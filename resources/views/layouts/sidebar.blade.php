@@ -1,45 +1,16 @@
-<div class="d-flex">
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar p-2">
-        <!-- Logo -->
-        <div class="sidebar-logo mb-3">
-            <a href="{{ route('home') }}">
-                <img src="{{ asset('logo.png') }}" alt="Logo" class="img-fluid">
-            </a>
-        </div>
-
-        <!-- Dashboard -->
-        <a href="{{ route('home') }}" class="{{ request()->is('home') ? 'active' : '' }}">
-            <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
-        </a>
-
-        <!-- Logout -->
-        <a href="{{ route('logout') }}"
-           onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-            <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
-        </a>
-        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-            @csrf
-        </form>
-
-        <!-- Gold accent stripe -->
-        <div class="sidebar-accent"></div>
+<aside id="sidebar" class="w-64 min-h-screen flex flex-col sidebar transition-transform duration-300">
+    <div class="flex flex-col items-center justify-center h-13 p-3 mt-2 mx-4 rounded-xl bg-gradient-to-r from-blue-500 to-blue-300 shadow-md">
+        <img src="https://altayaboon.com/assets/altayaboonlogosvg-BKWEtYJo.svg"
+             alt="GHG Tracker Pro Logo"
+             class="h-12 w-auto object-contain mb-1">
     </div>
 
-    <!-- Page Content -->
-    <div class="flex-grow-1">
-        <!-- Top Navbar -->
-        <nav class="navbar navbar-expand-lg">
-            <div class="container-fluid">
-                <button class="btn btn-outline-secondary me-3" id="toggleSidebar">
-                    <i class="bi bi-list"></i>
-                </button>
-                <span class="navbar-brand mb-0 h1">Dashboard</span>
-                <div class="ms-auto">
-                    <a class="btn btn-brand" href="{{ route('logout') }}"
-                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        {{ __('Logout') }}
-                    </a>
-                </div>
-            </div>
-        </nav>
+    <nav class="mt-4 flex-1 overflow-y-auto">
+        <ul class="space-y-2 px-4">
+            <li><a href="#" class="sidebar-item flex items-center p-3 rounded-md active"><span class="ml-2 font-medium">Dashboard</span></a></li>
+            <li><a href="#" class="sidebar-item flex items-center p-3 rounded-md"><span class="ml-2 font-medium">Monitoring</span></a></li>
+            <li><a href="#" class="sidebar-item flex items-center p-3 rounded-md"><span class="ml-2 font-medium">Reports</span></a></li>
+            <li><a href="#" class="sidebar-item flex items-center p-3 rounded-md"><span class="ml-2 font-medium">Settings</span></a></li>
+        </ul>
+    </nav>
+</aside>

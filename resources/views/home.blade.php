@@ -1,197 +1,125 @@
 @extends('layouts.app')
 
+@section('title', 'GHG Dashboard')
+@section('page-title', 'Dashboard')
+
 @section('content')
-@include('layouts.sidebar')
-<br>
+    <section id="dashboard" class="view-content">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Emissions -->
+            <div class="lg:col-span-2 dashboard-card rounded-xl p-6 flex flex-col h-full">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Total GHG Emissions (Kg CO₂e)</h3>
+                <div class="flex-grow w-full flex justify-center items-center">
+                    <canvas id="totalEmissionsDoughnut" class="max-h-64"></canvas>
+                </div>
+                <div class="mt-6 text-center border-t border-gray-200 pt-4">
+                    <p class="text-4xl font-extrabold text-gray-800">40.27 MT</p>
+                    <p class="text-sm text-gray-500 mt-1">Total CO₂e YTD - Last 12 Months</p>
+                </div>
+            </div>
 
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+            <!-- Metric Cards -->
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Metric Cards -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <!-- Scope 1 -->
+                    <div class="dashboard-card rounded-xl p-5 border-l-4 border-red-500">
+                        <p class="text-sm font-medium text-gray-600">Scope 1 (Direct)</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">23.83 MT</p>
+                        <div class="flex justify-between items-center text-xs mt-2 text-gray-500">
+                            <span>59.2% of Total</span>
+                            <span class="flex items-center text-red-500">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>+1.2% MoM
+            </span>
+                        </div>
+                    </div>
 
-  :root {
-    --primary-color: #1aa238;
-    --secondary-color: #0d6620;
-    --card-bg: #ffffff;
-    --hover-glow: rgba(26, 162, 56, 0.2);
-    --logo-bg: #f9f9f9;
-  }
+                    <!-- Scope 2 -->
+                    <div class="dashboard-card rounded-xl p-5 border-l-4 border-blue-500">
+                        <p class="text-sm font-medium text-gray-600">Scope 2 (Energy)</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">9.94 MT</p>
+                        <div class="flex justify-between items-center text-xs mt-2 text-gray-500">
+                            <span>24.7% of Total</span>
+                            <span class="flex items-center text-blue-500">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>+0.8% MoM
+            </span>
+                        </div>
+                    </div>
 
-  body {
-    background-color: #f4f6f9;
-    font-family: 'Poppins', sans-serif;
-  }
+                    <!-- Scope 3 -->
+                    <div class="dashboard-card rounded-xl p-5 border-l-4 border-green-500">
+                        <p class="text-sm font-medium text-gray-600">Scope 3 (Indirect)</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">6.50 MT</p>
+                        <div class="flex justify-between items-center text-xs mt-2 text-gray-500">
+                            <span>16.1% of Total</span>
+                            <span class="flex items-center text-green-500">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>-0.5% MoM
+            </span>
+                        </div>
+                    </div>
 
-  .dashboard-header {
-    text-align: center;
-    margin-bottom: 30px;
-  }
+                    <!-- Renewable Energy Savings -->
+                    <div class="dashboard-card rounded-xl p-5 border-l-4 border-purple-500">
+                        <p class="text-sm font-medium text-gray-600">Renewable Energy Savings</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">5.00 MT</p>
+                        <div class="flex justify-between items-center text-xs mt-2 text-gray-500">
+                            <span>12.4% of Total</span>
+                            <span class="flex items-center text-purple-500">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                </svg>+2.0% MoM
+            </span>
+                        </div>
+                    </div>
+                </div>
 
-  .dashboard-header h2 {
-    font-weight: 700;
-    color: var(--primary-color);
-  }
+            </div>
+        </div>
 
-  .dashboard-header p {
-    color: #666;
-    font-size: 1rem;
-  }
-
-  .company-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 10px 15px 40px;
-  }
-
-  .company-card {
-    background: var(--card-bg);
-    border-radius: 18px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-    transition: all 0.4s ease;
-    padding: 25px 20px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid #e0e0e0;
-    cursor: pointer;
-    animation: fadeIn 0.8s ease forwards;
-  }
-
-  .company-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 15px 30px var(--hover-glow);
-    border-color: var(--primary-color);
-  }
-
-  .company-card::before {
-    content: '';
-    position: absolute;
-    top: -30%;
-    left: -30%;
-    width: 160%;
-    height: 160%;
-    background: radial-gradient(circle at top left, var(--primary-color), transparent 70%);
-    opacity: 0.05;
-    z-index: 0;
-  }
-
-  .company-logo {
-    width: 120px;
-    background-color: var(--logo-bg);
-    border-radius: 14px;
-    padding: 10px;
-    margin-bottom: 15px;
-    position: relative;
-    z-index: 1;
-    transition: transform 0.3s ease;
-  }
-
-  .company-logo:hover {
-    transform: scale(1.1) rotate(5deg);
-  }
-
-  .company-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    position: relative;
-    z-index: 1;
-    margin-bottom: 6px;
-  }
-
-  .company-desc {
-    font-size: 0.9rem;
-    color: #666;
-    z-index: 1;
-    position: relative;
-  }
-
-  /* Animations */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @media (max-width: 576px) {
-    .company-logo {
-      width: 80px;
-      height: 80px;
-    }
-
-    .company-name {
-      font-size: 1rem;
-    }
-  }
-
-
-    .audit-card {
-    background: linear-gradient(135deg, green 0%, #3b3737 70%, gold 5%);
-    border-radius: 16px;
-    padding: 24px 20px;
-    width: 260px;
-    text-align: center;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
-    color: white;
-    transition: transform 0.2s, box-shadow 0.2s;
-    position: relative;
-    overflow: hidden;
-    }
-
-    .audit-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 28px rgba(0,0,0,0.35);
-    }
-
-    .audit-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 16px;
-        font-size: 18px;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    }
-
-    .audit-header i {
-        font-size: 24px;
-        color: limegreen; /* dominant green icon */
-    }
-
-    .audit-value {
-        font-size: 42px;
-        font-weight: 900;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    }
-
-    /* Yellow accent is minimal, just a small stripe at the bottom */
-    .audit-accent {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 5px;
-        background-color: gold;
-        border-bottom-left-radius: 16px;
-        border-bottom-right-radius: 16px;
-    }
-
-</style>
-
-
-
-
-<div class="container">
-  <div class="dashboard-header">
-    <h2>Welcome to Your Dashboard</h2>
-  </div>
-
-
-
-  <div class="company-container">
-    <div class="row g-4">
-   
-
-    </div>
-  </div>
-
-</div>
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="dashboard-card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Monthly CO₂e Emissions Trend</h3>
+                <canvas id="emissionsTrendChart" class="max-h-64"></canvas>
+            </div>
+            <div class="dashboard-card rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Emission Source Distribution</h3>
+                <canvas id="sourceDistributionChart" class="max-h-64"></canvas>
+            </div>
+        </div>
+    </section>
 @endsection
+
+@push('scripts')
+    <script>
+        const chartTextColor = '#334155';
+        const gridColor = '#e2e8f0';
+
+        new Chart(document.getElementById('totalEmissionsDoughnut'), {
+            type: 'doughnut',
+            data: { labels: ['Scope 1', 'Scope 2', 'Scope 3'], datasets: [{ data: [23.83, 9.94, 6.50], backgroundColor: ['#ef4444','#3b82f6','#10b981'] }] },
+            options: { plugins: { legend: { position: 'bottom', labels: { color: chartTextColor } } } }
+        });
+
+        new Chart(document.getElementById('emissionsTrendChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [{ label: 'Total CO₂e (MT)', data: [3.1,3.5,3.8,3.6,3.9,4.0,3.8,3.7,4.1,4.2,4.3,4.4], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.2)', fill: true, tension: 0.3 }]
+            },
+            options: { plugins: { legend: { labels: { color: chartTextColor } } }, scales: { x: { ticks: { color: chartTextColor }, grid: { color: gridColor } }, y: { ticks: { color: chartTextColor }, grid: { color: gridColor } } } }
+        });
+
+        new Chart(document.getElementById('sourceDistributionChart'), {
+            type: 'pie',
+            data: { labels: ['Transportation','Energy','Waste','Materials'], datasets: [{ data: [40,30,20,10], backgroundColor: ['#ef4444','#3b82f6','#10b981','#8b5cf6'] }] },
+            options: { plugins: { legend: { position: 'bottom', labels: { color: chartTextColor } } } }
+        });
+    </script>
+@endpush
