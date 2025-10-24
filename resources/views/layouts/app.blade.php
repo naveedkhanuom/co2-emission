@@ -1,64 +1,190 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'GHG Dashboard')</title>
 
-    <!-- Tailwind & Chart.js -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap">
+    <!-- Bootstrap 5 + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Inter font (keeps the same look) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
-        .sidebar { background-color: #ffffff; border-right: 1px solid #e5e7eb; box-shadow: 2px 0 6px rgba(0,0,0,0.05); }
-        .sidebar-item { border-left: 4px solid transparent; transition: all 0.2s; color: #334155; }
-        .sidebar-item:hover { background-color: #f1f5f9; color: #1e40af; }
-        .sidebar-item.active { background-color: #e0f2fe; border-left-color: #3b82f6; color: #1e40af; font-weight: 600; }
-        .dashboard-card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 4px 8px rgba(0,0,0,0.05); transition: all 0.3s ease; }
-        .dashboard-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .scrollbar::-webkit-scrollbar { width: 8px; }
-        .scrollbar::-webkit-scrollbar-thumb { background-color: #93c5fd; border-radius: 4px; }
-        .scrollbar::-webkit-scrollbar-track { background-color: #f1f5f9; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: #fff;
+            border-right: 1px solid #e5e7eb;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1040;
+            transition: transform 0.28s ease;
+            box-shadow: 2px 0 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* On small screens hide sidebar by default */
+        @media (max-width: 991.98px) {
+            #sidebar { transform: translateX(-100%); }
+            #sidebar.show { transform: translateX(0); }
+        }
+
+        /* Sidebar header/logo block */
+        .sidebar-brand {
+            margin: 14px;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            background: linear-gradient(90deg,#0d6efd,#60a5fa);
+            box-shadow: 0 4px 10px rgba(14,50,112,0.12);
+        }
+        .sidebar-brand img { height: 48px; width: auto; }
+
+        /* Sidebar nav items */
+        .sidebar-nav {
+            padding: 0.75rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .6rem .9rem;
+            color: #334155;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all .15s ease;
+            border-left: 4px solid transparent;
+            font-weight: 500;
+        }
+        .sidebar-item:hover {
+            background: #f1f5f9;
+            color: #0d6efd;
+        }
+        .sidebar-item.active {
+            background: #e6f4ff;
+            color: #0d6efd;
+            border-left-color: #0d6efd;
+            font-weight: 600;
+        }
+
+        /* main content layout */
+        .main-content {
+            margin-left: 250px;
+            transition: margin-left .28s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        @media (max-width: 991.98px) {
+            .main-content { margin-left: 0; }
+        }
+
+        /* header */
+        header.site-header {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            padding: 12px 20px;
+            z-index: 1035;
+        }
+
+        /* card style like your tailwind version */
+        .dashboard-card {
+            background: #fff;
+            border: 1px solid #e6eef8;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(7,22,48,0.04);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(7,22,48,0.08);
+        }
+
+        /* scrollbar color (webkit) */
+        .sidebar-nav::-webkit-scrollbar { width: 8px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 6px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: #f1f5f9; }
     </style>
 
     @stack('styles')
 </head>
-
-<body class="flex h-screen overflow-hidden">
-
-<!-- Sidebar -->
+<body>
+{{-- Sidebar include (blade) --}}
 @include('layouts.sidebar')
 
-<!-- Main Content -->
-<div class="flex-1 flex flex-col overflow-auto scrollbar">
+{{-- Main content container --}}
+<div class="main-content" id="mainContent">
+    <header class="site-header d-flex align-items-center justify-content-between sticky-top">
+        <div class="d-flex align-items-center">
+            <button class="btn btn-outline-secondary d-lg-none me-2" id="btnToggleSidebar" aria-label="Toggle sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <h5 class="mb-0 fw-semibold">@yield('page-title','Dashboard')</h5>
+        </div>
 
-    <!-- Header -->
-    <header class="bg-white sticky top-0 z-10 p-4 flex justify-between items-center border-b border-gray-200 shadow-sm">
-        <button id="sidebar-toggle" class="md:hidden text-gray-600 hover:text-blue-600">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-        </button>
-        <h1 id="page-title" class="text-xl font-semibold text-gray-800">@yield('page-title', 'Dashboard')</h1>
-        <div class="flex items-center space-x-4">
-            <span class="text-sm text-gray-500 hidden sm:inline">@yield('company-info','Acme Manufacturing | FY 2024 (Q3)')</span>
-            <div class="h-9 w-9 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-base border-2 border-blue-300">AM</div>
+        <div class="d-flex align-items-center">
+            <span class="text-muted small me-3 d-none d-sm-inline">@yield('company-info', 'Acme Manufacturing | FY 2024 (Q3)')</span>
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;">AM</div>
         </div>
     </header>
 
-    <!-- Page Content -->
-    <main class="p-6 flex-1 overflow-y-auto bg-gray-50">
+    <main class="p-4 bg-light flex-grow-1">
         @yield('content')
     </main>
-
 </div>
 
+<!-- Chart.js (kept) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Bootstrap bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    document.getElementById('sidebar-toggle').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('-translate-x-full');
-    });
+    // sidebar toggle (mobile)
+    (function () {
+        const sidebar = document.getElementById('sidebar');
+        const btn = document.getElementById('btnToggleSidebar');
+        const main = document.getElementById('mainContent');
+
+        if (!btn || !sidebar) return;
+
+        btn.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+        });
+
+        // click outside to close on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 991.98) {
+                if (!sidebar.contains(e.target) && !btn.contains(e.target) && sidebar.classList.contains('show')) {
+                    sidebar.classList.remove('show');
+                }
+            }
+        });
+
+        // close sidebar on link click (mobile)
+        sidebar.addEventListener('click', (e) => {
+            const target = e.target.closest('a');
+            if (target && window.innerWidth <= 991.98) {
+                sidebar.classList.remove('show');
+            }
+        });
+    })();
 </script>
 
 @stack('scripts')
