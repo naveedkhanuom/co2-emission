@@ -10,16 +10,21 @@ class EmissionRecord extends Model
     use HasFactory;
 
     protected $fillable = [
-        'company_id',
-        'site_id',
-        'user_id',
-        'emission_source_id',
-        'emission_factor_id',
-        'record_date',
+        'entry_date',
+        'facility',
+        'scope',
+        'emission_source',
         'activity_data',
-        'emission_value',
-        'unit'
+        'emission_factor',
+        'co2e_value',
+        'confidence_level',
+        'department',
+        'data_source',
+        'notes',
+        'created_by',
+        'status',
     ];
+
 
     // Relationships
     public function company() { return $this->belongsTo(Company::class); }

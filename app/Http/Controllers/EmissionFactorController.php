@@ -59,3 +59,4 @@ class EmissionFactorController extends Controller
         return response()->json(['message' => 'Emission Factor deleted successfully!']);
     }
 }
+

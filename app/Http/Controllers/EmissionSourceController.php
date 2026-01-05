@@ -50,7 +50,7 @@ class EmissionSourceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'scope' => 'required|string|max:255',
+            'scope' => 'nullable|integer|in:1,2,3',
             'description' => 'nullable|string',
         ]);
 
@@ -88,3 +88,4 @@ class EmissionSourceController extends Controller
         return response()->json(['success' => true, 'message' => 'Emission Source deleted successfully!']);
     }
 }
+

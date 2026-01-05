@@ -15,6 +15,9 @@ class Report extends Model
         'report_name',
         'period',
         'generated_at',
+        'status',
+        'type',
+        'created_by',
     ];
 
     public function company() {
@@ -23,6 +26,10 @@ class Report extends Model
 
     public function site() {
         return $this->belongsTo(Site::class);
+    }
+
+    public function user() {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
 

@@ -19,8 +19,16 @@
 
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins', sans-serif; }
 
+        // body {
+        //     background-color: var(--color-body-bg);
+        //     min-height: 100vh;
+        //     display: flex;
+        //     justify-content: center;
+        //     align-items: center;
+        //     padding: 20px;
+        // }
         body {
-            background-color: var(--color-body-bg);
+            background: url('bg2.jpeg') no-repeat center center/cover;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -28,16 +36,30 @@
             padding: 20px;
         }
 
+
         .login-wrapper { width: 100%; display: flex; justify-content: center; }
+
+        // .login-box {
+        //     width: 100%;
+        //     max-width: 420px;
+        //     background: var(--color-card-bg);
+        //     padding: 40px;
+        //     border-radius: 20px;
+        //     box-shadow: var(--box-shadow);
+        //     text-align: center;
+        //     animation: fadeIn 0.8s ease-out forwards;
+        // }
 
         .login-box {
             width: 100%;
             max-width: 420px;
-            background: var(--color-card-bg);
+            background: rgba(255, 255, 255, 0.05); /* almost fully clear */
             padding: 40px;
             border-radius: 20px;
             box-shadow: var(--box-shadow);
             text-align: center;
+            backdrop-filter: blur(15px); /* strong glass blur */
+            border: 1px solid rgba(255, 255, 255, 0.15); 
             animation: fadeIn 0.8s ease-out forwards;
         }
 
@@ -96,7 +118,7 @@
 <div class="login-wrapper">
     <div class="login-box">
         <div class="icon-logo">
-            <img src="https://altayaboon.com/assets/altayaboonlogosvg-BKWEtYJo.svg"
+            <img src="{{asset('logo.png')}}"
                  alt="Altayaboon Logo"
                  loading="eager"
                  onerror="this.style.display='none'; this.closest('.icon-logo').innerHTML='<h3 style=\'color: var(--color-primary); font-size: 20px;\'>ALTAYABOON</h3>';"/>

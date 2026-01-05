@@ -15,9 +15,9 @@ class EmissionSource extends Model
         'description',
     ];
 
-    // Example relationship placeholder (if later needed)
-    // public function emissionFactors()
-    // {
-    //     return $this->hasMany(EmissionFactor::class);
-    // }
+    public function emissionFactors()
+    {
+        return $this->hasMany(EmissionFactor::class);
+    }
 }
+

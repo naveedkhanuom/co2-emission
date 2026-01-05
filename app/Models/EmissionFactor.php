@@ -21,3 +21,4 @@ class EmissionFactor extends Model
         return $this->belongsTo(EmissionSource::class);
     }
 }
+

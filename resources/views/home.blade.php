@@ -1,208 +1,465 @@
 @extends('layouts.app')
 
-@section('title', 'GHG Dashboard')
-@section('page-title', 'Dashboard')
-
-@push('styles')
-    <style>
-        /* Metric Card Borders */
-        .metric-card {
-            border-left-width: 6px !important;
-            border-top: 1px solid #dee2e6;
-            border-right: 1px solid #dee2e6;
-            border-bottom: 1px solid #dee2e6;
-        }
-    </style>
-@endpush
-
 @section('content')
-    <section id="dashboard">
-        <div class="container-fluid">
-            <!-- Top Row: Left Doughnut + Right Metrics -->
-            <div class="row g-4 align-items-stretch">
+    <!-- Main Content -->
+    <div id="content">
 
-                <!-- Left Card: Total Emissions -->
-                <div class="col-lg-6 d-flex">
-                    <div class="card shadow-sm rounded-xl flex-fill">
-                        <div class="card-body d-flex flex-column p-4">
-                            <h3 class="fw-semibold text-dark mb-4 fs-5">Total GHG Emissions (Kg CO₂e)</h3>
-                            <div class="d-flex justify-content-center align-items-center flex-grow-1">
-                                <canvas id="totalEmissionsDoughnut" class="w-100" style="max-height:250px;"></canvas>
+       @include('layouts.top-nav') 
+        <!-- KPI Summary Cards -->
+        <div class="row mt-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">TOTAL EMISSIONS</div>
+                                <div class="kpi-value">{{ number_format($totalEmissions, 2) }} <span class="fs-6">tCO₂e</span></div>
+                                <div class="kpi-change {{ $percentageChange >= 0 ? 'change-positive' : 'change-negative' }}">
+                                    <i class="fas fa-arrow-{{ $percentageChange >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($percentageChange), 1) }}% from last month
+                                </div>
                             </div>
-                            <div class="text-center border-top pt-3 mt-3">
-                                <p class="fw-bold mb-0 fs-2">40.27 MT</p>
-                                <p class="text-muted mt-1 small">Total CO₂e YTD - Last 12 Months</p>
+                            <div class="kpi-icon" style="background-color: var(--primary-green);">
+                                <i class="fas fa-globe-europe"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Right Cards: Metrics -->
-                <div class="col-lg-6 d-flex flex-column">
-                    <div class="row g-3 flex-fill">
-
-                        <!-- Scope 1 -->
-                        <div class="col-sm-6 d-flex">
-                            <div class="card shadow-sm rounded-xl flex-fill metric-card" style="border-left-color:#dc3545;">
-                                <div class="card-body d-flex flex-column justify-content-between p-3">
-                                    <div>
-                                        <p class="text-muted mb-1 small">Scope 1 (Direct)</p>
-                                        <p class="fw-bold mb-2 fs-4">23.83 MT</p>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center text-muted small">
-                                        <span>59.2% of Total</span>
-                                        <span class="text-danger d-flex align-items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="me-1" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7 7 7M12 3v18"/>
-                                        </svg>
-                                        +1.2% MoM
-                                    </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Scope 2 -->
-                        <div class="col-sm-6 d-flex">
-                            <div class="card shadow-sm rounded-xl flex-fill metric-card" style="border-left-color:#0d6efd;">
-                                <div class="card-body d-flex flex-column justify-content-between p-3">
-                                    <div>
-                                        <p class="text-muted mb-1 small">Scope 2 (Energy)</p>
-                                        <p class="fw-bold mb-2 fs-4">9.94 MT</p>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center text-muted small">
-                                        <span>24.7% of Total</span>
-                                        <span class="text-primary d-flex align-items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="me-1" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7 7 7M12 3v18"/>
-                                        </svg>
-                                        +0.8% MoM
-                                    </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Scope 3 -->
-                        <div class="col-sm-6 d-flex">
-                            <div class="card shadow-sm rounded-xl flex-fill metric-card" style="border-left-color:#198754;">
-                                <div class="card-body d-flex flex-column justify-content-between p-3">
-                                    <div>
-                                        <p class="text-muted mb-1 small">Scope 3 (Indirect)</p>
-                                        <p class="fw-bold mb-2 fs-4">6.50 MT</p>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center text-muted small">
-                                        <span>16.1% of Total</span>
-                                        <span class="text-success d-flex align-items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="me-1" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7-7-7M12 21V3"/>
-                                        </svg>
-                                        -0.5% MoM
-                                    </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Renewable Energy Savings -->
-                        <div class="col-sm-6 d-flex">
-                            <div class="card shadow-sm rounded-xl flex-fill metric-card" style="border-left-color:#8b5cf6;">
-                                <div class="card-body d-flex flex-column justify-content-between p-3">
-                                    <div>
-                                        <p class="text-muted mb-1 small">Renewable Energy Savings</p>
-                                        <p class="fw-bold mb-2 fs-4">5.00 MT</p>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center text-muted small">
-                                        <span>12.4% of Total</span>
-                                        <span class="d-flex align-items-center" style="color:#8b5cf6;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" class="me-1" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7 7 7M12 3v18"/>
-                                        </svg>
-                                        +2.0% MoM
-                                    </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
             </div>
-
-            <!-- Charts Row -->
-            <div class="row g-4 mt-3">
-                <div class="col-12 col-lg-6">
-                    <div class="dashboard-card p-4 h-100">
-                        <h3 class="h6 mb-3">Monthly CO₂e Emissions Trend</h3>
-                        <canvas id="emissionsTrendChart" style="max-height:320px; width:100%;"></canvas>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">SCOPE 1 EMISSIONS</div>
+                                <div class="kpi-value">{{ number_format($scope1Emissions, 2) }} <span class="fs-6">tCO₂e</span></div>
+                                <div class="kpi-change {{ $scope1Change >= 0 ? 'change-positive' : 'change-negative' }}">
+                                    <i class="fas fa-arrow-{{ $scope1Change >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($scope1Change), 1) }}% from last month
+                                </div>
+                            </div>
+                            <div class="kpi-icon" style="background-color: var(--light-green);">
+                                <i class="fas fa-industry"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="col-12 col-lg-6">
-                    <div class="dashboard-card p-4 h-100">
-                        <h3 class="h6 mb-3">Emission Source Distribution</h3>
-                        <canvas id="sourceDistributionChart" style="max-height:320px; width:100%;"></canvas>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">SCOPE 2 EMISSIONS</div>
+                                <div class="kpi-value">{{ number_format($scope2Emissions, 2) }} <span class="fs-6">tCO₂e</span></div>
+                                <div class="kpi-change {{ $scope2Change >= 0 ? 'change-positive' : 'change-negative' }}">
+                                    <i class="fas fa-arrow-{{ $scope2Change >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($scope2Change), 1) }}% from last month
+                                </div>
+                            </div>
+                            <div class="kpi-icon" style="background-color: var(--primary-blue);">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">SCOPE 3 EMISSIONS</div>
+                                <div class="kpi-value">{{ number_format($scope3Emissions, 2) }} <span class="fs-6">tCO₂e</span></div>
+                                <div class="kpi-change {{ $scope3Change >= 0 ? 'change-positive' : 'change-negative' }}">
+                                    <i class="fas fa-arrow-{{ $scope3Change >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($scope3Change), 1) }}% from last month
+                                </div>
+                            </div>
+                            <div class="kpi-icon" style="background-color: var(--warning-orange);">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
-@endsection
-
-@push('scripts')
+        
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <h5 class="mb-3">Filter Emissions Data</h5>
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="filter-label">Date Range</div>
+                    <select class="form-select" id="dateRangeFilter">
+                        <option value="12" {{ $dateRange == '12' ? 'selected' : '' }}>Last 12 Months</option>
+                        <option value="ytd" {{ $dateRange == 'ytd' ? 'selected' : '' }}>Year to Date</option>
+                        <option value="3" {{ $dateRange == '3' ? 'selected' : '' }}>Last Quarter</option>
+                        <option value="custom" {{ $dateRange == 'custom' ? 'selected' : '' }}>Custom Range</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="filter-label">Facility</div>
+                    <select class="form-select" id="facilityFilter">
+                        <option value="" {{ empty($facilityFilter) ? 'selected' : '' }}>All Facilities</option>
+                        @foreach($facilities as $facility)
+                            <option value="{{ $facility->id }}" {{ $facilityFilter == $facility->id ? 'selected' : '' }}>{{ $facility->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="filter-label">Department</div>
+                    <select class="form-select" id="departmentFilter">
+                        <option value="" {{ empty($departmentFilter) ? 'selected' : '' }}>All Departments</option>
+                        @foreach($departments as $department)
+                            <option value="{{ $department->id }}" {{ $departmentFilter == $department->id ? 'selected' : '' }}>{{ $department->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="filter-label">Emission Category</div>
+                    <select class="form-select" id="categoryFilter">
+                        <option value="" {{ empty($categoryFilter) ? 'selected' : '' }}>All Categories</option>
+                        @foreach($emissionCategories as $category)
+                            <option value="{{ $category }}" {{ $categoryFilter == $category ? 'selected' : '' }}>{{ $category }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-2">
+                <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn">
+                    <i class="fas fa-redo me-2"></i>Reset Filters
+                </button>
+                <button type="button" class="btn btn-success" id="applyFiltersBtn">
+                    <i class="fas fa-filter me-2"></i>Apply Filters
+                </button>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="row">
+            <!-- Monthly Trend Chart -->
+            <div class="col-lg-8 mb-4">
+                <div class="chart-container">
+                    <div class="chart-title">Monthly GHG Emissions Trend</div>
+                    <div id="trendChart"></div>
+                </div>
+            </div>
+            
+            <!-- Emissions by Scope Chart -->
+            <div class="col-lg-4 mb-4">
+                <div class="chart-container">
+                    <div class="chart-title">Emissions by Scope</div>
+                    <div id="scopeChart"></div>
+                </div>
+            </div>
+            
+            <!-- Emissions by Source Chart -->
+            <div class="col-lg-12 mb-4">
+                <div class="chart-container">
+                    <div class="chart-title">Emissions by Source</div>
+                    <div id="sourceChart"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Table Preview -->
+        <div class="data-table-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Recent Emissions Data</h5>
+                <div class="input-group" style="width: 300px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Search emissions data...">
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Scope</th>
+                            <th>Source</th>
+                            <th>CO₂e Value</th>
+                            <th>Facility</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($recentRecords as $record)
+                        <tr>
+                            <td>{{ $record->entry_date ? \Carbon\Carbon::parse($record->entry_date)->format('Y-m-d') : 'N/A' }}</td>
+                            <td><span class="scope-badge scope-{{ $record->scope }}">Scope {{ $record->scope }}</span></td>
+                            <td>{{ $record->emission_source ?? 'N/A' }}</td>
+                            <td>{{ number_format($record->co2e_value, 2) }} tCO₂e</td>
+                            <td>{{ $record->facility ?? 'N/A' }}</td>
+                            <td>
+                                @if($record->status === 'active')
+                                    <span class="badge bg-success">Active</span>
+                                @else
+                                    <span class="badge bg-secondary">Draft</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No emission records found</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">Showing {{ $recentRecords->count() }} of {{ $totalRecords }} records</div>
+                <nav aria-label="Table pagination">
+                    <ul class="pagination pagination-sm">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>GHG Emissions Monitoring System v2.1 • Data last updated: {{ now()->format('F d, Y') }}</p>
+            <p class="small">© {{ date('Y') }} Sustainability Analytics. All emissions data is measured in metric tons of CO₂ equivalent (tCO₂e).</p>
+        </div>
+    </div>
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
+    
     <script>
-        const chartTextColor = '#334155';
-        const gridColor = '#e6eef8';
-
-        // Doughnut: Total Emissions
-        new Chart(document.getElementById('totalEmissionsDoughnut'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Scope 1', 'Scope 2', 'Scope 3'],
-                datasets: [{ data: [23.83, 9.94, 6.50], backgroundColor: ['#ef4444','#3b82f6','#10b981'] }]
-            },
-            options: {
-                plugins: { legend: { position: 'bottom', labels: { color: chartTextColor } } },
-                maintainAspectRatio: false
-            }
-        });
-
-        // Line: Monthly trend
-        new Chart(document.getElementById('emissionsTrendChart'), {
-            type: 'line',
-            data: {
-                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                datasets: [{
-                    label: 'Total CO₂e (MT)',
-                    data: [3.1,3.5,3.8,3.6,3.9,4.0,3.8,3.7,4.1,4.2,4.3,4.4],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59,130,246,0.18)',
-                    fill: true,
-                    tension: 0.3,
-                }]
-            },
-            options: {
-                plugins: { legend: { labels: { color: chartTextColor } } },
-                scales: {
-                    x: { ticks: { color: chartTextColor }, grid: { color: gridColor } },
-                    y: { ticks: { color: chartTextColor }, grid: { color: gridColor } }
+        // Initialize charts when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Chart 1: Monthly Trend
+            const trendOptions = {
+                series: [{
+                    name: 'Total Emissions',
+                    data: @json($monthlyTrend)
+                }, {
+                    name: 'Target',
+                    data: @json($monthlyTarget)
+                }],
+                chart: {
+                    height: 350,
+                    type: 'line',
+                    zoom: {
+                        enabled: false
+                    },
+                    toolbar: {
+                        show: true
+                    }
                 },
-                maintainAspectRatio: false
-            }
-        });
-
-        // Pie: Source Distribution
-        new Chart(document.getElementById('sourceDistributionChart'), {
-            type: 'pie',
-            data: {
-                labels: ['Transportation','Energy','Waste','Materials'],
-                datasets: [{ data: [40,30,20,10], backgroundColor: ['#ef4444','#3b82f6','#10b981','#8b5cf6'] }]
-            },
-            options: {
-                plugins: { legend: { position: 'bottom', labels: { color: chartTextColor } } },
-                maintainAspectRatio: false
-            }
+                colors: ['#2e7d32', '#f57c00'],
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 3
+                },
+                title: {
+                    text: '',
+                    align: 'left'
+                },
+                grid: {
+                    row: {
+                        colors: ['#f3f3f3', 'transparent'],
+                        opacity: 0.5
+                    },
+                },
+                xaxis: {
+                    categories: @json($months),
+                    title: {
+                        text: 'Month'
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: 'tCO₂e'
+                    }
+                    @if(count($monthlyTrend) > 0)
+                    ,min: {{ floor(min($monthlyTrend) * 0.9) }}
+                    ,max: {{ ceil(max($monthlyTrend) * 1.1) }}
+                    @endif
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'right',
+                    floating: true,
+                    offsetY: -25,
+                    offsetX: -5
+                }
+            };
+            
+            const trendChart = new ApexCharts(document.querySelector("#trendChart"), trendOptions);
+            trendChart.render();
+            
+            // Chart 2: Emissions by Scope
+            const scopeOptions = {
+                series: [{{ number_format($scope1Emissions, 2) }}, {{ number_format($scope2Emissions, 2) }}, {{ number_format($scope3Emissions, 2) }}],
+                chart: {
+                    type: 'donut',
+                    height: 320
+                },
+                colors: ['#2e7d32', '#03a9f4', '#f57c00'],
+                labels: ['Scope 1', 'Scope 2', 'Scope 3'],
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '65%',
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'Total',
+                                    color: '#5f6368',
+                                    fontSize: '16px'
+                                },
+                                value: {
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#3c4043'
+                                }
+                            }
+                        }
+                    }
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                legend: {
+                    position: 'bottom',
+                    horizontalAlign: 'center'
+                },
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                            width: 200
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }]
+            };
+            
+            const scopeChart = new ApexCharts(document.querySelector("#scopeChart"), scopeOptions);
+            scopeChart.render();
+            
+            // Chart 3: Emissions by Source
+            const sourceNames = @json($sourceNames ?? []);
+            const sourceValues = @json($sourceValues ?? []);
+            
+            const sourceOptions = {
+                series: [{
+                    name: 'tCO₂e',
+                    data: sourceValues.length > 0 ? sourceValues : [0]
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                        show: true
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        borderRadius: 4,
+                        horizontal: true,
+                        distributed: true
+                    }
+                },
+                colors: ['#2e7d32', '#4caf50', '#81c784', '#0277bd', '#03a9f4', '#f57c00', '#ff9800', '#ffb74d', '#795548', '#a1887f'],
+                dataLabels: {
+                    enabled: sourceValues.length > 0,
+                    formatter: function(val) {
+                        return val + " tCO₂e";
+                    },
+                    style: {
+                        fontSize: '12px',
+                        colors: ['#fff']
+                    }
+                },
+                xaxis: {
+                    categories: sourceNames.length > 0 ? sourceNames : ['No data available'],
+                    title: {
+                        text: 'tCO₂e'
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            fontSize: '13px'
+                        }
+                    }
+                },
+                title: {
+                    text: '',
+                    align: 'left'
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + " tCO₂e";
+                        }
+                    }
+                }
+            };
+            
+            const sourceChart = new ApexCharts(document.querySelector("#sourceChart"), sourceOptions);
+            sourceChart.render();
+            
+            // Sidebar toggle for mobile
+            document.getElementById('sidebarCollapse').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+                document.getElementById('content').classList.toggle('active');
+            });
+            
+            // Update active menu item
+            const menuItems = document.querySelectorAll('.sidebar-menu a');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    menuItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Apply filters button functionality
+            document.getElementById('applyFiltersBtn').addEventListener('click', function() {
+                const dateRange = document.getElementById('dateRangeFilter').value;
+                const facility = document.getElementById('facilityFilter').value;
+                const department = document.getElementById('departmentFilter').value;
+                const category = document.getElementById('categoryFilter').value;
+                
+                // Build query string
+                const params = new URLSearchParams();
+                if (dateRange) params.append('date_range', dateRange);
+                if (facility) params.append('facility', facility);
+                if (department) params.append('department', department);
+                if (category) params.append('category', category);
+                
+                // Redirect with filter parameters
+                const url = '{{ route("home") }}' + (params.toString() ? '?' + params.toString() : '');
+                window.location.href = url;
+            });
+            
+            // Reset filters button functionality
+            document.getElementById('resetFiltersBtn').addEventListener('click', function() {
+                // Redirect to home without any parameters
+                window.location.href = '{{ route("home") }}';
+            });
         });
     </script>
-@endpush
+@endsection
