@@ -4,10 +4,22 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use App\Models\Bill;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use App\Models\UtilityBill;
+use App\Services\BillDataExtractor;
+use thiagoalessio\TesseractOCR\TesseractOCR;
 
 class BillOCRController extends Controller
 {
+    protected $extractor;
+
+    public function __construct(BillDataExtractor $extractor)
+    {
+        $this->extractor = $extractor;
+    }
+
     public function showForm()
     {
         return view('bill_upload');
@@ -17,60 +29,164 @@ class BillOCRController extends Controller
     {
         $request->validate([
             'bill_file' => 'required|mimes:jpg,jpeg,png,pdf|max:10240',
+            'bill_type' => 'required|in:electricity,fuel',
         ]);
 
         $file = $request->file('bill_file');
+        $billType = $request->bill_type;
+        
+        // Store the uploaded file
+        $path = $file->store('utility_bills', 'public');
+        $filePath = storage_path('app/public/' . $path);
+        $ext = strtolower($file->getClientOriginalExtension());
 
-        // Send to OCR.space
-        $response = Http::withHeaders([
-            'apikey' => env('OCR_SPACE_API_KEY')
-        ])->attach(
-            'file', file_get_contents($file->getRealPath()), $file->getClientOriginalName()
-        )->post('https://api.ocr.space/parse/image', [
-            'language' => 'eng',
-            'isOverlayRequired' => 'false',
-        ]);
+        // Step 1: Extract text using OCR
+        $text = '';
+        $ocrMethod = 'unknown';
+        
+        // Try OCR.space API first if API key is configured
+        $ocrSpaceApiKey = env('OCR_SPACE_API_KEY');
+        if (!empty($ocrSpaceApiKey)) {
+            try {
+                $response = Http::withHeaders([
+                    'apikey' => $ocrSpaceApiKey
+                ])->attach(
+                    'file', file_get_contents($file->getRealPath()), $file->getClientOriginalName()
+                )->post('https://api.ocr.space/parse/image', [
+                    'language' => 'eng',
+                    'isOverlayRequired' => 'false',
+                ]);
 
-        $result = $response->json();
+                $result = $response->json();
 
-        if (!isset($result['ParsedResults'][0]['ParsedText'])) {
-            return back()->withErrors(['bill_file' => 'OCR failed, please try again.']);
+                if (isset($result['ParsedResults'][0]['ParsedText'])) {
+                    $text = $result['ParsedResults'][0]['ParsedText'];
+                    $ocrMethod = 'ocr_space';
+                } elseif (isset($result['ErrorMessage'])) {
+                    Log::warning('OCR.space API error: ' . $result['ErrorMessage']);
+                }
+            } catch (\Exception $e) {
+                Log::warning('OCR.space API exception: ' . $e->getMessage());
+            }
         }
 
-        $text = $result['ParsedResults'][0]['ParsedText'];
+        // Fallback to TesseractOCR if OCR.space failed or is not configured
+        if (empty($text)) {
+            if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
+                try {
+                    $tesseractPath = env('TESSERACT_PATH', 'tesseract');
+                    
+                    $text = (new TesseractOCR($filePath))
+                        ->executable($tesseractPath)
+                        ->run();
+                    $ocrMethod = 'tesseract';
+                } catch (\Exception $e) {
+                    return back()->withInput()->with('error', 'OCR extraction failed: ' . $e->getMessage());
+                }
+            } elseif ($ext === 'pdf') {
+                try {
+                    // Try to extract text directly using pdftotext (if available)
+                    $text = @shell_exec("pdftotext \"$filePath\" - 2>&1");
+                    
+                    if (!empty($text)) {
+                        $ocrMethod = 'pdftotext';
+                    }
+                    
+                    // If pdftotext is not available, try using PDF to Image library
+                    if (empty($text) && class_exists(\Spatie\PdfToImage\Pdf::class)) {
+                        try {
+                            $pdf = new \Spatie\PdfToImage\Pdf($filePath);
+                            $pdf->setPage(1);
+                            
+                            $tempDir = storage_path('app/temp');
+                            if (!file_exists($tempDir)) {
+                                mkdir($tempDir, 0755, true);
+                            }
+                            
+                            $imagePath = $tempDir . '/' . uniqid() . '.png';
+                            $pdf->saveImage($imagePath);
+                            
+                            $tesseractPath = env('TESSERACT_PATH', 'tesseract');
+                            $text = (new TesseractOCR($imagePath))
+                                ->executable($tesseractPath)
+                                ->run();
+                            $ocrMethod = 'tesseract_pdf';
+                                
+                            if (file_exists($imagePath)) {
+                                unlink($imagePath);
+                            }
+                        } catch (\Exception $pdfException) {
+                            return back()->withInput()->with('error', 'PDF processing failed. Please convert PDF to image (JPG/PNG) or install pdftotext utility.');
+                        }
+                    }
+                    
+                    if (empty($text)) {
+                        return back()->withInput()->with('error', 'Could not extract text from PDF. Please convert PDF to image (JPG/PNG) or install pdftotext utility.');
+                    }
+                } catch (\Exception $e) {
+                    return back()->withInput()->with('error', 'PDF processing failed: ' . $e->getMessage());
+                }
+            } else {
+                return back()->withInput()->with('error', 'Unsupported file type.');
+            }
+        }
 
-        // Extract data using regex
-        preg_match('/Invoice:\s*(\d+)/', $text, $invoice);
-        preg_match('/Issue Date:(\d{2}\/\d{2}\/\d{4})/', $text, $issue_date);
-        preg_match('/Month:\s*([A-Za-z]+\s\d{4})/', $text, $month);
-        preg_match('/Period:\s*([\d\/]+\s*to\s*[\d\/]+)/', $text, $period);
-        preg_match('/Account Number\s*(\d+)/', $text, $account);
-        preg_match('/Meter number\(s\):\s*([\w\d]+)/', $text, $meter);
-        preg_match('/Current reading:\s*(\d+)/', $text, $current);
-        preg_match('/Previous reading:\s*(\d+)/', $text, $previous);
-        preg_match('/Consumption\s*([\d,]+\s*kWh)/', $text, $consumption);
-        preg_match('/Rate\s*([\d.]+AED)/', $text, $rate);
-        preg_match('/Sub total\s*([\d.]+)/', $text, $sub_total);
-        preg_match('/VAT.*?([\d.]+)/', $text, $vat);
-        preg_match('/Total\s*([\d.]+)/', $text, $total);
-dd($consumption[1]);
-        // Save to DB
-        $bill = Bill::create([
-            'invoice_no' => $invoice[1] ?? null,
-            'issue_date' => isset($issue_date[1]) ? date('Y-m-d', strtotime($issue_date[1])) : null,
-            'month' => $month[1] ?? null,
-            'period' => $period[1] ?? null,
-            'account_no' => $account[1] ?? null,
-            'meter_no' => $meter[1] ?? null,
-            'current_reading' => $current[1] ?? null,
-            'previous_reading' => $previous[1] ?? null,
-            'consumption' => $consumption[1] ?? null,
-            'rate' => $rate[1] ?? null,
-            'sub_total' => $sub_total[1] ?? null,
-            'vat' => $vat[1] ?? null,
-            'total' => $total[1] ?? null,
+        if (empty($text)) {
+            return back()->withInput()->with('error', 'Could not extract text from the bill. Please ensure the image is clear.');
+        }
+
+        // Step 2: Extract structured data based on bill type
+        if ($billType === 'electricity') {
+            $extractedData = $this->extractor->extractElectricityData($text);
+        } else {
+            $extractedData = $this->extractor->extractFuelData($text);
+        }
+
+        // Step 3: Calculate CO2e (optional, for display)
+        $co2eValue = 0;
+        if ($extractedData['consumption']) {
+            if ($billType === 'electricity') {
+                $factorValue = 0.527 / 1000; // Default: kg CO2e per kWh converted to tCO2e
+            } else {
+                $factorValue = 2.68 / 1000; // Default: kg CO2e per liter converted to tCO2e
+            }
+            $co2eValue = $extractedData['consumption'] * $factorValue;
+        }
+        $extractedData['co2e_value'] = $co2eValue;
+
+        // Step 4: Save utility bill
+        $extractedData['ocr_method'] = $ocrMethod;
+        
+        $bill = UtilityBill::create([
+            'company_id' => Auth::user()->company_id ?? null,
+            'site_id' => null,
+            'file_path' => $path,
+            'bill_type' => $billType,
+            'supplier_name' => $extractedData['supplier_name'],
+            'bill_date' => $extractedData['bill_date'],
+            'consumption' => $extractedData['consumption'],
+            'consumption_unit' => $extractedData['consumption_unit'],
+            'cost' => $extractedData['cost'],
+            'raw_text' => $text,
+            'extracted_data' => $extractedData,
+            'created_by' => Auth::id(),
         ]);
 
-        return redirect()->back()->with('success', 'Bill processed and saved! Invoice No: ' . $bill->invoice_no);
+        // Prepare success message
+        $consumptionInfo = '';
+        if ($extractedData['consumption']) {
+            $unit = $extractedData['consumption_unit'] ?? ($billType === 'fuel' ? 'L' : 'kWh');
+            $consumptionInfo = "Extracted: " . number_format($extractedData['consumption'], 2) . " {$unit}";
+            if ($extractedData['consumption_unit'] === 'L' || $billType === 'fuel') {
+                $consumptionInfo .= " of fuel";
+            } else {
+                $consumptionInfo .= " of electricity";
+            }
+        }
+
+        return redirect()->back()
+            ->with('success', 'Bill uploaded and processed successfully! ' . $consumptionInfo)
+            ->with('bill', $bill)
+            ->with('extracted_data', $extractedData);
     }
 }

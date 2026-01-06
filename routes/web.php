@@ -143,12 +143,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/utility-bills', [UtilityBillController::class, 'index'])->name('utility.index');
     Route::get('/utility-bills/create', [UtilityBillController::class, 'create'])->name('utility.create');
     Route::post('/utility-bills/upload', [UtilityBillController::class, 'upload'])->name('utility.upload');
+    
+    Route::get('/bill-upload', [BillOCRController::class, 'showForm'])->name('bill.upload');
+    Route::post('/bill-upload', [BillOCRController::class, 'upload'])->name('bill.upload.post');
 });
-
-
-
-Route::get('/bill-upload', [BillOCRController::class, 'showForm'])->name('bill.upload');
-Route::post('/bill-upload', [BillOCRController::class, 'upload'])->name('bill.upload.post');
 
 
 
