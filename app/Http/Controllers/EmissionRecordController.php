@@ -20,6 +20,29 @@ class EmissionRecordController extends Controller
         ]);
     }
 
+    public function scopeEntry()
+    {
+        // Load emission sources grouped by scope
+        // Get sources specific to each scope, plus any sources without a scope (general sources)
+        $scope1Sources = EmissionSource::where(function($query) {
+            $query->where('scope', 1)->orWhereNull('scope');
+        })->orderBy('name')->get();
+        
+        $scope2Sources = EmissionSource::where(function($query) {
+            $query->where('scope', 2)->orWhereNull('scope');
+        })->orderBy('name')->get();
+        
+        $scope3Sources = EmissionSource::where(function($query) {
+            $query->where('scope', 3)->orWhereNull('scope');
+        })->orderBy('name')->get();
+        
+        return view('scope_entry.index', [
+            'scope1Sources' => $scope1Sources,
+            'scope2Sources' => $scope2Sources,
+            'scope3Sources' => $scope3Sources,
+        ]);
+    }
+
     public function getData()
     {
         $records = EmissionRecord::with(['company', 'site', 'user']);
@@ -102,8 +125,8 @@ class EmissionRecordController extends Controller
             'emissionFactor'        => 'required|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
             'confidenceLevel'       => 'required|in:low,medium,high',
-            'departmentSelect'      => 'required|string|max:100',
-            'dataSource'            => 'required|in:manual,import,api',
+            'departmentSelect'      => 'nullable|string|max:100',
+            'dataSource'            => 'required|in:manual,import,api,meter,invoice,estimate',
             'entryNotes'            => 'nullable|string|max:1000',
         ]);
 
@@ -124,7 +147,7 @@ class EmissionRecordController extends Controller
             'emission_factor'   => $request->emissionFactor,
             'co2e_value'        => $request->co2eValue,
             'confidence_level'  => $request->confidenceLevel,
-            'department'        => $request->departmentSelect,
+            'department'        => $request->departmentSelect ?: null,
             'data_source'       => $request->dataSource,
             'notes'             => $request->entryNotes,
             'created_by'        => auth()->id(),

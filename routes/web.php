@@ -87,6 +87,7 @@ Route::prefix('emission-factors')->name('emission_factors.')->group(function () 
 
 Route::prefix('emission-records')->group(function() {
     Route::get('/', [EmissionRecordController::class,'index'])->name('emission_records.index');
+    Route::get('/scope-entry', [EmissionRecordController::class,'scopeEntry'])->name('emission_records.scope_entry');
     Route::get('/data', [EmissionRecordController::class,'getData'])->name('emission_records.data');
     Route::post('/store', [EmissionRecordController::class,'store'])->name('emission-records.store');
     Route::post('/store-or-update', [EmissionRecordController::class,'storeOrUpdate'])->name('emission_records.storeOrUpdate');

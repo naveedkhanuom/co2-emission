@@ -15,9 +15,17 @@
 
         <li>
             <a href="{{ route('emission_records.index') }}" 
-               class="{{ request()->routeIs('emission_records.*') ? 'active' : '' }}">
+               class="{{ request()->routeIs('emission_records.index') ? 'active' : '' }}">
                 <i class="fas fa-keyboard"></i>
                 <span>Manual Entry</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('emission_records.scope_entry') }}" 
+               class="{{ request()->routeIs('emission_records.scope_entry') ? 'active' : '' }}">
+                <i class="fas fa-layer-group"></i>
+                <span>Scope-Based Entry</span>
             </a>
         </li>
 
