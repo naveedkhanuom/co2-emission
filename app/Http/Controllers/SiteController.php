@@ -6,19 +6,31 @@ use App\Models\Site;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use DataTables;
+use App\Helpers\CompanyHelper;
 
 class SiteController extends Controller
 {
+    /**
+     * Get current company ID from context.
+     */
+    protected function getCurrentCompanyId()
+    {
+        return CompanyHelper::currentCompanyId();
+    }
+    
     // Show Sites page
     public function index()
     {
-        $companies = Company::all();
+        // Get accessible companies for current user
+        $user = auth()->user();
+        $companies = $user ? $user->accessibleCompanies()->get() : collect();
         return view('sites.index', compact('companies'));
     }
 
     // Server-side Datatable
     public function getSites(Request $request)
     {
+        // Sites are automatically scoped by HasCompanyScope trait
         $sites = Site::with('company')->select('sites.*');
         return DataTables::of($sites)
             ->addColumn('company', function(Site $site){
@@ -37,19 +49,49 @@ class SiteController extends Controller
     // Store or Update
     public function storeOrUpdate(Request $request)
     {
+        $companyId = $this->getCurrentCompanyId();
+        
+        if (!$companyId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No company selected. Please select a company first.'
+            ], 400);
+        }
+        
         $request->validate([
-            'company_id' => 'required|exists:companies,id',
             'name' => 'required|string|max:255',
         ]);
+        
+        // If updating, verify site belongs to current company
+        if ($request->site_id) {
+            $existingSite = Site::find($request->site_id);
+            if ($existingSite && $existingSite->company_id != $companyId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to this site.'
+                ], 403);
+            }
+        }
 
         $site = Site::updateOrCreate(
             ['id' => $request->site_id],
-            $request->only('company_id', 'name', 'location', 'latitude', 'longitude', 'description')
+            [
+                'company_id' => $companyId,
+                'name' => $request->name,
+                'location' => $request->location,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'description' => $request->description,
+            ]
         );
 
         $message = $request->site_id ? 'Site updated successfully' : 'Site added successfully';
 
-        return response()->json(['message' => $message]);
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => $site
+        ]);
     }
 
     // Show single site
@@ -63,8 +105,21 @@ class SiteController extends Controller
     public function destroy($id)
     {
         $site = Site::findOrFail($id);
+        
+        // Verify site belongs to current company
+        $companyId = $this->getCurrentCompanyId();
+        if ($companyId && $site->company_id != $companyId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have access to this site.'
+            ], 403);
+        }
+        
         $site->delete();
-        return response()->json(['message' => 'Site deleted successfully']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Site deleted successfully'
+        ]);
     }
 }
 

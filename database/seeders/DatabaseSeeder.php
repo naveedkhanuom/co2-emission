@@ -17,6 +17,10 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
             DefaultUserSeeder::class,
+            Scope3CategoriesSeeder::class,
+            EmissionSourcesSeeder::class,
+            EmissionFactorsSeeder::class,
+            EioFactorsSeeder::class,
         ]);
     }
 }

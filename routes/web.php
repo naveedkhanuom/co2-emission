@@ -20,6 +20,12 @@ use App\Http\Controllers\EmissionImportController;
 use App\Http\Controllers\ReviewDataController;
 use App\Http\Controllers\ImportHistoryController;
 use App\Http\Controllers\TargetController;
+use App\Http\Controllers\CompanySwitcherController;
+use App\Http\Controllers\Scope3Controller;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierSurveyController;
+use App\Http\Controllers\EioFactorController;
+use App\Http\Controllers\DataQualityController;
 
 
 Auth::routes();
@@ -41,10 +47,17 @@ Route::resource('users', UserController::class);
 
 
 
+// Company Switcher Routes
+Route::middleware(['auth'])->group(function () {
+    Route::post('company/switch', [CompanySwitcherController::class, 'switch'])->name('company.switch');
+    Route::get('company/accessible', [CompanySwitcherController::class, 'getAccessibleCompanies'])->name('company.accessible');
+});
+
 Route::get('companies', [CompanyController::class, 'index'])->name('companies.index');
 Route::post('companies', [CompanyController::class, 'store'])->name('companies.store');
 Route::get('companies/{id}', [CompanyController::class, 'show'])->name('companies.show');
 Route::get('companies/{id}/edit', [CompanyController::class, 'edit'])->name('companies.edit');
+Route::put('companies/{id}', [CompanyController::class, 'update'])->name('companies.update');
 Route::delete('companies/{id}', [CompanyController::class, 'destroy'])->name('companies.destroy');
 
 
@@ -91,6 +104,7 @@ Route::prefix('emission-records')->group(function() {
     Route::get('/data', [EmissionRecordController::class,'getData'])->name('emission_records.data');
     Route::post('/store', [EmissionRecordController::class,'store'])->name('emission-records.store');
     Route::post('/store-or-update', [EmissionRecordController::class,'storeOrUpdate'])->name('emission_records.storeOrUpdate');
+    Route::put('/{emissionRecord}', [EmissionRecordController::class,'update'])->name('emission_records.update');
     Route::get('/{emissionRecord}', [EmissionRecordController::class,'show']);
     Route::delete('/{emissionRecord}', [EmissionRecordController::class,'destroy']);
 });
@@ -123,8 +137,67 @@ Route::prefix('review-data')->name('review_data.')->group(function() {
 
 Route::prefix('targets')->name('targets.')->middleware('auth')->group(function() {
     Route::get('/', [TargetController::class, 'index'])->name('index');
+    Route::get('/data', [TargetController::class, 'getData'])->name('data');
+    Route::post('/store-or-update', [TargetController::class, 'storeOrUpdate'])->name('storeOrUpdate');
+    Route::get('/{id}', [TargetController::class, 'show'])->name('show');
+    Route::delete('/{id}', [TargetController::class, 'destroy'])->name('destroy');
 });
 
+// Scope 3 Routes
+Route::prefix('scope3')->name('scope3.')->middleware('auth')->group(function () {
+    Route::get('/', [Scope3Controller::class, 'index'])->name('index');
+    Route::get('/summary', [Scope3Controller::class, 'getScope3Summary'])->name('summary');
+    Route::get('/categories', [Scope3Controller::class, 'getCategories'])->name('categories');
+    Route::get('/category/{categoryId}', [Scope3Controller::class, 'getCategoryDetails'])->name('category.details');
+});
+
+// Supplier Routes
+Route::prefix('suppliers')->name('suppliers.')->middleware('auth')->group(function () {
+    Route::get('/', [SupplierController::class, 'index'])->name('index');
+    Route::get('/data', [SupplierController::class, 'getData'])->name('data');
+    Route::get('/list', [SupplierController::class, 'list'])->name('list');
+    Route::post('/', [SupplierController::class, 'store'])->name('store');
+    Route::get('/{id}', [SupplierController::class, 'show'])->name('show');
+    Route::put('/{id}', [SupplierController::class, 'update'])->name('update');
+    Route::delete('/{id}', [SupplierController::class, 'destroy'])->name('destroy');
+    Route::get('/{id}/emissions', [SupplierController::class, 'getEmissionsSummary'])->name('emissions');
+});
+
+// Supplier Survey Routes
+Route::prefix('supplier-surveys')->name('supplier_surveys.')->middleware('auth')->group(function () {
+    Route::get('/', [SupplierSurveyController::class, 'index'])->name('index');
+    Route::get('/data', [SupplierSurveyController::class, 'getData'])->name('data');
+    Route::post('/', [SupplierSurveyController::class, 'store'])->name('store');
+    Route::get('/{id}', [SupplierSurveyController::class, 'show'])->name('show');
+    Route::put('/{id}/responses', [SupplierSurveyController::class, 'updateResponses'])->name('update_responses');
+    Route::post('/{id}/send', [SupplierSurveyController::class, 'send'])->name('send');
+    Route::post('/{id}/reminder', [SupplierSurveyController::class, 'sendReminder'])->name('reminder');
+    Route::delete('/{id}', [SupplierSurveyController::class, 'destroy'])->name('destroy');
+});
+
+// Supplier Portal (public, token-based)
+Route::prefix('supplier-portal')->name('supplier_portal.')->group(function () {
+    Route::get('/survey/{token}', [SupplierSurveyController::class, 'publicShow'])->name('survey.show');
+    Route::post('/survey/{token}', [SupplierSurveyController::class, 'publicSubmit'])->name('survey.submit');
+});
+
+// EIO Factor Routes
+Route::prefix('eio-factors')->name('eio_factors.')->middleware('auth')->group(function () {
+    Route::get('/', [EioFactorController::class, 'index'])->name('index');
+    Route::get('/data', [EioFactorController::class, 'getData'])->name('data');
+    Route::get('/get-factor', [EioFactorController::class, 'getFactor'])->name('get_factor');
+    Route::post('/calculate', [EioFactorController::class, 'calculate'])->name('calculate');
+    Route::post('/', [EioFactorController::class, 'store'])->name('store');
+    Route::put('/{id}', [EioFactorController::class, 'update'])->name('update');
+    Route::delete('/{id}', [EioFactorController::class, 'destroy'])->name('destroy');
+});
+
+// Data Quality Routes
+Route::prefix('data-quality')->name('data_quality.')->middleware('auth')->group(function () {
+    Route::get('/', [DataQualityController::class, 'index'])->name('index');
+    Route::get('/summary', [DataQualityController::class, 'getSummary'])->name('summary');
+    Route::put('/record/{id}', [DataQualityController::class, 'updateQuality'])->name('update_quality');
+});
 
 Route::prefix('reports')->group(function() {
     Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
@@ -132,8 +205,26 @@ Route::prefix('reports')->group(function() {
     Route::get('/data', [App\Http\Controllers\ReportController::class, 'getData'])->name('reports.data');
     Route::get('/json', [App\Http\Controllers\ReportController::class, 'getReportsJson'])->name('reports.json');
     Route::post('/store-or-update', [App\Http\Controllers\ReportController::class, 'storeOrUpdate'])->name('reports.storeOrUpdate');
+    
+    // GHG Protocol Report (must come before /{id} route)
+    Route::get('/ghg-protocol', [App\Http\Controllers\GHGReportController::class, 'index'])->name('reports.ghg_protocol');
+    
+    // Templates
+    Route::get('/templates/list', [App\Http\Controllers\ReportController::class, 'getTemplates'])->name('reports.templates.list');
+    Route::post('/templates/store', [App\Http\Controllers\ReportController::class, 'storeTemplate'])->name('reports.templates.store');
+    
+    // Scheduled Reports
+    Route::get('/scheduled/list', [App\Http\Controllers\ReportController::class, 'getScheduledReports'])->name('reports.scheduled.list');
+    Route::post('/scheduled/store', [App\Http\Controllers\ReportController::class, 'storeScheduledReport'])->name('reports.scheduled.store');
+    
+    // Export Jobs
+    Route::get('/exports/list', [App\Http\Controllers\ReportController::class, 'getExportJobs'])->name('reports.exports.list');
+    Route::post('/exports/store', [App\Http\Controllers\ReportController::class, 'storeExportJob'])->name('reports.exports.store');
+    
+    // Dynamic routes (must come last)
     Route::get('/{id}', [App\Http\Controllers\ReportController::class, 'show']);
     Route::delete('/{id}', [App\Http\Controllers\ReportController::class, 'destroy']);
+    Route::post('/{id}/track-view', [App\Http\Controllers\ReportController::class, 'trackView'])->name('reports.trackView');
 });
 
 
@@ -147,6 +238,11 @@ Route::middleware(['auth'])->group(function () {
     
     Route::get('/bill-upload', [BillOCRController::class, 'showForm'])->name('bill.upload');
     Route::post('/bill-upload', [BillOCRController::class, 'upload'])->name('bill.upload.post');
+    
+    // Data Source - Coming Soon
+    Route::get('/data-source', function () {
+        return view('data_source.coming_soon');
+    })->name('data_source.index');
 });
 
 

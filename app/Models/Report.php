@@ -10,22 +10,29 @@ class Report extends Model
     use HasFactory;
 
     protected $fillable = [
-        'company_id',
-        'site_id',
+        'facility_id',
+        'department_id',
         'report_name',
         'period',
         'generated_at',
         'status',
         'type',
+        'views_count',
+        'last_viewed_at',
         'created_by',
     ];
 
-    public function company() {
-        return $this->belongsTo(Company::class);
+    protected $casts = [
+        'generated_at' => 'date',
+        'last_viewed_at' => 'datetime',
+    ];
+
+    public function facility() {
+        return $this->belongsTo(Facilities::class);
     }
 
-    public function site() {
-        return $this->belongsTo(Site::class);
+    public function department() {
+        return $this->belongsTo(Department::class);
     }
 
     public function user() {

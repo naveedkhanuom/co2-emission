@@ -89,13 +89,13 @@
                             </div>
                             
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label required-label">Date</label>
                                     <input type="date" class="form-control date-picker" name="entryDate" required>
                                     <div class="help-text">Select the date when emissions occurred</div>
                                 </div>
                                 
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label required-label">Facility / Location</label>
                                     <select class="form-select facility-select" name="facilitySelect" required>
                                         <option value="">Select facility...</option>
@@ -104,6 +104,17 @@
                                         @endforeach
                                     </select>
                                     <div class="help-text">Choose the facility where emissions occurred</div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label">Site</label>
+                                    <select class="form-select site-select" name="siteSelect" id="scope{{ $scope }}SiteSelect">
+                                        <option value="">Select site (optional)...</option>
+                                        @foreach(sites() as $site)
+                                            <option value="{{ $site->id }}">{{ $site->name }}@if($site->location) - {{ $site->location }}@endif</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="help-text">Optional: Select a specific site within the facility</div>
                                 </div>
                             </div>
                         </div>
@@ -130,42 +141,52 @@
                                         <option value="">Select emission source...</option>
                                         @if($scope == 1)
                                             @foreach($scope1Sources as $source)
-                                                <option value="{{ $source->name }}" data-unit="" data-factor="">{{ $source->name }}</option>
+                                                @php
+                                                    $factor = $source->emissionFactors->first();
+                                                    $unit = $factor ? $factor->unit : '';
+                                                    $factorValue = $factor ? $factor->factor_value : '';
+                                                @endphp
+                                                <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
                                             @endforeach
-                                            {{-- Fallback options if no database sources --}}
-                                            @if($scope1Sources->isEmpty())
-                                                <option value="natural-gas" data-unit="m³" data-factor="">Natural Gas Combustion</option>
-                                                <option value="diesel" data-unit="L" data-factor="">Diesel Fuel</option>
-                                                <option value="gasoline" data-unit="L" data-factor="">Gasoline (Company Vehicles)</option>
-                                                <option value="lpg" data-unit="L" data-factor="">LPG (Liquefied Petroleum Gas)</option>
-                                                <option value="refrigerants" data-unit="kg" data-factor="">Refrigerants (F-gases)</option>
-                                                <option value="process-emissions" data-unit="kg" data-factor="">Process Emissions</option>
-                                            @endif
                                         @elseif($scope == 2)
                                             @foreach($scope2Sources as $source)
-                                                <option value="{{ $source->name }}" data-unit="" data-factor="">{{ $source->name }}</option>
+                                                @php
+                                                    $factor = $source->emissionFactors->first();
+                                                    $unit = $factor ? $factor->unit : '';
+                                                    $factorValue = $factor ? $factor->factor_value : '';
+                                                @endphp
+                                                <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
                                             @endforeach
-                                            {{-- Fallback options if no database sources --}}
-                                            @if($scope2Sources->isEmpty())
-                                                <option value="electricity" data-unit="kWh" data-factor="">Purchased Electricity</option>
                                                 <option value="steam" data-unit="MJ" data-factor="">Purchased Steam</option>
                                                 <option value="heating" data-unit="kWh" data-factor="">District Heating</option>
                                                 <option value="cooling" data-unit="kWh" data-factor="">District Cooling</option>
-                                            @endif
                                         @elseif($scope == 3)
                                             @foreach($scope3Sources as $source)
-                                                <option value="{{ $source->name }}" data-unit="" data-factor="">{{ $source->name }}</option>
+                                                @php
+                                                    $factor = $source->emissionFactors->first();
+                                                    $unit = $factor ? $factor->unit : '';
+                                                    $factorValue = $factor ? $factor->factor_value : '';
+                                                @endphp
+                                                <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
                                             @endforeach
-                                            {{-- Fallback options if no database sources --}}
-                                            @if($scope3Sources->isEmpty())
-                                                <option value="business-travel" data-unit="km" data-factor="">Business Travel (Air)</option>
-                                                <option value="business-travel-road" data-unit="km" data-factor="">Business Travel (Road)</option>
-                                                <option value="employee-commute" data-unit="km" data-factor="">Employee Commuting</option>
-                                                <option value="waste" data-unit="kg" data-factor="">Waste Disposal</option>
-                                                <option value="purchased-goods" data-unit="kg" data-factor="">Purchased Goods & Services</option>
-                                                <option value="transportation" data-unit="km" data-factor="">Transportation & Distribution</option>
-                                                <option value="water" data-unit="m³" data-factor="">Water Consumption</option>
-                                            @endif
+                                            {{-- All 15 Scope 3 Categories (GHG Protocol) --}}
+                                            <optgroup label="GHG Protocol Categories">
+                                                <option value="1. Purchased Goods & Services" data-unit="kg" data-factor="">1. Purchased Goods & Services</option>
+                                                <option value="2. Capital Goods" data-unit="kg" data-factor="">2. Capital Goods</option>
+                                                <option value="3. Fuel & Energy Related Activities" data-unit="kWh" data-factor="">3. Fuel & Energy Related Activities</option>
+                                                <option value="4. Upstream Transportation & Distribution" data-unit="km" data-factor="">4. Upstream Transportation & Distribution</option>
+                                                <option value="5. Waste Generated in Operations" data-unit="kg" data-factor="">5. Waste Generated in Operations</option>
+                                                <option value="6. Business Travel" data-unit="km" data-factor="">6. Business Travel</option>
+                                                <option value="7. Employee Commuting" data-unit="km" data-factor="">7. Employee Commuting</option>
+                                                <option value="8. Upstream Leased Assets" data-unit="m²" data-factor="">8. Upstream Leased Assets</option>
+                                                <option value="9. Downstream Transportation & Distribution" data-unit="km" data-factor="">9. Downstream Transportation & Distribution</option>
+                                                <option value="10. Processing of Sold Products" data-unit="kg" data-factor="">10. Processing of Sold Products</option>
+                                                <option value="11. Use of Sold Products" data-unit="unit" data-factor="">11. Use of Sold Products</option>
+                                                <option value="12. End-of-Life Treatment of Sold Products" data-unit="kg" data-factor="">12. End-of-Life Treatment of Sold Products</option>
+                                                <option value="13. Downstream Leased Assets" data-unit="m²" data-factor="">13. Downstream Leased Assets</option>
+                                                <option value="14. Franchises" data-unit="unit" data-factor="">14. Franchises</option>
+                                                <option value="15. Investments" data-unit="unit" data-factor="">15. Investments</option>
+                                            </optgroup>
                                         @endif
                                     </select>
                                     <div class="help-text">Select from existing emission sources</div>
@@ -199,7 +220,7 @@
                                     <label class="form-label required-label">Emission Factor</label>
                                     <div class="input-group">
                                         <input type="number" class="form-control" name="emissionFactor" id="scope{{ $scope }}EmissionFactor" step="0.000001" min="0" placeholder="0.000000" required oninput="calculateCO2e({{ $scope }})">
-                                        <span class="input-group-text">tCO₂e/unit</span>
+                                        <span class="input-group-text" id="scope{{ $scope }}FactorUnitLabel">tCO₂e/unit</span>
                                     </div>
                                     <div class="help-text">Pre-filled based on emission source</div>
                                 </div>
@@ -225,6 +246,115 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Scope 3 Specific Fields (Only for Scope 3) -->
+                        @if($scope == 3)
+                        <div class="form-section scope3-specific-section" id="scope{{ $scope }}Scope3Section">
+                            <div class="form-section-title">
+                                <i class="fas fa-network-wired"></i> Scope 3 Specific Information
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Scope 3 Category</label>
+                                    <select class="form-select scope3-category-select" name="scope3_category_id" id="scope{{ $scope }}Scope3Category">
+                                        <option value="">Select category (optional)...</option>
+                                        @foreach(scope3_categories() as $category)
+                                            <option value="{{ $category->id }}" data-type="{{ $category->category_type }}">
+                                                {{ $category->code }} - {{ $category->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <div class="help-text">Select the GHG Protocol Scope 3 category</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Supplier</label>
+                                    <select class="form-select supplier-select" name="supplier_id" id="scope{{ $scope }}Supplier">
+                                        <option value="">Select supplier (optional)...</option>
+                                        @foreach(suppliers() as $supplier)
+                                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="help-text">Select the supplier if applicable</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Calculation Method</label>
+                                    <select class="form-select calculation-method-select" name="calculation_method" id="scope{{ $scope }}CalculationMethod" onchange="toggleCalculationMethod({{ $scope }})">
+                                        <option value="activity-based" selected>Activity-Based</option>
+                                        <option value="spend-based">Spend-Based</option>
+                                        <option value="hybrid">Hybrid</option>
+                                    </select>
+                                    <div class="help-text">Choose how emissions are calculated</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Data Quality</label>
+                                    <select class="form-select data-quality-select" name="data_quality" id="scope{{ $scope }}DataQuality">
+                                        <option value="primary">Primary Data</option>
+                                        <option value="secondary">Secondary Data</option>
+                                        <option value="estimated" selected>Estimated</option>
+                                    </select>
+                                    <div class="help-text">Quality rating of the data source</div>
+                                </div>
+                                
+                                <!-- Spend-Based Fields (Hidden by default) -->
+                                <div class="col-md-12 spend-based-fields" id="scope{{ $scope }}SpendBasedFields" style="display: none;">
+                                    <div class="alert alert-info mb-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Spend-Based Calculation:</strong> Enter the spend amount and select sector to automatically calculate emissions using EIO factors.
+                                    </div>
+                                    
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Spend Amount</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="spend_amount" id="scope{{ $scope }}SpendAmount" step="0.01" min="0" placeholder="0.00" oninput="calculateSpendBased({{ $scope }})">
+                                                <select class="form-select" name="spend_currency" id="scope{{ $scope }}SpendCurrency" style="max-width: 100px;">
+                                                    <option value="USD" selected>USD</option>
+                                                    <option value="EUR">EUR</option>
+                                                    <option value="GBP">GBP</option>
+                                                    <option value="JPY">JPY</option>
+                                                    <option value="CAD">CAD</option>
+                                                    <option value="AUD">AUD</option>
+                                                </select>
+                                            </div>
+                                            <div class="help-text">Enter the monetary spend amount</div>
+                                        </div>
+                                        
+                                        <div class="col-md-4">
+                                            <label class="form-label">Sector Code</label>
+                                            <input type="text" class="form-control" name="sector_code" id="scope{{ $scope }}SectorCode" placeholder="e.g., 31-33" oninput="calculateSpendBased({{ $scope }})">
+                                            <div class="help-text">NAICS or similar sector code for EIO factor lookup</div>
+                                        </div>
+                                        
+                                        <div class="col-md-4">
+                                            <label class="form-label">Country</label>
+                                            <select class="form-select" name="country" id="scope{{ $scope }}Country" onchange="calculateSpendBased({{ $scope }})">
+                                                <option value="USA" selected>United States</option>
+                                                <option value="CAN">Canada</option>
+                                                <option value="GBR">United Kingdom</option>
+                                                <option value="DEU">Germany</option>
+                                                <option value="FRA">France</option>
+                                                <option value="JPN">Japan</option>
+                                                <option value="CHN">China</option>
+                                                <option value="AUS">Australia</option>
+                                            </select>
+                                            <div class="help-text">Country for EIO factor lookup</div>
+                                        </div>
+                                        
+                                        <div class="col-md-12">
+                                            <div class="alert alert-warning" id="scope{{ $scope }}SpendCalculationResult" style="display: none;">
+                                                <i class="fas fa-calculator me-2"></i>
+                                                <span id="scope{{ $scope }}SpendCalculationText">Enter spend amount and sector code to calculate emissions</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
                         
                         <!-- Additional Details Section -->
                         <div class="form-section">
@@ -266,6 +396,20 @@
                                     <label class="form-label">Notes / Comments</label>
                                     <textarea class="form-control" name="entryNotes" rows="3" placeholder="Add any additional information about this emission record..."></textarea>
                                     <div class="help-text">Optional: Add context, assumptions, or specific details</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">Supporting Documents</label>
+                                    <input
+                                        type="file"
+                                        class="form-control"
+                                        name="supporting_documents[]"
+                                        multiple
+                                        accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.csv"
+                                    >
+                                    <div class="help-text">
+                                        Optional: Upload invoices, meter screenshots, spreadsheets, or other evidence (max 10MB per file)
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -472,31 +616,8 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-    // Pre-defined emission factors (will be updated with your values)
-    const emissionFactors = {
-        // Scope 1
-        'natural-gas': { unit: 'm³', factor: 0.00196 }, // tCO2e per m³
-        'diesel': { unit: 'L', factor: 0.00268 }, // tCO2e per liter
-        'gasoline': { unit: 'L', factor: 0.00231 }, // tCO2e per liter
-        'lpg': { unit: 'L', factor: 0.00151 }, // tCO2e per liter
-        'refrigerants': { unit: 'kg', factor: 0.0 }, // Will be provided
-        'process-emissions': { unit: 'kg', factor: 0.0 }, // Will be provided
-        
-        // Scope 2
-        'electricity': { unit: 'kWh', factor: 0.000527 }, // tCO2e per kWh
-        'steam': { unit: 'MJ', factor: 0.0 }, // Will be provided
-        'heating': { unit: 'kWh', factor: 0.0 }, // Will be provided
-        'cooling': { unit: 'kWh', factor: 0.0 }, // Will be provided
-        
-        // Scope 3
-        'business-travel': { unit: 'km', factor: 0.000255 }, // tCO2e per km (air travel)
-        'business-travel-road': { unit: 'km', factor: 0.00015 }, // tCO2e per km (road)
-        'employee-commute': { unit: 'km', factor: 0.00012 }, // tCO2e per km
-        'waste': { unit: 'kg', factor: 0.0 }, // Will be provided
-        'purchased-goods': { unit: 'kg', factor: 0.0 }, // Will be provided
-        'transportation': { unit: 'km', factor: 0.0 }, // Will be provided
-        'water': { unit: 'm³', factor: 0.0 }, // Will be provided
-    };
+    // Dynamic emission factors loaded from database
+    const emissionFactors = @json($emissionFactorsMap);
     
     // Open scope form
     function openScopeForm(scope) {
@@ -529,11 +650,32 @@
                     width: '100%'
                 });
                 
+                $(form).find('.site-select').select2({
+                    placeholder: "Select site (optional)...",
+                    allowClear: true,
+                    width: '100%'
+                });
+                
                 $(form).find('.emission-source-select').select2({
                     placeholder: "Select emission source...",
                     allowClear: true,
                     width: '100%'
                 });
+                
+                // Initialize Scope 3 specific Select2 dropdowns
+                if (scope === 3) {
+                    $(form).find('.scope3-category-select').select2({
+                        placeholder: "Select category (optional)...",
+                        allowClear: true,
+                        width: '100%'
+                    });
+                    
+                    $(form).find('.supplier-select').select2({
+                        placeholder: "Select supplier (optional)...",
+                        allowClear: true,
+                        width: '100%'
+                    });
+                }
             }
         }
     }
@@ -580,30 +722,47 @@
         const sourceType = document.getElementById(`scope${scope}SourceType`).value;
         const activityUnit = document.getElementById(`scope${scope}ActivityUnit`);
         const factorInput = document.getElementById(`scope${scope}EmissionFactor`);
+        const factorUnitLabel = document.getElementById(`scope${scope}FactorUnitLabel`);
         
         let source = '';
+        let unit = '';
+        let factor = '';
+        
         if (sourceType === 'existing') {
             const sourceSelect = document.getElementById(`scope${scope}EmissionSource`);
+            const selectedOption = sourceSelect.options[sourceSelect.selectedIndex];
             source = sourceSelect.value;
+            unit = selectedOption ? selectedOption.getAttribute('data-unit') || '' : '';
+            factor = selectedOption ? selectedOption.getAttribute('data-factor') || '' : '';
         } else {
             const customInput = document.getElementById(`scope${scope}CustomEmissionSource`);
             source = customInput.value;
+            // For custom sources, try to find in emissionFactors map
+            if (source && emissionFactors[source]) {
+                unit = emissionFactors[source].unit || '';
+                factor = emissionFactors[source].factor || '';
+            }
         }
         
-        // Try to find emission factor from predefined list or database
-        if (source && emissionFactors[source.toLowerCase()]) {
-            const factorData = emissionFactors[source.toLowerCase()];
-            activityUnit.textContent = factorData.unit;
+        // Use data from select option first, then fallback to emissionFactors map
+        if (unit && factor) {
+            activityUnit.textContent = unit;
+            factorInput.value = factor;
+            if (factorUnitLabel) factorUnitLabel.textContent = `tCO₂e/${unit || 'unit'}`;
+            calculateCO2e(scope);
+        } else if (source && emissionFactors[source]) {
+            const factorData = emissionFactors[source];
+            activityUnit.textContent = factorData.unit || '-';
             factorInput.value = factorData.factor || '';
-            
-            // Trigger calculation
+            if (factorUnitLabel) factorUnitLabel.textContent = `tCO₂e/${(factorData.unit || 'unit')}`;
             calculateCO2e(scope);
         } else {
-            // If not found in predefined list, user needs to enter manually
+            // If not found, user needs to enter manually
             activityUnit.textContent = '-';
             if (!factorInput.value) {
                 factorInput.value = '';
             }
+            if (factorUnitLabel) factorUnitLabel.textContent = 'tCO₂e/unit';
         }
     }
     
@@ -621,6 +780,76 @@
         formula.textContent = `${activityData.toFixed(2)} ${activityUnit} × ${emissionFactor.toFixed(6)} tCO₂e/${activityUnit} = ${co2eValue.toFixed(4)} tCO₂e`;
     }
     
+    // Toggle calculation method for Scope 3
+    function toggleCalculationMethod(scope) {
+        const method = document.getElementById(`scope${scope}CalculationMethod`).value;
+        const spendFields = document.getElementById(`scope${scope}SpendBasedFields`);
+        
+        if (method === 'spend-based' || method === 'hybrid') {
+            spendFields.style.display = 'block';
+        } else {
+            spendFields.style.display = 'none';
+        }
+    }
+    
+    // Calculate emissions from spend amount (Scope 3 spend-based)
+    function calculateSpendBased(scope) {
+        const spendAmount = parseFloat(document.getElementById(`scope${scope}SpendAmount`).value) || 0;
+        const sectorCode = document.getElementById(`scope${scope}SectorCode`).value;
+        const country = document.getElementById(`scope${scope}Country`).value;
+        const currency = document.getElementById(`scope${scope}SpendCurrency`).value;
+        const resultDiv = document.getElementById(`scope${scope}SpendCalculationResult`);
+        const resultText = document.getElementById(`scope${scope}SpendCalculationText`);
+        
+        if (!spendAmount || !sectorCode) {
+            resultDiv.style.display = 'none';
+            return;
+        }
+        
+        // Call API to calculate emissions
+        fetch('{{ route("eio_factors.calculate") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                spend_amount: spendAmount,
+                sector_code: sectorCode,
+                country: country,
+                currency: currency
+            })
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (res.ok && data.success) {
+                const emissionsT = data.emissions_t_co2e || 0;
+                resultText.innerHTML = `<strong>Calculated Emissions:</strong> ${emissionsT.toFixed(4)} tCO₂e from ${spendAmount.toFixed(2)} ${currency}`;
+                resultDiv.className = 'alert alert-success';
+                resultDiv.style.display = 'block';
+                
+                // Auto-fill CO2e value if spend-based
+                const method = document.getElementById(`scope${scope}CalculationMethod`).value;
+                if (method === 'spend-based') {
+                    const co2eInput = document.getElementById(`scope${scope}CO2eValue`);
+                    if (co2eInput) {
+                        co2eInput.value = emissionsT.toFixed(4);
+                    }
+                }
+            } else {
+                resultText.innerHTML = `<strong>Error:</strong> ${data.message || 'Could not calculate emissions. Please check sector code.'}`;
+                resultDiv.className = 'alert alert-warning';
+                resultDiv.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            resultText.innerHTML = `<strong>Error:</strong> Could not calculate emissions. Please try again.`;
+            resultDiv.className = 'alert alert-warning';
+            resultDiv.style.display = 'block';
+        });
+    }
+    
     // Clear scope form
     function clearScopeForm(scope) {
         const form = document.getElementById(`scope${scope}Form`);
@@ -631,15 +860,33 @@
             document.getElementById(`scope${scope}SourceType`).value = 'existing';
             toggleSourceInput(scope);
             
+            // Reset calculation method toggle for Scope 3
+            if (scope === 3) {
+                document.getElementById(`scope${scope}CalculationMethod`).value = 'activity-based';
+                toggleCalculationMethod(scope);
+            }
+            
             // Reset Select2
             if (typeof $ !== 'undefined') {
                 $(form).find('.facility-select').val(null).trigger('change');
+                $(form).find('.site-select').val(null).trigger('change');
                 $(form).find('.emission-source-select').val(null).trigger('change');
+                
+                if (scope === 3) {
+                    $(form).find('.scope3-category-select').val(null).trigger('change');
+                    $(form).find('.supplier-select').val(null).trigger('change');
+                }
             }
             
             // Reset calculation
             document.getElementById(`scope${scope}ActivityUnit`).textContent = '-';
             document.getElementById(`scope${scope}CalculationFormula`).textContent = 'Activity Data × Emission Factor = CO₂e Value';
+            
+            // Hide spend calculation result
+            if (scope === 3) {
+                const resultDiv = document.getElementById(`scope${scope}SpendCalculationResult`);
+                if (resultDiv) resultDiv.style.display = 'none';
+            }
             
             showToast('Form cleared', 'info');
         }
@@ -706,6 +953,43 @@
                 
                 // Set the emission source value
                 formData.set('emissionSourceSelect', emissionSource);
+                
+                // Add Scope 3 specific fields if scope is 3
+                if (scope === 3) {
+                    const scope3Category = document.getElementById(`scope${scope}Scope3Category`);
+                    const supplier = document.getElementById(`scope${scope}Supplier`);
+                    const calculationMethod = document.getElementById(`scope${scope}CalculationMethod`);
+                    const dataQuality = document.getElementById(`scope${scope}DataQuality`);
+                    const spendAmount = document.getElementById(`scope${scope}SpendAmount`);
+                    const spendCurrency = document.getElementById(`scope${scope}SpendCurrency`);
+                    const sectorCode = document.getElementById(`scope${scope}SectorCode`);
+                    const country = document.getElementById(`scope${scope}Country`);
+                    
+                    if (scope3Category && scope3Category.value) {
+                        formData.set('scope3_category_id', scope3Category.value);
+                    }
+                    if (supplier && supplier.value) {
+                        formData.set('supplier_id', supplier.value);
+                    }
+                    if (calculationMethod) {
+                        formData.set('calculation_method', calculationMethod.value);
+                    }
+                    if (dataQuality) {
+                        formData.set('data_quality', dataQuality.value);
+                    }
+                    if (spendAmount && spendAmount.value) {
+                        formData.set('spend_amount', spendAmount.value);
+                    }
+                    if (spendCurrency) {
+                        formData.set('spend_currency', spendCurrency.value);
+                    }
+                    if (sectorCode && sectorCode.value) {
+                        formData.set('sector_code', sectorCode.value);
+                    }
+                    if (country) {
+                        formData.set('country', country.value);
+                    }
+                }
                 
                 fetch(this.action, {
                     method: 'POST',

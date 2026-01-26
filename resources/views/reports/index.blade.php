@@ -509,6 +509,21 @@
             </div>
         </div>
         
+        <!-- Additional Quick Actions -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <a href="{{ route('reports.ghg_protocol') }}" class="text-decoration-none">
+                    <div class="quick-action-card">
+                        <div class="quick-action-icon" style="color: #0066cc;">
+                            <i class="fas fa-file-contract"></i>
+                        </div>
+                        <h5>GHG Protocol Report</h5>
+                        <p class="text-muted small">Generate standard GHG Protocol compliance report</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
         <!-- Reports Tabs -->
         <div class="reports-tabs">
             <ul class="nav nav-tabs nav-tabs-reports" id="reportsTab" role="tablist">
@@ -598,7 +613,7 @@
                                     <button class="btn btn-outline-primary me-2" id="saveFilterBtn">
                                         <i class="fas fa-save me-2"></i>Save Filter
                                     </button>
-                                    <button class="btn btn-success" id="applyFilters">
+                                    <button class="btn btn-success" id="applyFilters" onclick="loadReports()">
                                         <i class="fas fa-filter me-2"></i>Apply Filters
                                     </button>
                                 </div>
@@ -828,25 +843,24 @@
                                     <h6 class="mb-0">Template Categories</h6>
                                 </div>
                                 <div class="card-body">
-                                    <div class="list-group list-group-flush">
-                                        <a href="#" class="list-group-item list-group-item-action active">
-                                            <i class="fas fa-chart-line me-2"></i>Executive Reports
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action">
-                                            <i class="fas fa-balance-scale me-2"></i>Compliance Reports
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action">
-                                            <i class="fas fa-industry me-2"></i>Facility Reports
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action">
-                                            <i class="fas fa-users me-2"></i>Stakeholder Reports
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action">
-                                            <i class="fas fa-calendar-alt me-2"></i>Periodic Reports
-                                        </a>
-                                        <a href="#" class="list-group-item list-group-item-action">
-                                            <i class="fas fa-bullseye me-2"></i>Target Tracking
-                                        </a>
+                                    <div class="list-group list-group-flush" id="templateCategories">
+                                        @php
+                                            $categories = [
+                                                'executive' => ['icon' => 'fa-chart-line', 'label' => 'Executive Reports'],
+                                                'compliance' => ['icon' => 'fa-balance-scale', 'label' => 'Compliance Reports'],
+                                                'facility' => ['icon' => 'fa-industry', 'label' => 'Facility Reports'],
+                                                'stakeholder' => ['icon' => 'fa-users', 'label' => 'Stakeholder Reports'],
+                                                'periodic' => ['icon' => 'fa-calendar-alt', 'label' => 'Periodic Reports'],
+                                                'target-tracking' => ['icon' => 'fa-bullseye', 'label' => 'Target Tracking'],
+                                            ];
+                                            $activeCategory = 'executive';
+                                        @endphp
+                                        @foreach($categories as $key => $category)
+                                            <a href="#" class="list-group-item list-group-item-action {{ $key === $activeCategory ? 'active' : '' }}" 
+                                               onclick="filterTemplatesByCategory('{{ $key }}'); return false;">
+                                                <i class="fas {{ $category['icon'] }} me-2"></i>{{ $category['label'] }}
+                                            </a>
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
@@ -854,122 +868,49 @@
                         
                         <!-- Templates Grid -->
                         <div class="col-lg-9">
-                            <div class="row">
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="template-card">
-                                        <div class="template-header">
-                                            <h5 class="mb-0">Executive Dashboard</h5>
-                                            <small>For board and C-suite</small>
-                                        </div>
-                                        <div class="template-body">
-                                            <p class="small text-muted">High-level summary with KPIs and trend analysis</p>
-                                            <div class="mb-3">
-                                                <span class="badge bg-light text-dark me-1">PDF</span>
-                                                <span class="badge bg-light text-dark me-1">PPTX</span>
-                                                <span class="badge bg-light text-dark">Web</span>
+                            <div class="row" id="templatesGrid">
+                                @forelse($templates->flatten() as $template)
+                                    @php
+                                        $categoryColors = [
+                                            'executive' => '',
+                                            'compliance' => 'style="background-color: var(--warning-orange);"',
+                                            'facility' => 'style="background-color: var(--light-green);"',
+                                            'stakeholder' => 'style="background-color: var(--primary-blue);"',
+                                            'periodic' => 'style="background-color: var(--purple);"',
+                                            'target-tracking' => 'style="background-color: var(--danger-red);"',
+                                        ];
+                                        $color = $categoryColors[$template->category] ?? '';
+                                        $formats = $template->formats ?? [];
+                                    @endphp
+                                    <div class="col-md-6 col-lg-4 mb-4 template-item" data-category="{{ $template->category }}">
+                                        <div class="template-card">
+                                            <div class="template-header" {!! $color !!}>
+                                                <h5 class="mb-0">{{ $template->name }}</h5>
+                                                <small>{{ ucfirst(str_replace('-', ' ', $template->category)) }}</small>
                                             </div>
-                                            <button class="btn btn-primary w-100" onclick="useTemplate('executive-dashboard')">
-                                                <i class="fas fa-clone me-2"></i>Use Template
-                                            </button>
+                                            <div class="template-body">
+                                                <p class="small text-muted">{{ $template->description ?? 'No description available' }}</p>
+                                                <div class="mb-3">
+                                                    @foreach($formats as $format)
+                                                        <span class="badge bg-light text-dark me-1">{{ strtoupper($format) }}</span>
+                                                    @endforeach
+                                                    @if(empty($formats))
+                                                        <span class="badge bg-light text-dark">PDF</span>
+                                                    @endif
+                                                </div>
+                                                <button class="btn btn-primary w-100" onclick="useTemplate({{ $template->id }})">
+                                                    <i class="fas fa-clone me-2"></i>Use Template
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="template-card">
-                                        <div class="template-header" style="background-color: var(--warning-orange);">
-                                            <h5 class="mb-0">GHG Protocol Report</h5>
-                                            <small>For regulatory compliance</small>
-                                        </div>
-                                        <div class="template-body">
-                                            <p class="small text-muted">Complete GHG Protocol reporting template with all required sections</p>
-                                            <div class="mb-3">
-                                                <span class="badge bg-light text-dark me-1">Excel</span>
-                                                <span class="badge bg-light text-dark me-1">PDF</span>
-                                            </div>
-                                            <button class="btn btn-primary w-100" onclick="useTemplate('ghg-protocol')">
-                                                <i class="fas fa-clone me-2"></i>Use Template
-                                            </button>
+                                @empty
+                                    <div class="col-12">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>No templates available. Create your first template to get started.
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="template-card">
-                                        <div class="template-header" style="background-color: var(--light-green);">
-                                            <h5 class="mb-0">CDP Disclosure</h5>
-                                            <small>For CDP reporting</small>
-                                        </div>
-                                        <div class="template-body">
-                                            <p class="small text-muted">CDP climate change questionnaire response template</p>
-                                            <div class="mb-3">
-                                                <span class="badge bg-light text-dark me-1">Excel</span>
-                                                <span class="badge bg-light text-dark">Web</span>
-                                            </div>
-                                            <button class="btn btn-primary w-100" onclick="useTemplate('cdp-disclosure')">
-                                                <i class="fas fa-clone me-2"></i>Use Template
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="template-card">
-                                        <div class="template-header" style="background-color: var(--primary-blue);">
-                                            <h5 class="mb-0">Monthly Performance</h5>
-                                            <small>For internal teams</small>
-                                        </div>
-                                        <div class="template-body">
-                                            <p class="small text-muted">Monthly emissions performance tracking and analysis</p>
-                                            <div class="mb-3">
-                                                <span class="badge bg-light text-dark me-1">PDF</span>
-                                                <span class="badge bg-light text-dark">Excel</span>
-                                            </div>
-                                            <button class="btn btn-primary w-100" onclick="useTemplate('monthly-performance')">
-                                                <i class="fas fa-clone me-2"></i>Use Template
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="template-card">
-                                        <div class="template-header" style="background-color: var(--purple);">
-                                            <h5 class="mb-0">Sustainability Report</h5>
-                                            <small>For public disclosure</small>
-                                        </div>
-                                        <div class="template-body">
-                                            <p class="small text-muted">Annual sustainability report with ESG metrics</p>
-                                            <div class="mb-3">
-                                                <span class="badge bg-light text-dark me-1">PPTX</span>
-                                                <span class="badge bg-light text-dark me-1">PDF</span>
-                                                <span class="badge bg-light text-dark">Web</span>
-                                            </div>
-                                            <button class="btn btn-primary w-100" onclick="useTemplate('sustainability-report')">
-                                                <i class="fas fa-clone me-2"></i>Use Template
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="template-card">
-                                        <div class="template-header" style="background-color: var(--danger-red);">
-                                            <h5 class="mb-0">Audit Report</h5>
-                                            <small>For internal/external audit</small>
-                                        </div>
-                                        <div class="template-body">
-                                            <p class="small text-muted">Detailed audit report with data validation and verification</p>
-                                            <div class="mb-3">
-                                                <span class="badge bg-light text-dark me-1">PDF</span>
-                                                <span class="badge bg-light text-dark">Excel</span>
-                                            </div>
-                                            <button class="btn btn-primary w-100" onclick="useTemplate('audit-report')">
-                                                <i class="fas fa-clone me-2"></i>Use Template
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                @endforelse
                             </div>
                         </div>
                     </div>
@@ -989,46 +930,53 @@
                     
                     <!-- Scheduled Reports List -->
                     <div id="scheduledReportsList">
-                        <!-- Scheduled reports will be loaded here -->
-                        <div class="schedule-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="mb-1">Monthly Executive Summary</h6>
-                                    <div class="text-muted small">PDF report emailed to executive team</div>
-                                    <div class="mt-2">
-                                        <span class="badge bg-primary me-2">Monthly</span>
-                                        <span class="badge bg-success">Active</span>
+                        @forelse($scheduledReports as $scheduled)
+                            <div class="schedule-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ $scheduled->name }}</h6>
+                                        <div class="text-muted small">{{ $scheduled->description ?? 'No description' }}</div>
+                                        <div class="mt-2">
+                                            <span class="badge bg-primary me-2">{{ ucfirst($scheduled->frequency) }}</span>
+                                            <span class="badge bg-{{ $scheduled->status === 'active' ? 'success' : ($scheduled->status === 'paused' ? 'warning' : 'secondary') }}">
+                                                {{ ucfirst($scheduled->status) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">Next: {{ $scheduled->next_run_date ? $scheduled->next_run_date->format('M d, Y') : 'Not scheduled' }}</div>
+                                        <div class="text-muted small">{{ $scheduled->schedule_time ? \Carbon\Carbon::parse($scheduled->schedule_time)->format('g:i A') : 'N/A' }}</div>
                                     </div>
                                 </div>
-                                <div class="text-end">
-                                    <div class="fw-bold">Next: Nov 1, 2023</div>
-                                    <div class="text-muted small">8:00 AM</div>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <div class="small">
+                                            <i class="fas fa-user me-1"></i> Recipients: {{ $scheduled->recipients ? count($scheduled->recipients) : 0 }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="small">
+                                            <i class="fas fa-history me-1"></i> Last run: {{ $scheduled->last_run_date ? $scheduled->last_run_date->format('M d, Y') : 'Never' }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="runScheduleNow({{ $scheduled->id }})">
+                                                <i class="fas fa-play"></i> Run Now
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="editSchedule({{ $scheduled->id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div class="row mt-3">
-                                <div class="col-md-4">
-                                    <div class="small">
-                                        <i class="fas fa-user me-1"></i> Recipients: 12
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="small">
-                                        <i class="fas fa-history me-1"></i> Last run: Oct 1, 2023
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <button class="btn btn-sm btn-outline-primary" onclick="runScheduleNow('monthly-exec')">
-                                            <i class="fas fa-play"></i> Run Now
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-secondary" onclick="editSchedule('monthly-exec')">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </div>
+                        @empty
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>No scheduled reports. Create one to automate report generation.
                             </div>
-                        </div>
+                        @endforelse
                     </div>
                 </div>
                 
@@ -1057,25 +1005,44 @@
                 </tr>
                 </thead>
                                             <tbody id="exportsTableBody">
-                                                <tr>
-                                                    <td>
-                                                        <strong>Q3 2023 Data Export</strong>
-                                                        <div class="text-muted small">All emissions data</div>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-success">Excel</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-success">Completed</span>
-                                                    </td>
-                                                    <td>Today, 10:30 AM</td>
-                                                    <td>24.5 MB</td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-outline-primary" onclick="downloadExport('export-1')">
-                                                            <i class="fas fa-download"></i>
-                                                        </button>
-                                                    </td>
-                                                </tr>
+                                                @forelse($exportJobs as $job)
+                                                    <tr>
+                                                        <td>
+                                                            <strong>{{ $job->name }}</strong>
+                                                            <div class="text-muted small">{{ $job->description ?? 'No description' }}</div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-success">{{ strtoupper($job->format) }}</span>
+                                                        </td>
+                                                        <td>
+                                                            @php
+                                                                $statusColors = [
+                                                                    'pending' => 'warning',
+                                                                    'processing' => 'info',
+                                                                    'completed' => 'success',
+                                                                    'failed' => 'danger',
+                                                                ];
+                                                                $color = $statusColors[$job->status] ?? 'secondary';
+                                                            @endphp
+                                                            <span class="badge bg-{{ $color }}">{{ ucfirst($job->status) }}</span>
+                                                        </td>
+                                                        <td>{{ $job->created_at->format('M d, Y g:i A') }}</td>
+                                                        <td>{{ $job->file_size ?? 'N/A' }}</td>
+                                                        <td>
+                                                            @if($job->status === 'completed' && $job->file_path)
+                                                                <button class="btn btn-sm btn-outline-primary" onclick="downloadExport({{ $job->id }})">
+                                                                    <i class="fas fa-download"></i>
+                                                                </button>
+                                                            @else
+                                                                <span class="text-muted">-</span>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="6" class="text-center text-muted">No export jobs yet</td>
+                                                    </tr>
+                                                @endforelse
                                             </tbody>
             </table>
                                     </div>
@@ -1193,6 +1160,88 @@
             </div>
         </div>
     </div>
+    
+    <!-- New/Edit Report Modal -->
+    <div class="modal fade" id="newReportModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalTitle">Create New Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reportForm">
+                        <input type="hidden" id="reportId" name="id">
+                        
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Report Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="reportName" name="report_name" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Facility <span class="text-danger">*</span></label>
+                                <select class="form-select" id="reportFacility" name="facility_id" required onchange="loadDepartments(this.value)">
+                                    <option value="">Select Facility...</option>
+                                    @foreach($facilities as $facility)
+                                        <option value="{{ $facility->id }}">{{ $facility->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Department</label>
+                                <select class="form-select" id="reportDepartment" name="department_id">
+                                    <option value="">Select Department...</option>
+                                    @foreach($departments as $department)
+                                        <option value="{{ $department->id }}" data-facility-id="{{ $department->facility_id }}" style="display: none;">
+                                            {{ $department->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Period <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="reportPeriod" name="period" placeholder="e.g., Q3 2023, January 2024" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Generated Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="reportGeneratedAt" name="generated_at" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Report Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="reportType" name="type" required>
+                                    <option value="executive">Executive Summary</option>
+                                    <option value="regulatory">Regulatory Compliance</option>
+                                    <option value="internal" selected>Internal Analysis</option>
+                                    <option value="public">Public Disclosure</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Status <span class="text-danger">*</span></label>
+                                <select class="form-select" id="reportStatus" name="status" required>
+                                    <option value="draft" selected>Draft</option>
+                                    <option value="published">Published</option>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="archived">Archived</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveReport()">
+                        <i class="fas fa-save me-2"></i>Save Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -1210,7 +1259,7 @@
         });
         
         function loadStatistics() {
-            $.get("{{ route('reports.index') }}/statistics", function(data) {
+            $.get("{{ route('reports.statistics') }}", function(data) {
                 $('#totalReports').text(data.total || 0);
                 $('#reportsThisMonth').text('+' + (data.this_month || 0));
                 $('#scheduledReports').text(data.scheduled || 0);
@@ -1220,23 +1269,47 @@
                 $('#pendingReports').text(data.pending || 0);
             }).fail(function() {
                 // Default values if endpoint doesn't exist yet
-                $('#totalReports').text('0');
-                $('#reportsThisMonth').text('+0');
+                $('#totalReports').text('{{ $total ?? 0 }}');
+                $('#reportsThisMonth').text('+{{ $thisMonth ?? 0 }}');
                 $('#scheduledReports').text('0');
                 $('#dueToday').text('0 due today');
-                $('#sharedReports').text('0');
+                $('#sharedReports').text('{{ $published ?? 0 }}');
                 $('#viewsThisWeek').text('0 views this week');
-                $('#pendingReports').text('0');
+                $('#pendingReports').text('{{ $pending ?? 0 }}');
             });
         }
         
         function loadReports() {
-            $.get("{{ route('reports.json') }}", function(data) {
+            const filters = {
+                type: $('#reportTypeFilter').val() || 'all',
+                status: $('#statusFilter').val() || 'all',
+                date_range: $('#dateRangeFilter').val() || 'all',
+            };
+            
+            $.get("{{ route('reports.json') }}", filters, function(data) {
                 renderReports(data.data || []);
             }).fail(function() {
-                // Fallback to DataTables endpoint
-                $.get("{{ route('reports.data') }}", function(data) {
-                    renderReports(data.data || []);
+                // Fallback: load via DataTables endpoint
+                const table = $('#reportsTable').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: "{{ route('reports.data') }}",
+                        data: function(d) {
+                            d.type = filters.type;
+                            d.status = filters.status;
+                            d.date_range = filters.date_range;
+                        }
+                    },
+                    columns: [
+                        { data: 'report_name', name: 'report_name' },
+                        { data: 'type_badge', name: 'type' },
+                        { data: 'status_badge', name: 'status' },
+                        { data: 'period', name: 'period' },
+                        { data: 'generated_at', name: 'generated_at' },
+                        { data: 'author_name', name: 'user.name' },
+                        { data: 'actions', name: 'actions', orderable: false, searchable: false }
+                    ]
                 });
             });
         }
@@ -1287,6 +1360,10 @@
                         <div class="mb-3">
                             <div class="config-label">Report Details</div>
                             <div class="small">
+                                <i class="fas fa-building me-1"></i> Facility: ${report.facility?.name || 'N/A'}
+                                <br>
+                                <i class="fas fa-sitemap me-1"></i> Department: ${report.department?.name || 'N/A'}
+                                <br>
                                 <i class="fas fa-calendar me-1"></i> Generated: ${report.generated_at || 'N/A'}
                                 <br>
                                 <i class="fas fa-user me-1"></i> Author: ${report.user?.name || 'Unknown'}
@@ -1300,8 +1377,8 @@
                             <a href="#" class="action-btn edit-btn" onclick="editReport(${report.id})">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
-                            <a href="#" class="action-btn share-btn" onclick="shareReport(${report.id})">
-                                <i class="fas fa-share-alt"></i> Share
+                            <a href="#" class="action-btn delete-btn" onclick="deleteReport(${report.id})">
+                                <i class="fas fa-trash"></i> Delete
                             </a>
                         </div>
                     </div>
@@ -1349,20 +1426,134 @@
             window.location.href = `/reports/${reportId}/download`;
         }
         
-        function editReport(reportId) {
-            window.location.href = `/reports/${reportId}/edit`;
+        async function editReport(reportId) {
+            try {
+                const response = await $.get("{{ url('reports') }}/" + reportId);
+                if (response) {
+                    // Fill form
+                    $('#reportId').val(response.id);
+                    $('#reportName').val(response.report_name || '');
+                    $('#reportFacility').val(response.facility_id || '');
+                    
+                    // Load departments for selected facility
+                    if (response.facility_id) {
+                        loadDepartments(response.facility_id, response.department_id);
+                    }
+                    
+                    $('#reportPeriod').val(response.period || '');
+                    $('#reportType').val(response.type || 'internal');
+                    $('#reportStatus').val(response.status || 'draft');
+                    $('#reportGeneratedAt').val(response.generated_at ? (response.generated_at.split(' ')[0] || response.generated_at) : '');
+                    
+                    // Update modal title
+                    $('#reportModalTitle').text('Edit Report');
+                    
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('newReportModal'));
+                    modal.show();
+                }
+            } catch (error) {
+                showToast('Error loading report: ' + (error.responseJSON?.message || error.statusText), 'error');
+            }
+        }
+        
+        // Load departments based on selected facility
+        function loadDepartments(facilityId, selectedDepartmentId = null) {
+            const departmentSelect = $('#reportDepartment');
+            departmentSelect.find('option').each(function() {
+                const option = $(this);
+                if (option.val() === '') {
+                    option.show();
+                } else {
+                    const optionFacilityId = option.data('facility-id');
+                    if (optionFacilityId == facilityId) {
+                        option.show();
+                    } else {
+                        option.hide();
+                    }
+                }
+            });
+            
+            // Reset selection
+            departmentSelect.val('');
+            
+            // Set selected department if provided
+            if (selectedDepartmentId) {
+                departmentSelect.val(selectedDepartmentId);
+            }
         }
         
         function shareReport(reportId) {
             showToast(`Sharing options for report ${reportId}`, 'info');
         }
         
+        function deleteReport(reportId) {
+            if (!confirm('Are you sure you want to delete this report?')) return;
+            
+            $.ajax({
+                url: "{{ url('reports') }}/" + reportId,
+                method: 'DELETE',
+                success: function(response) {
+                    showToast('Report deleted successfully', 'success');
+                    loadReports();
+                    loadStatistics();
+                },
+                error: function(xhr) {
+                    showToast('Error deleting report: ' + (xhr.responseJSON?.message || 'Unknown error'), 'error');
+                }
+            });
+        }
+        
         // Quick actions
         function startNewReport() {
-            const builderTab = document.getElementById('builder-tab');
-            builderTab.click();
-            clearReport();
-            showToast('Starting new report', 'info');
+            // Clear form
+            $('#reportForm')[0].reset();
+            $('#reportId').val('');
+            $('#reportGeneratedAt').val(new Date().toISOString().split('T')[0]);
+            $('#reportModalTitle').text('Create New Report');
+            
+            // Reset department dropdown
+            $('#reportDepartment').find('option').hide();
+            $('#reportDepartment').find('option[value=""]').show();
+            $('#reportDepartment').val('');
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('newReportModal'));
+            modal.show();
+        }
+        
+        // Save report
+        function saveReport() {
+            const formData = {
+                id: $('#reportId').val() || null,
+                facility_id: $('#reportFacility').val(),
+                department_id: $('#reportDepartment').val() || null,
+                report_name: $('#reportName').val(),
+                period: $('#reportPeriod').val(),
+                type: $('#reportType').val(),
+                status: $('#reportStatus').val(),
+                generated_at: $('#reportGeneratedAt').val(),
+            };
+            
+            $.ajax({
+                url: "{{ route('reports.storeOrUpdate') }}",
+                method: 'POST',
+                data: formData,
+                success: function(response) {
+                    showToast(response.message || 'Report saved successfully', 'success');
+                    $('#newReportModal').modal('hide');
+                    loadReports();
+                    loadStatistics();
+                },
+                error: function(xhr) {
+                    const errors = xhr.responseJSON?.errors || {};
+                    let errorMsg = xhr.responseJSON?.message || 'Error saving report';
+                    if (Object.keys(errors).length > 0) {
+                        errorMsg = Object.values(errors).flat().join(', ');
+                    }
+                    showToast(errorMsg, 'error');
+                }
+            });
         }
         
         function useTemplateWizard() {
@@ -1540,7 +1731,24 @@
         }
         
         // Template functions
-        function useTemplate(templateName) {
+        function filterTemplatesByCategory(category) {
+            // Update active category
+            document.querySelectorAll('#templateCategories .list-group-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter templates
+            document.querySelectorAll('.template-item').forEach(item => {
+                if (item.dataset.category === category) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        function useTemplate(templateId) {
             const builderTab = document.getElementById('builder-tab');
             builderTab.click();
             
@@ -1552,10 +1760,8 @@
                 addComponentToReport('chart-bar');
                 addComponentToReport('table-summary');
                 
-                document.getElementById('reportTitle').value = `${templateName.replace('-', ' ').toUpperCase()} Report`;
-                document.getElementById('previewTitle').textContent = `${templateName.replace('-', ' ').toUpperCase()} Report`;
-                
-                showToast(`Template "${templateName}" loaded`, 'success');
+                // You can load template-specific data here if needed
+                showToast(`Template loaded`, 'success');
             }, 500);
         }
         
@@ -1587,7 +1793,7 @@
             showToast('Filters applied successfully', 'success');
         });
         
-        document.getElementById('resetFilters').addEventListener('click', function() {
+        $('#resetFilters').on('click', function() {
             document.querySelectorAll('.filter-panel select').forEach(select => {
                 select.value = 'all';
             });

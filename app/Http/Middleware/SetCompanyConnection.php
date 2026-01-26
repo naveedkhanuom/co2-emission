@@ -3,36 +3,43 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Company;
 
 class SetCompanyConnection
 {
     public function handle($request, Closure $next)
     {
-        if ($request->is('reports*')) {
-
-            return $next($request); // Skip logic
+        // Skip for public routes
+        if ($request->is('login', 'register', 'password/*')) {
+            return $next($request);
         }
 
-        // 1️⃣ Detect company from query string
-        $company = $request->query('company');
+        // Get company from session, query parameter, or user's default company
+        $companyId = $request->session()->get('current_company_id');
+        
+        if (!$companyId && Auth::check()) {
+            $companyId = Auth::user()->company_id;
+        }
 
-        // 2️⃣ If not provided, optionally detect from subdomain
-        if (!$company) {
-            $host = $request->getHost(); // e.g., qrs.example.com
-            $subdomain = explode('.', $host)[0];
-
-            if (in_array($subdomain, ['qrs', 'tqs'])) {
-                $company = $subdomain;
+        // If company ID is provided in query, validate and set it
+        if ($request->has('company_id')) {
+            $requestedCompanyId = $request->query('company_id');
+            
+            if (Auth::check() && Auth::user()->canAccessCompany($requestedCompanyId)) {
+                $companyId = $requestedCompanyId;
+                $request->session()->put('current_company_id', $companyId);
             }
         }
 
-        // 3️⃣ Default to main DB if no match
-        if (!in_array($company, ['qrs', 'tqs'])) {
-            $company = 'mysql';
+        // Set company context for the application
+        if ($companyId) {
+            $company = Company::find($companyId);
+            if ($company && $company->is_active) {
+                app()->instance('current_company', $company);
+                app()->instance('current_company_id', $companyId);
+            }
         }
-
-        // Share connection with the app for all models
-        app()->instance('company_connection', $company);
 
         return $next($request);
     }

@@ -10,285 +10,707 @@
      @include('layouts.top-nav') 
         
         <!-- Entry Mode Selection -->
-        <div class="row mt-4">
-            <div class="col-md-4 mb-4">
+        <div class="row mt-3 mb-3">
+            <div class="col-md-4 mb-3">
                 <div class="entry-mode-card active" id="singleEntryCard" onclick="setEntryMode('single')">
                     <div class="entry-mode-icon">
                         <i class="fas fa-file-signature"></i>
                     </div>
                     <h4>Single Entry</h4>
-                    <p class="text-muted">Enter one emission record at a time with detailed information</p>
-                    <div class="mt-3">
-                        <span class="badge bg-success">Recommended for accuracy</span>
-                    </div>
+                    <p class="text-muted mb-2">Enter one emission record at a time</p>
+                    <span class="badge bg-success">Recommended</span>
                 </div>
             </div>
             
-            <div class="col-md-4 mb-4">
+            <div class="col-md-4 mb-3">
                 <div class="entry-mode-card" id="quickEntryCard" onclick="setEntryMode('quick')">
                     <div class="entry-mode-icon">
                         <i class="fas fa-table"></i>
                     </div>
                     <h4>Quick Entry</h4>
-                    <p class="text-muted">Enter multiple records in a table format for efficiency</p>
-                    <div class="mt-3">
-                        <span class="badge bg-primary">Fast bulk entry</span>
-                    </div>
+                    <p class="text-muted mb-2">Enter multiple records quickly</p>
+                    <span class="badge bg-primary">Fast bulk entry</span>
                 </div>
             </div>
             
-            <div class="col-md-4 mb-4">
+            <div class="col-md-4 mb-3">
                 <div class="entry-mode-card" id="templateEntryCard" onclick="setEntryMode('template')">
                     <div class="entry-mode-icon">
                         <i class="fas fa-clipboard-list"></i>
                     </div>
                     <h4>Template Based</h4>
-                    <p class="text-muted">Use pre-defined templates for common emission sources</p>
-                    <div class="mt-3">
-                        <span class="badge bg-info">Consistent formatting</span>
-                    </div>
+                    <p class="text-muted mb-2">Use pre-defined templates</p>
+                    <span class="badge bg-info">Consistent</span>
                 </div>
             </div>
         </div>
         
         <!-- Single Entry Form -->
         <div class="form-container" id="singleEntryForm">
-            <h4 class="mb-4">Enter Emission Data</h4>
-
-        <!-- Single Entry Form -->
-        <form class="form-container"
-                  id="singleEntryForm"
-                  method="POST"
-                  action="{{ route('emission-records.store') }}">
-                @csrf
-            <h4 class="mb-4">Enter Emission Data</h4>
-            
-            <!-- Basic Information Section -->
-            <div class="form-section">
-                <div class="form-section-title">
-                    <i class="fas fa-info-circle"></i> Basic Information
-                </div>
-                
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label required-label">Date</label>
-                        <input type="date" class="form-control date-picker" id="entryDate" name="entryDate" placeholder="Select date" required>
-                        <div class="help-text">Select the date when emissions occurred</div>
+            <div class="form-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-1">
+                            <i class="fas fa-leaf text-success me-2"></i>
+                            Enter Emission Data
+                        </h4>
+                        <p class="text-muted mb-0 small">Fill in the details below to record your greenhouse gas emissions</p>
                     </div>
-                    
-                    <div class="col-md-6">
-                        <label class="form-label required-label">Facility / Location</label>
-                        <select class="form-select facility-select" id="facilitySelect" name="facilitySelect" required>
-                            <option value="">Select facility...</option>
-                            @foreach(facilities() as $facility)
-                                <option value="{{ $facility->id }}">{{ $facility->name }}</option>
-                            @endforeach
-                        </select>
-                        <div class="help-text">Choose the facility where emissions occurred</div>
-                    </div>
-
-                    
-                    <div class="col-md-6">
-                        <label class="form-label required-label">Scope</label>
-                        <select class="form-select" id="scopeSelect" name="scopeSelect" required>
-                            <option value="">Select scope...</option>
-                            <option value="1">Scope 1 - Direct Emissions</option>
-                            <option value="2">Scope 2 - Indirect Emissions (Purchased Energy)</option>
-                            <option value="3">Scope 3 - Other Indirect Emissions</option>
-                        </select>
-                        <div class="help-text">Select GHG Protocol scope category</div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <label class="form-label required-label">Emission Source</label>
-                        <select class="form-select emission-source-select" id="emissionSourceSelect" name="emissionSourceSelect" required>
-                            <option value="">Select source...</option>
-                            <optgroup label="Scope 1 Sources">
-                                <option value="natural-gas">Natural Gas Combustion</option>
-                                <option value="diesel">Diesel Fuel</option>
-                                <option value="gasoline">Gasoline (Company Vehicles)</option>
-                                <option value="refrigerants">Refrigerants (F-gases)</option>
-                                <option value="process">Process Emissions</option>
-                            </optgroup>
-                            <optgroup label="Scope 2 Sources">
-                                <option value="electricity">Purchased Electricity</option>
-                                <option value="steam">Purchased Steam</option>
-                                <option value="heating">District Heating</option>
-                                <option value="cooling">District Cooling</option>
-                            </optgroup>
-                            <optgroup label="Scope 3 Sources">
-                                <option value="business-travel">Business Travel</option>
-                                <option value="employee-commute">Employee Commuting</option>
-                                <option value="waste">Waste Disposal</option>
-                                <option value="purchased-goods">Purchased Goods & Services</option>
-                                <option value="transportation">Transportation & Distribution</option>
-                            </optgroup>
-                        </select>
-                        <div class="help-text">Select the specific source of emissions</div>
+                    <div class="form-steps-indicator">
+                        <span class="step active" title="Step 1: Basic Information">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                        <span class="step" title="Step 2: Calculation">
+                            <i class="fas fa-circle"></i>
+                        </span>
+                        <span class="step" title="Step 3: Additional Details">
+                            <i class="fas fa-circle"></i>
+                        </span>
                     </div>
                 </div>
             </div>
+
+        <form id="emissionRecordForm"
+                  method="POST"
+                  action="{{ route('emission-records.store') }}"
+                  onsubmit="handleFormSubmit(event);">
+                @csrf
             
-            <!-- Calculation Mode -->
+            <!-- Basic Information Section -->
             <div class="form-section">
-                <div class="form-section-title">
-                    <i class="fas fa-calculator"></i> Calculation Method
-                </div>
-                
-                <div class="calculation-mode">
-                    <div class="calc-option active" onclick="setCalculationMode('direct')">
-                        <h6>Direct Entry</h6>
-                        <p class="small text-muted mb-0">Enter CO₂e value directly</p>
-                    </div>
-                    <div class="calc-option" onclick="setCalculationMode('activity', this)">
-                        <h6>Activity-Based</h6>
-                        <p class="small text-muted mb-0">Calculate from activity data</p>
+                <div class="form-section-header">
+                    <div class="section-number">1</div>
+                    <div class="section-title-content">
+                        <h5 class="form-section-title mb-1">
+                            <i class="fas fa-info-circle text-primary me-2"></i>Basic Information
+                        </h5>
+                        <p class="section-description">Start by providing the essential details about your emission record</p>
                     </div>
                 </div>
                 
-                <!-- Direct Entry -->
-                <div id="directEntrySection">
-                    <div class="row g-3">
+                <div class="form-section-body">
+                    <div class="row g-4">
                         <div class="col-md-6">
-                            <label class="form-label required-label">CO₂e Value</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="co2eValue" name="co2eValue" step="0.01" min="0" placeholder="0.00" required>
-                                <span class="input-group-text">tCO₂e</span>
+                            <div class="form-field-wrapper">
+                                <label class="form-label required-label">
+                                    <i class="fas fa-calendar-alt me-1"></i>Date
+                                </label>
+                                <input type="date" 
+                                       class="form-control form-control-lg date-picker" 
+                                       id="entryDate" 
+                                       name="entryDate" 
+                                       placeholder="Select date" 
+                                       required>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Select the date when emissions occurred
+                                </div>
                             </div>
-                            <div class="help-text">Enter the total CO₂ equivalent value</div>
                         </div>
                         
                         <div class="col-md-6">
-                            <label class="form-label">Confidence Level</label>
-                            <select class="form-select" id="confidenceLevel" name="confidenceLevel">
-                                <option value="high">High Confidence</option>
-                                <option value="medium" selected>Medium Confidence</option>
-                                <option value="low">Low Confidence</option>
-                                <option value="estimated">Estimated</option>
-                            </select>
-                            <div class="help-text">How confident are you in this data?</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Activity-Based Calculation Section -->
-                <div class="form-section" id="activityBasedSection" style="display: none;">
-                    <div class="row g-3">
-                        <!-- Emission Source -->
-                        <div class="col-md-4">
-                            <label class="form-label required-label">Emission Source</label>
-                            <select class="form-select" id="emissionSourceSelect" name="emissionSourceSelect" required>
-                                <option value="">Select source...</option>
-                                <optgroup label="Scope 1 Sources">
-                                    <option value="natural-gas">Natural Gas Combustion</option>
-                                    <option value="diesel">Diesel Fuel</option>
-                                    <option value="gasoline">Gasoline (Company Vehicles)</option>
-                                </optgroup>
-                                <optgroup label="Scope 2 Sources">
-                                    <option value="electricity">Purchased Electricity</option>
-                                </optgroup>
-                                <optgroup label="Scope 3 Sources">
-                                    <option value="business-travel">Business Travel</option>
-                                    <option value="waste">Waste Disposal</option>
-                                </optgroup>
-                            </select>
-                            <div class="help-text">Select the specific source of emissions</div>
-                        </div>
-
-                        <!-- Activity Data -->
-                        <div class="col-md-4">
-                            <label class="form-label required-label">Activity Data</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="activityData" name="activityData" step="0.01" min="0" placeholder="0.00">
-                                <select class="form-select" id="activityUnitSelect">
-                                    <option value="kWh">kWh</option>
-                                    <option value="liters">Liters</option>
-                                    <option value="m³">m³</option>
-                                    <option value="km">km</option>
-                                    <option value="kg">kg</option>
+                            <div class="form-field-wrapper">
+                                <label class="form-label required-label">
+                                    <i class="fas fa-building me-1"></i>Facility / Location
+                                </label>
+                                <select class="form-select form-select-lg facility-select" 
+                                        id="facilitySelect" 
+                                        name="facilitySelect" 
+                                        required>
+                                    <option value="">Choose a facility...</option>
+                                    @foreach(facilities() as $facility)
+                                        <option value="{{ $facility->id }}">{{ $facility->name }}</option>
+                                    @endforeach
                                 </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Choose the facility where emissions occurred
+                                </div>
                             </div>
-                            <div class="help-text">Select the unit for activity data</div>
                         </div>
-
-                        <!-- Emission Factor -->
-                        <div class="col-md-4">
-                            <label class="form-label required-label">Emission Factor</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="emissionFactor" name="emissionFactor" step="0.00001" min="0" placeholder="0.0000">
-                                <span class="input-group-text">tCO₂e/unit</span>
+                        
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Site
+                                </label>
+                                <select class="form-select form-select-lg site-select" 
+                                        id="siteSelect" 
+                                        name="siteSelect">
+                                    <option value="">Select site (optional)...</option>
+                                    @foreach(sites() as $site)
+                                        <option value="{{ $site->id }}">{{ $site->name }}@if($site->location) - {{ $site->location }}@endif</option>
+                                    @endforeach
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Optional: Select a specific site within the facility
+                                </div>
                             </div>
-                            <div class="help-text">Emission factor for this activity</div>
                         </div>
-                    </div>
-
-                    <!-- Calculated Result -->
-                    <div class="row g-3 mt-3">
-                        <div class="col-md-12">
-                            <label class="form-label">Calculated CO₂e</label>
-                            <div class="calculation-display">
-                                <div class="calculation-formula" id="calculationFormula">0.00 × 0.0000 = 0.00 tCO₂e</div>
-                                <div class="mt-2">
-                                    <strong id="calculatedResult">0.00 tCO₂e</strong>
+                    
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label required-label">
+                                    <i class="fas fa-layer-group me-1"></i>Scope Category
+                                </label>
+                                <select class="form-select form-select-lg" 
+                                        id="scopeSelect" 
+                                        name="scopeSelect" 
+                                        required
+                                        onchange="toggleScope3Fields()">
+                                    <option value="">Select scope category...</option>
+                                    <option value="1">
+                                        <span class="scope-option">Scope 1</span> - Direct Emissions
+                                    </option>
+                                    <option value="2">
+                                        <span class="scope-option">Scope 2</span> - Indirect Emissions (Purchased Energy)
+                                    </option>
+                                    <option value="3">
+                                        <span class="scope-option">Scope 3</span> - Other Indirect Emissions
+                                    </option>
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Select GHG Protocol scope category
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label required-label">
+                                    <i class="fas fa-smog me-1"></i>Emission Source
+                                </label>
+                                <select class="form-select form-select-lg emission-source-select" 
+                                        id="emissionSourceSelect" 
+                                        name="emissionSourceSelect" 
+                                        required>
+                                    <option value="">Select emission source...</option>
+                                    @if(($scope1Sources ?? collect())->isEmpty() && ($scope2Sources ?? collect())->isEmpty() && ($scope3Sources ?? collect())->isEmpty())
+                                        <option value="" disabled>No emission sources found. Please run: php artisan migrate:fresh --seed</option>
+                                    @endif
+                                    <optgroup label="Scope 1 Sources">
+                                        @foreach(($scope1Sources ?? collect()) as $source)
+                                            @php
+                                                $factor = $source->emissionFactors->first();
+                                                $unit = $factor ? $factor->unit : '';
+                                                $factorValue = $factor ? $factor->factor_value : '';
+                                            @endphp
+                                            <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                    <optgroup label="Scope 2 Sources">
+                                        @foreach(($scope2Sources ?? collect()) as $source)
+                                            @php
+                                                $factor = $source->emissionFactors->first();
+                                                $unit = $factor ? $factor->unit : '';
+                                                $factorValue = $factor ? $factor->factor_value : '';
+                                            @endphp
+                                            <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                    <optgroup label="Scope 3 Sources">
+                                        @foreach(($scope3Sources ?? collect()) as $source)
+                                            @php
+                                                $factor = $source->emissionFactors->first();
+                                                $unit = $factor ? $factor->unit : '';
+                                                $factorValue = $factor ? $factor->factor_value : '';
+                                            @endphp
+                                            <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Select the specific source of emissions
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
             
-            <!-- Additional Details -->
+            <!-- Calculation Method Section -->
             <div class="form-section">
-                <div class="form-section-title">
-                    <i class="fas fa-file-alt"></i> Additional Details
+                <div class="form-section-header">
+                    <div class="section-number">2</div>
+                    <div class="section-title-content">
+                        <h5 class="form-section-title mb-1">
+                            <i class="fas fa-calculator text-primary me-2"></i>Calculation Method
+                        </h5>
+                        <p class="section-description">Choose how you want to enter the emission data</p>
+                    </div>
                 </div>
                 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Department / Cost Center</label>
-                        <select class="form-select" id="departmentSelect" name="departmentSelect" required>
-                            <option value="">Select department...</option>
-                            @foreach(departments() as $department)
-                                <option value="{{ $department->id }}">{{ $department->name }}</option>
-                            @endforeach
-                        </select>
+                <div class="form-section-body">
+                    <div class="calculation-mode-selector">
+                        <div class="calc-option" onclick="setCalculationMode('direct')">
+                            <div class="calc-option-icon">
+                                <i class="fas fa-keyboard"></i>
+                            </div>
+                            <div class="calc-option-content">
+                                <h6 class="mb-1">Direct Entry</h6>
+                                <p class="small text-muted mb-0">Enter CO₂e value directly if you already know it</p>
+                            </div>
+                            <div class="calc-option-badge">
+                                <span class="badge bg-light text-dark">Quick</span>
+                            </div>
+                        </div>
+                        <div class="calc-option active" onclick="setCalculationMode('activity', this)">
+                            <div class="calc-option-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="calc-option-content">
+                                <h6 class="mb-1">Activity-Based</h6>
+                                <p class="small text-muted mb-0">Calculate from activity data and emission factor</p>
+                            </div>
+                            <div class="calc-option-badge">
+                                <span class="badge bg-success">Recommended</span>
+                            </div>
+                        </div>
                     </div>
+                
+                    <!-- Direct Entry Section -->
+                    <div id="directEntrySection" style="display: none;">
+                        <div class="row g-4 mt-2">
+                            <div class="col-md-6">
+                                <div class="form-field-wrapper">
+                                    <label class="form-label required-label">
+                                        <i class="fas fa-weight me-1"></i>CO₂e Value
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="co2eValue" 
+                                               name="co2eValue" 
+                                               step="0.01" 
+                                               min="0" 
+                                               placeholder="0.00" 
+                                               required>
+                                        <span class="input-group-text bg-light">
+                                            <strong>tCO₂e</strong>
+                                        </span>
+                                    </div>
+                                    <div class="field-help">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        Enter the total CO₂ equivalent value
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-field-wrapper">
+                                    <label class="form-label">
+                                        <i class="fas fa-certificate me-1"></i>Confidence Level
+                                    </label>
+                                    <select class="form-select form-select-lg" 
+                                            id="confidenceLevel" 
+                                            name="confidenceLevel">
+                                        <option value="high">
+                                            <i class="fas fa-check-circle"></i> High Confidence
+                                        </option>
+                                        <option value="medium" selected>Medium Confidence</option>
+                                        <option value="low">Low Confidence</option>
+                                        <option value="estimated">Estimated</option>
+                                    </select>
+                                    <div class="field-help">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        How confident are you in this data?
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                    <!-- Activity-Based Calculation Section -->
+                    <div id="activityBasedSection" class="mt-4">
+                        <!-- Hidden input for calculated CO₂e value (always available for form submission) -->
+                        <input type="hidden" id="co2eValueHidden" name="co2eValue" value="0.00">
+                        
+                        <div class="row g-4">
+                            <!-- Activity Data -->
+                            <div class="col-md-4">
+                                <div class="form-field-wrapper">
+                                    <label class="form-label required-label">
+                                        <i class="fas fa-tachometer-alt me-1"></i>Activity Data
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="activityData" 
+                                               name="activityData" 
+                                               step="0.01" 
+                                               min="0" 
+                                               placeholder="0.00">
+                                        <select class="form-select" id="activityUnitSelect">
+                                            <option value="kWh">kWh</option>
+                                            <option value="liters">Liters</option>
+                                            <option value="m³">m³</option>
+                                            <option value="km">km</option>
+                                            <option value="kg">kg</option>
+                                        </select>
+                                    </div>
+                                    <div class="field-help">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        Enter the activity amount (e.g., energy consumed, distance traveled)
+                                    </div>
+                                </div>
+                            </div>
 
-                    
-                    <div class="col-md-6">
-                        <label class="form-label">Data Source</label>
-                        <select class="form-select" id="dataSource" name="dataSource">
-                            <option value="manual" selected>Manual Entry</option>
-                            <option value="meter">Meter Reading</option>
-                            <option value="invoice">Utility Invoice</option>
-                            <option value="estimate">Estimate</option>
-                        </select>
+                            <!-- Emission Factor -->
+                            <div class="col-md-4">
+                                <div class="form-field-wrapper">
+                                    <label class="form-label required-label">
+                                        <i class="fas fa-exchange-alt me-1"></i>Emission Factor
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="emissionFactor" 
+                                               name="emissionFactor" 
+                                               step="0.00001" 
+                                               min="0" 
+                                               placeholder="0.0000">
+                                        <span class="input-group-text bg-light">
+                                            <small id="factorUnitLabel">tCO₂e/unit</small>
+                                        </span>
+                                    </div>
+                                    <div class="field-help">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        Standard emission factor for this activity type
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Calculated Result Display -->
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    <i class="fas fa-chart-bar me-1"></i>Calculated Result
+                                </label>
+                                <div class="calculation-display-enhanced">
+                                    <div class="calculation-formula-small mb-2" id="calculationFormula">
+                                        <span class="text-muted">Formula:</span> 0.00 × 0.0000 = 
+                                    </div>
+                                    <div class="calculated-result-large">
+                                        <span id="calculatedResult">0.00</span>
+                                        <span class="result-unit">tCO₂e</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Scope 3 Specific Fields (Only visible when Scope 3 is selected) -->
+            <div class="form-section scope3-specific-section" id="scope3SpecificSection" style="display: none;">
+                <div class="form-section-header">
+                    <div class="section-number">2.5</div>
+                    <div class="section-title-content">
+                        <h5 class="form-section-title mb-1">
+                            <i class="fas fa-network-wired text-primary me-2"></i>Scope 3 Specific Information
+                        </h5>
+                        <p class="section-description">Additional fields required for Scope 3 emissions tracking</p>
+                    </div>
+                </div>
+                
+                <div class="form-section-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-tags me-1"></i>Scope 3 Category
+                                </label>
+                                <select class="form-select form-select-lg scope3-category-select" 
+                                        id="scope3Category" 
+                                        name="scope3_category_id">
+                                    <option value="">Select category (optional)...</option>
+                                    @foreach(scope3_categories() as $category)
+                                        <option value="{{ $category->id }}" data-type="{{ $category->category_type }}">
+                                            {{ $category->code }} - {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Select the GHG Protocol Scope 3 category (1-15)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-truck me-1"></i>Supplier
+                                </label>
+                                <select class="form-select form-select-lg supplier-select" 
+                                        id="supplierId" 
+                                        name="supplier_id">
+                                    <option value="">Select supplier (optional)...</option>
+                                    @foreach(suppliers() as $supplier)
+                                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Select the supplier if applicable
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-calculator me-1"></i>Calculation Method
+                                </label>
+                                <select class="form-select form-select-lg calculation-method-select" 
+                                        id="calculationMethod" 
+                                        name="calculation_method"
+                                        onchange="toggleScope3CalculationMethod()">
+                                    <option value="activity-based" selected>Activity-Based</option>
+                                    <option value="spend-based">Spend-Based</option>
+                                    <option value="hybrid">Hybrid</option>
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Choose how emissions are calculated
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-certificate me-1"></i>Data Quality
+                                </label>
+                                <select class="form-select form-select-lg data-quality-select" 
+                                        id="dataQuality" 
+                                        name="data_quality">
+                                    <option value="primary">Primary Data</option>
+                                    <option value="secondary">Secondary Data</option>
+                                    <option value="estimated" selected>Estimated</option>
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Quality rating of the data source
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Spend-Based Fields (Hidden by default) -->
+                        <div class="col-12 spend-based-fields" id="spendBasedFields" style="display: none;">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Spend-Based Calculation:</strong> Enter the spend amount and select sector to automatically calculate emissions using EIO factors.
+                            </div>
+                            
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="form-field-wrapper">
+                                        <label class="form-label">
+                                            <i class="fas fa-dollar-sign me-1"></i>Spend Amount
+                                        </label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   id="spendAmount" 
+                                                   name="spend_amount" 
+                                                   step="0.01" 
+                                                   min="0" 
+                                                   placeholder="0.00"
+                                                   oninput="calculateScope3SpendBased()">
+                                            <select class="form-select" name="spend_currency" id="spendCurrency" style="max-width: 120px;" onchange="calculateScope3SpendBased()">
+                                                <option value="USD" selected>USD</option>
+                                                <option value="EUR">EUR</option>
+                                                <option value="GBP">GBP</option>
+                                                <option value="JPY">JPY</option>
+                                                <option value="CAD">CAD</option>
+                                                <option value="AUD">AUD</option>
+                                            </select>
+                                        </div>
+                                        <div class="field-help">
+                                            <i class="fas fa-lightbulb me-1"></i>
+                                            Enter the monetary spend amount
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-field-wrapper">
+                                        <label class="form-label">
+                                            <i class="fas fa-industry me-1"></i>Sector Code
+                                        </label>
+                                        <input type="text" 
+                                               class="form-control form-control-lg" 
+                                               id="sectorCode" 
+                                               name="sector_code" 
+                                               placeholder="e.g., 31-33"
+                                               oninput="calculateScope3SpendBased()">
+                                        <div class="field-help">
+                                            <i class="fas fa-lightbulb me-1"></i>
+                                            NAICS or similar sector code for EIO factor lookup
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="form-field-wrapper">
+                                        <label class="form-label">
+                                            <i class="fas fa-globe me-1"></i>Country
+                                        </label>
+                                        <select class="form-select form-select-lg" 
+                                                id="country" 
+                                                name="country"
+                                                onchange="calculateScope3SpendBased()">
+                                            <option value="USA" selected>United States</option>
+                                            <option value="CAN">Canada</option>
+                                            <option value="GBR">United Kingdom</option>
+                                            <option value="DEU">Germany</option>
+                                            <option value="FRA">France</option>
+                                            <option value="JPN">Japan</option>
+                                            <option value="CHN">China</option>
+                                            <option value="AUS">Australia</option>
+                                        </select>
+                                        <div class="field-help">
+                                            <i class="fas fa-lightbulb me-1"></i>
+                                            Country for EIO factor lookup
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-12">
+                                    <div class="alert alert-warning" id="spendCalculationResult" style="display: none;">
+                                        <i class="fas fa-calculator me-2"></i>
+                                        <span id="spendCalculationText">Enter spend amount and sector code to calculate emissions</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Details Section -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <div class="section-number">3</div>
+                    <div class="section-title-content">
+                        <h5 class="form-section-title mb-1">
+                            <i class="fas fa-file-alt text-primary me-2"></i>Additional Details
+                        </h5>
+                        <p class="section-description">Add optional information to improve data tracking and reporting</p>
+                    </div>
+                </div>
+                
+                <div class="form-section-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-sitemap me-1"></i>Department / Cost Center
+                                </label>
+                                <select class="form-select form-select-lg" 
+                                        id="departmentSelect" 
+                                        name="departmentSelect" 
+                                        required>
+                                    <option value="">Select department...</option>
+                                    @foreach(departments() as $department)
+                                        <option value="{{ $department->id }}">{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Organize emissions by department or cost center
+                                </div>
+                            </div>
+                        </div>
                     
-                    <div class="col-12">
-                        <label class="form-label">Notes / Comments</label>
-                        <textarea class="form-control" id="entryNotes" name="entryNotes" rows="3" placeholder="Add any additional information about this emission record..."></textarea>
-                        <div class="help-text">Optional: Add context, assumptions, or specific details</div>
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-database me-1"></i>Data Source
+                                </label>
+                                <select class="form-select form-select-lg" 
+                                        id="dataSource" 
+                                        name="dataSource">
+                                    <option value="manual" selected>
+                                        <i class="fas fa-keyboard"></i> Manual Entry
+                                    </option>
+                                    <option value="meter">Meter Reading</option>
+                                    <option value="invoice">Utility Invoice</option>
+                                    <option value="estimate">Estimate</option>
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    How was this data obtained?
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-sticky-note me-1"></i>Notes / Comments
+                                </label>
+                                <textarea class="form-control form-control-lg" 
+                                          id="entryNotes" 
+                                          name="entryNotes" 
+                                          rows="4" 
+                                          placeholder="Add any additional information, context, assumptions, or specific details about this emission record..."></textarea>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Optional: Add context, assumptions, or specific details
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-field-wrapper">
+                                <label class="form-label">
+                                    <i class="fas fa-paperclip me-1"></i>Supporting Documents
+                                </label>
+                                <input
+                                    type="file"
+                                    class="form-control form-control-lg"
+                                    id="supportingDocuments"
+                                    name="supporting_documents[]"
+                                    multiple
+                                    accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.csv"
+                                >
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Optional: Upload invoices, meter screenshots, spreadsheets, or other evidence (max 10MB per file)
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Form Actions -->
-            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                <div>
-                    <button type="submit" name="status" value="draft" class="btn btn-outline-secondary">
+            <div class="form-actions-wrapper">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <button type="submit" 
+                            name="status" 
+                            value="draft" 
+                            class="btn btn-lg btn-outline-secondary">
                         <i class="fas fa-save me-2"></i>Save as Draft
                     </button>
-                </div>
-                
-                <div class="d-flex gap-3">
-                    <button type="button" class="btn btn-outline-primary" onclick="clearForm()">
-                        <i class="fas fa-redo me-2"></i>Clear Form
-                    </button>
-                    <button type="submit" name="status" value="active" class="btn btn-success">
-                        <i class="fas fa-check-circle me-2"></i>Submit Entry
-                    </button>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="button" 
+                                class="btn btn-lg btn-outline-primary" 
+                                onclick="clearForm()">
+                            <i class="fas fa-redo me-2"></i>Clear Form
+                        </button>
+                        <button type="submit" 
+                                name="status" 
+                                value="active" 
+                                class="btn btn-lg btn-success">
+                            <i class="fas fa-check-circle me-2"></i>Submit Entry
+                        </button>
+                    </div>
                 </div>
             </div>
           </form>
@@ -382,23 +804,26 @@
 <script>
     // Convert PHP helper result to JS array
     const facilitiesData = @json(Facilities());
+    // Dynamic emission factors loaded from database (keyed by emission source name)
+    const emissionFactors = @json($emissionFactorsMap ?? []);
+    const allEmissionSourceNames = @json($allEmissionSourceNames ?? []);
+    const emissionSourceNamesByScope = @json($emissionSourceNamesByScope ?? []);
 </script>
 
 <script>
         // Entry mode state
         let currentEntryMode = 'single';
-        let calculationMode = 'direct';
+        let calculationMode = 'activity';
         let quickEntryRows = 0;
 
-// Allowed units for each emission source
-const allowedUnits = {
-    "electricity": ["kWh"],
-    "natural-gas": ["m³"],
-    "diesel": ["liters"],
-    "gasoline": ["liters"],
-    "business-travel": ["km"],
-    "waste": ["kg"],
-};
+// Build unit/factor helpers from DB-driven emissionFactors map
+const allowedUnits = {};
+const emissionUnits = { default: { unit: 'unit', factorUnit: 'tCO₂e/unit' } };
+Object.keys(emissionFactors || {}).forEach((name) => {
+    const unit = emissionFactors[name]?.unit || 'unit';
+    allowedUnits[name] = [unit];
+    emissionUnits[name] = { unit, factorUnit: `tCO₂e/${unit}` };
+});
 
 // Update activity unit options based on selected emission source
 function updateUnitOptions() {
@@ -412,12 +837,108 @@ function updateUnitOptions() {
 
     // Auto-select the first valid unit
     if (validUnits.length > 0) {
-        unitSelect.value = validUnits[0];
+        // Ensure the unit option exists, otherwise create it
+        const u = validUnits[0];
+        if (![...unitSelect.options].some(o => o.value === u)) {
+            const opt = document.createElement('option');
+            opt.value = u;
+            opt.textContent = u;
+            unitSelect.appendChild(opt);
+        }
+        unitSelect.value = u;
     } else {
         unitSelect.value = '';
     }
 
+    // Auto-fill emission factor + unit label (prefer option dataset; fallback to map)
+    const option = document.getElementById('emissionSourceSelect').selectedOptions?.[0];
+    const unitFromOpt = option?.dataset?.unit;
+    const factorFromOpt = option?.dataset?.factor;
+
+    const unitResolved = unitFromOpt || emissionFactors[source]?.unit || validUnits[0] || 'unit';
+    const factorResolved = (factorFromOpt !== undefined && factorFromOpt !== null && factorFromOpt !== '')
+        ? factorFromOpt
+        : emissionFactors[source]?.factor;
+
+    const factorLabel = document.getElementById('factorUnitLabel');
+    if (factorLabel) {
+        factorLabel.textContent = `tCO₂e/${unitResolved || 'unit'}`;
+    }
+
+    // Lock unit dropdown to the resolved unit (create option if needed)
+    if (unitResolved) {
+        if (![...unitSelect.options].some(o => o.value === unitResolved)) {
+            const opt = document.createElement('option');
+            opt.value = unitResolved;
+            opt.textContent = unitResolved;
+            unitSelect.appendChild(opt);
+        }
+        unitSelect.value = unitResolved;
+    }
+
+    if (typeof factorResolved !== 'undefined' && factorResolved !== null && factorResolved !== '') {
+        const factorInput = document.getElementById('emissionFactor');
+        if (factorInput) factorInput.value = parseFloat(factorResolved) || 0;
+    }
+
     updateCalculation();
+}
+
+function rebuildEmissionSourceOptionsForScope(scopeValue) {
+    const select = document.getElementById('emissionSourceSelect');
+    if (!select) return;
+
+    // Keep the initial full list so user can clear scope and see everything again
+    if (!select.dataset.fullOptionsHtml) {
+        select.dataset.fullOptionsHtml = select.innerHTML;
+    }
+
+    // If no scope selected, restore original options
+    if (!scopeValue) {
+        select.innerHTML = select.dataset.fullOptionsHtml;
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+            $(select).trigger('change.select2');
+        }
+        return;
+    }
+
+    const names = emissionSourceNamesByScope?.[scopeValue] || [];
+    const current = select.value;
+
+    // Rebuild with only the selected scope names
+    select.innerHTML = '<option value="">Select emission source...</option>';
+    if (!names.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.disabled = true;
+        opt.textContent = 'No sources found for this scope (check Settings → Emission Sources)';
+        select.appendChild(opt);
+    } else {
+        names.forEach((name) => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+
+            // Preserve metadata for auto-fill
+            const meta = emissionFactors?.[name];
+            if (meta?.unit) opt.dataset.unit = meta.unit;
+            if (typeof meta?.factor !== 'undefined' && meta?.factor !== null) opt.dataset.factor = meta.factor;
+
+            select.appendChild(opt);
+        });
+    }
+
+    // If previous selection no longer valid, clear it
+    if (current && !names.includes(current)) {
+        select.value = '';
+    } else if (current) {
+        select.value = current;
+    }
+
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $(select).trigger('change.select2');
+    }
+    updateUnitOptions();
 }
 
 // Update calculation formula & result
@@ -434,8 +955,17 @@ function updateCalculation() {
     document.getElementById('calculatedResult').textContent =
         `${result.toFixed(2)} tCO₂e`;
 
-    // Auto-fill CO₂e input
-    document.getElementById('co2eValue').value = result.toFixed(2);
+    // Update both visible and hidden CO₂e inputs
+    const co2eValueInput = document.getElementById('co2eValue');
+    const co2eValueHidden = document.getElementById('co2eValueHidden');
+    const value = result.toFixed(2);
+    
+    if (co2eValueInput) {
+        co2eValueInput.value = value;
+    }
+    if (co2eValueHidden) {
+        co2eValueHidden.value = value;
+    }
 }
 
 // Event listeners
@@ -443,35 +973,6 @@ document.getElementById('emissionSourceSelect').addEventListener('change', updat
 document.getElementById('activityData').addEventListener('input', updateCalculation);
 document.getElementById('emissionFactor').addEventListener('input', updateCalculation);
 document.getElementById('activityUnitSelect').addEventListener('change', updateCalculation);
-
-
-// Update Activity Unit & Factor Unit dynamically
-function updateUnits() {
-    const source = document.getElementById('emissionSourceSelect').value;
-    const config = emissionUnits[source] || emissionUnits["default"];
-
-    // Update the activity unit
-    document.getElementById('activityUnit').textContent = config.unit;
-
-    // Update the factor unit next to emissionFactor input
-    document.getElementById('factorUnit').textContent = config.factorUnit;
-
-    // Recalculate instantly
-    updateCalculation();
-}
-
-// Listen to changes on emission source
-document.getElementById('emissionSourceSelect')
-    .addEventListener('change', updateUnits);
-
-// Also trigger calculation on activity/factor input
-document.getElementById('activityData')
-    .addEventListener('input', updateCalculation);
-
-document.getElementById('emissionFactor')
-    .addEventListener('input', updateCalculation);
-
-
 
         
         // Initialize components
@@ -483,22 +984,51 @@ document.getElementById('emissionFactor')
                 maxDate: new Date()
             });
             
-            // Initialize Select2 for dropdowns
-            $('.facility-select').select2({
-                placeholder: "Select facility...",
-                allowClear: true,
-                width: '100%'
-            });
+            // Initialize Select2 for dropdowns (only if jQuery and Select2 are available)
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.facility-select').select2({
+                    placeholder: "Select facility...",
+                    allowClear: true,
+                    width: '100%'
+                });
+                
+                $('.site-select').select2({
+                    placeholder: "Select site (optional)...",
+                    allowClear: true,
+                    width: '100%'
+                });
+                
+                $('.emission-source-select').select2({
+                    placeholder: "Select emission source...",
+                    allowClear: true,
+                    width: '100%'
+                });
+                
+                $('.scope3-category-select').select2({
+                    placeholder: "Select category (optional)...",
+                    allowClear: true,
+                    width: '100%'
+                });
+                
+                $('.supplier-select').select2({
+                    placeholder: "Select supplier (optional)...",
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
             
-            $('.emission-source-select').select2({
-                placeholder: "Select emission source...",
-                allowClear: true,
-                width: '100%'
-            });
+            // Initialize Scope 3 fields visibility
+            toggleScope3Fields();
+            // Filter emission sources by selected scope
+            rebuildEmissionSourceOptionsForScope(document.getElementById('scopeSelect')?.value || '');
+            
+            // Set Activity-Based as default calculation mode
+            setCalculationMode('activity');
             
             // Update calculation when activity data changes
             document.getElementById('activityData')?.addEventListener('input', updateCalculation);
             document.getElementById('emissionFactor')?.addEventListener('input', updateCalculation);
+            document.getElementById('emissionSourceSelect')?.addEventListener('change', updateUnitOptions);
             
             // Add first quick entry row
             addQuickEntryRow();
@@ -521,17 +1051,6 @@ document.getElementById('emissionFactor')
             document.getElementById('templateEntryForm').style.display = mode === 'template' ? 'block' : 'none';
         }
 
-        document.getElementById('activityData')
-    .addEventListener('input', updateCalculation);
-
-document.getElementById('emissionFactor')
-    .addEventListener('input', updateCalculation);
-
-    document.getElementById('emissionSourceSelect')
-    .addEventListener('change', updateUnits);
-
-
-        
         // Set calculation mode
         function setCalculationMode(mode, el = null) {
     calculationMode = mode;
@@ -539,6 +1058,14 @@ document.getElementById('emissionFactor')
     document.querySelectorAll('.calc-option').forEach(option => {
         option.classList.remove('active');
     });
+
+    // Find and activate the correct option
+    const options = document.querySelectorAll('.calc-option');
+    if (mode === 'direct') {
+        options[0].classList.add('active');
+    } else if (mode === 'activity') {
+        options[1].classList.add('active');
+    }
 
     if (el) {
         el.classList.add('active');
@@ -550,41 +1077,34 @@ document.getElementById('emissionFactor')
     document.getElementById('activityBasedSection').style.display =
         mode === 'activity' ? 'block' : 'none';
 
-    if (mode === 'activity') {
+    // Handle form input names based on mode
+    const co2eValueInput = document.getElementById('co2eValue');
+    const co2eValueHidden = document.getElementById('co2eValueHidden');
+    
+    if (mode === 'direct') {
+        // In direct mode, use visible input
+        if (co2eValueInput) {
+            co2eValueInput.setAttribute('name', 'co2eValue');
+            co2eValueInput.setAttribute('required', 'required');
+        }
+        if (co2eValueHidden) {
+            co2eValueHidden.removeAttribute('name');
+        }
+    } else {
+        // In activity mode, use hidden input
+        if (co2eValueInput) {
+            co2eValueInput.removeAttribute('name');
+            co2eValueInput.removeAttribute('required');
+        }
+        if (co2eValueHidden) {
+            co2eValueHidden.setAttribute('name', 'co2eValue');
+        }
         updateCalculation();
     }
 }
 
         
-// Update calculation display
-function updateCalculation() {
-    const activity = parseFloat(document.getElementById('activityData').value) || 0;
-    const factor = parseFloat(document.getElementById('emissionFactor').value) || 0;
-    const result = activity * factor;
-
-    document.getElementById('calculationFormula').textContent =
-        `${activity.toFixed(2)} × ${factor.toFixed(6)} = ${result.toFixed(2)} tCO₂e`;
-
-    document.getElementById('calculatedResult').textContent =
-        `${result.toFixed(2)} tCO₂e`;
-
-    document.getElementById('co2eValue').value = result.toFixed(2);
-}
-
-
-function updateUnits() {
-    const source = document.getElementById('emissionSourceSelect').value;
-    const config = emissionUnits[source] || emissionUnits.default;
-
-    // Update unit labels
-    document.getElementById('activityUnit').textContent = config.unit;
-
-    document.querySelector('#emissionFactor')
-        .nextElementSibling.textContent = config.factorUnit;
-
-    // Recalculate after unit change
-    updateCalculation();
-}
+// NOTE: updateCalculation/updateUnitOptions are defined earlier (single source of truth).
 
         
 function addQuickEntryRow() {
@@ -603,8 +1123,18 @@ function addQuickEntryRow() {
     // Build facility options dynamically from helper
     let facilityOptions = `<option value="">Select facility...</option>`;
     facilitiesData.forEach(f => {
-        facilityOptions += `<option value="${f.id}">${f.name}</option>`;
+        // IMPORTANT: backend stores facility as string name (not ID)
+        facilityOptions += `<option value="${String(f.name).replace(/"/g, '&quot;')}">${f.name}</option>`;
     });
+
+    function buildSourceOptionsForScope(scopeValue) {
+        const names = emissionSourceNamesByScope?.[scopeValue] || allEmissionSourceNames || [];
+        let html = `<option value=\"\">Select source...</option>`;
+        (names || []).forEach(name => {
+            html += `<option value=\"${String(name).replace(/\"/g, '&quot;')}\">${name}</option>`;
+        });
+        return html;
+    }
 
     row.innerHTML = `
         <td>${quickEntryRows}</td>
@@ -626,12 +1156,7 @@ function addQuickEntryRow() {
         </td>
         <td>
             <select class="form-select form-select-sm quick-entry-source" required>
-                <option value="">Select source...</option>
-                <option value="natural-gas">Natural Gas</option>
-                <option value="electricity">Electricity</option>
-                <option value="vehicle">Company Vehicles</option>
-                <option value="travel">Business Travel</option>
-                <option value="waste">Waste</option>
+                ${buildSourceOptionsForScope('')}
             </select>
         </td>
         <td>
@@ -653,6 +1178,23 @@ function addQuickEntryRow() {
     `;
 
     document.getElementById('quickEntryTableBody').appendChild(row);
+
+    // Filter sources when scope changes (per-row)
+    const scopeEl = row.querySelector('.quick-entry-scope');
+    const sourceEl = row.querySelector('.quick-entry-source');
+    if (scopeEl && sourceEl) {
+        scopeEl.addEventListener('change', () => {
+            const selected = sourceEl.value;
+            sourceEl.innerHTML = buildSourceOptionsForScope(scopeEl.value);
+            if (selected) {
+                // try keep selection if still valid
+                const names = emissionSourceNamesByScope?.[scopeEl.value] || [];
+                if (names.includes(selected)) {
+                    sourceEl.value = selected;
+                }
+            }
+        });
+    }
 
     // Initialize date picker
     flatpickr(row.querySelector('.quick-entry-date'), {
@@ -722,33 +1264,47 @@ function addQuickEntryRow() {
             let valid = true;
 
             rows.forEach(row => {
+        // Clear previous invalid markers for this row
+        row.querySelectorAll('input, select').forEach(i => i.classList.remove('is-invalid'));
+
+        const dateEl = row.querySelector('.quick-entry-date');
+        const facilityEl = row.querySelector('.quick-entry-facility');
+        const scopeEl = row.querySelector('.quick-entry-scope');
+        const sourceEl = row.querySelector('.quick-entry-source');
+        const co2eEl = row.querySelector('.quick-entry-co2e');
+
+        // Validate required fields (row-level)
+        const required = [
+            { el: dateEl, name: 'Date' },
+            { el: facilityEl, name: 'Facility' },
+            { el: scopeEl, name: 'Scope' },
+            { el: sourceEl, name: 'Emission Source' },
+            { el: co2eEl, name: 'CO₂e' },
+        ];
+
+        const missing = required.filter(r => !r.el || !r.el.value);
+        if (missing.length) {
+            valid = false;
+            missing.forEach(r => r.el && r.el.classList.add('is-invalid'));
+        }
+
                 const entry = {
-                    entryDate: row.querySelector('.quick-entry-date').value,
-                    facilitySelect: row.querySelector('.quick-entry-facility').value,
-                    scopeSelect: row.querySelector('.quick-entry-scope').value,
-                    emissionSourceSelect: row.querySelector('.quick-entry-source').value,
-                    co2eValue: row.querySelector('.quick-entry-co2e').value,
+            entryDate: dateEl?.value,
+            facilitySelect: facilityEl?.value,
+            scopeSelect: scopeEl?.value,
+            emissionSourceSelect: sourceEl?.value,
+            co2eValue: co2eEl?.value,
                     confidenceLevel: 'medium', // default for quick entry
                     entryNotes: row.querySelector('.quick-entry-notes').value,
                     dataSource: 'manual',
                     departmentSelect: null
                 };
 
-                // Validate required fields
-                Object.keys(entry).forEach(key => {
-                    if ((entry[key] === null || entry[key] === '') && key !== 'entryNotes' && key !== 'departmentSelect') {
-                        valid = false;
-                        row.querySelectorAll('input, select').forEach(i => i.classList.add('is-invalid'));
-                    } else {
-                        row.querySelectorAll('input, select').forEach(i => i.classList.remove('is-invalid'));
-                    }
-                });
-
                 entries.push(entry);
             });
 
             if (!valid) {
-                showToast('Please fill all required fields', 'error');
+        showToast('Please fix the highlighted fields in the table (missing required values).', 'error');
                 return;
             }
 
@@ -765,6 +1321,14 @@ function addQuickEntryRow() {
             .then(async res => {
                 if (!res.ok) {
                     const error = await res.json();
+                    // Show row-level server validation if present
+                    if (error?.errors?.row && error?.errors?.messages) {
+                        const rowNum = error.errors.row;
+                        const messages = error.errors.messages;
+                        const firstKey = Object.keys(messages)[0];
+                        const firstMsg = messages[firstKey]?.[0] || 'Validation error';
+                        throw new Error(`Row ${rowNum}: ${firstMsg}`);
+                    }
                     throw new Error(error.message || 'Server error');
                 }
                 return res.json();
@@ -788,32 +1352,41 @@ function addQuickEntryRow() {
             switch(templateName) {
                 case 'electricity':
                     document.getElementById('scopeSelect').value = '2';
-                    document.getElementById('emissionSourceSelect').value = 'electricity';
-                    document.getElementById('activityUnit').textContent = 'kWh';
+                    selectEmissionSourceByText(/electric/i);
                     setCalculationMode('activity');
                     break;
                 case 'fleet':
                     document.getElementById('scopeSelect').value = '1';
-                    document.getElementById('emissionSourceSelect').value = 'gasoline';
-                    document.getElementById('activityUnit').textContent = 'liters';
+                    selectEmissionSourceByText(/gasoline|diesel|vehicle/i);
                     setCalculationMode('activity');
                     break;
                 case 'travel':
                     document.getElementById('scopeSelect').value = '3';
-                    document.getElementById('emissionSourceSelect').value = 'business-travel';
+                    selectEmissionSourceByText(/travel/i);
                     break;
                 case 'waste':
                     document.getElementById('scopeSelect').value = '3';
-                    document.getElementById('emissionSourceSelect').value = 'waste';
-                    document.getElementById('activityUnit').textContent = 'kg';
+                    selectEmissionSourceByText(/waste/i);
                     setCalculationMode('activity');
                     break;
             }
             
-            // Update Select2 values
-            $('.emission-source-select').trigger('change');
+            // Update Select2 values if jQuery is available
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.emission-source-select').trigger('change');
+            }
             
             showToast(`Template "${templateName}" applied`, 'success');
+        }
+
+        function selectEmissionSourceByText(regex) {
+            const select = document.getElementById('emissionSourceSelect');
+            if (!select) return;
+            const opt = [...select.options].find(o => o.value && regex.test(o.textContent || ''));
+            if (opt) {
+                select.value = opt.value;
+                updateUnitOptions();
+            }
         }
         
         // Save as draft
@@ -839,82 +1412,302 @@ function addQuickEntryRow() {
             showToast('Entry saved as draft', 'success');
         }
         
-        // Submit entry
-        function submitEntry() {
-            const form = document.getElementById('singleEntryForm');
-
+        // Handle form submission with AJAX
+        function handleFormSubmit(event) {
+            event.preventDefault(); // Prevent default form submission
+            
+            const form = event.target; // Get the form from the event
+            const formData = new FormData(form);
+            const submitButton = document.activeElement; // Get the clicked button
+            
+            // Determine status from the button clicked
+            const status = submitButton.name === 'status' ? submitButton.value : 'active';
+            formData.set('status', status);
+            
+            // Show loading state
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            // Submit via AJAX
             fetch(form.action, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: new FormData(form)
+                body: formData
             })
-            .then(res => {
-                if (!res.ok) throw res;
-                return res.json();
+            .then(async response => {
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || data.error || 'Validation error');
+                }
+                
+                return data;
             })
             .then(data => {
-                const modal = new bootstrap.Modal(
-                    document.getElementById('successModal')
-                );
-                modal.show();
+                // Success - Show toast notification
+                const message = data.message || 'Emission record saved successfully!';
+                showToast(message, 'success');
+                
+                // Reset form
                 form.reset();
+                // Reset Select2 dropdowns if jQuery is available
+                if (typeof $ !== 'undefined' && $.fn.select2) {
+                    $('.facility-select').val(null).trigger('change');
+                    $('.emission-source-select').val(null).trigger('change');
+                } else {
+                    // Fallback to vanilla JS
+                    const facilitySelect = document.querySelector('.facility-select');
+                    const sourceSelect = document.querySelector('.emission-source-select');
+                    if (facilitySelect) facilitySelect.value = '';
+                    if (sourceSelect) sourceSelect.value = '';
+                }
+                
+                // Reset calculation display
+                if (document.getElementById('calculatedResult')) {
+                    document.getElementById('calculatedResult').textContent = '0.00';
+                    document.getElementById('calculationFormula').textContent = '0.00 × 0.0000 = 0.00 tCO₂e';
+                }
+                
+                // Remove validation classes
+                document.querySelectorAll('.is-invalid').forEach(el => {
+                    el.classList.remove('is-invalid');
+                });
+                
+                // Reset button state after a short delay
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                }, 1000);
             })
-            .catch(async err => {
-                const error = await err.json();
-                showToast(error.message || 'Validation error', 'error');
+            .catch(error => {
+                // Error - Show toast notification
+                const errorMessage = error.message || 'An error occurred while saving. Please try again.';
+                showToast(errorMessage, 'error');
+                
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
             });
+        }
+        
+        // Legacy function - kept for compatibility
+        function submitEntry() {
+            handleFormSubmit(event);
         }
 
         
         // Clear form
         function clearForm() {
-            document.getElementById('singleEntryForm').reset();
-            $('.facility-select').val(null).trigger('change');
-            $('.emission-source-select').val(null).trigger('change');
+            const form = document.getElementById('emissionRecordForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // Reset Select2 dropdowns if jQuery is available
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.facility-select').val(null).trigger('change');
+                $('.site-select').val(null).trigger('change');
+                $('.emission-source-select').val(null).trigger('change');
+                $('.scope3-category-select').val(null).trigger('change');
+                $('.supplier-select').val(null).trigger('change');
+            } else {
+                // Fallback to vanilla JS
+                const facilitySelect = document.querySelector('.facility-select');
+                const siteSelect = document.querySelector('.site-select');
+                const sourceSelect = document.querySelector('.emission-source-select');
+                const scope3Category = document.getElementById('scope3Category');
+                const supplier = document.getElementById('supplierId');
+                if (facilitySelect) facilitySelect.value = '';
+                if (siteSelect) siteSelect.value = '';
+                if (sourceSelect) sourceSelect.value = '';
+                if (scope3Category) scope3Category.value = '';
+                if (supplier) supplier.value = '';
+            }
+            
+            // Hide Scope 3 section
+            const scope3Section = document.getElementById('scope3SpecificSection');
+            if (scope3Section) scope3Section.style.display = 'none';
+            
+            // Reset calculation method
+            const calcMethod = document.getElementById('calculationMethod');
+            if (calcMethod) {
+                calcMethod.value = 'activity-based';
+                toggleScope3CalculationMethod();
+            }
+            
+            // Hide spend calculation result
+            const spendResult = document.getElementById('spendCalculationResult');
+            if (spendResult) spendResult.style.display = 'none';
             
             // Remove validation classes
             document.querySelectorAll('.is-invalid').forEach(el => {
                 el.classList.remove('is-invalid');
             });
             
+            // Reset calculation display
+            if (document.getElementById('calculatedResult')) {
+                document.getElementById('calculatedResult').textContent = '0.00';
+                if (document.getElementById('calculationFormula')) {
+                    document.getElementById('calculationFormula').textContent = '0.00 × 0.0000 = 0.00 tCO₂e';
+                }
+            }
+            
             showToast('Form cleared', 'info');
         }
         
-        // Toast notification
+        // Enhanced Toast notification with better styling
         function showToast(message, type) {
-            const toast = document.createElement('div');
-            toast.className = 'position-fixed bottom-0 end-0 p-3';
-            toast.style.zIndex = '11';
+            // Remove existing toasts to prevent stacking
+            const existingToasts = document.querySelectorAll('.custom-toast-container');
+            existingToasts.forEach(toast => toast.remove());
             
-            const bgColor = type === 'success' ? 'bg-success' : 
-                           type === 'error' ? 'bg-danger' : 
-                           type === 'warning' ? 'bg-warning' : 'bg-info';
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'custom-toast-container position-fixed';
+            toastContainer.style.cssText = 'bottom: 20px; right: 20px; z-index: 9999; min-width: 300px;';
             
-            toast.innerHTML = `
-                <div class="toast show" role="alert">
-                    <div class="toast-header ${bgColor} text-white">
-                        <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                                        type === 'error' ? 'exclamation-circle' : 
-                                        type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-                        <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
-                        <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.parentElement.remove()"></button>
-                    </div>
-                    <div class="toast-body">
-                        ${message}
+            const iconClass = type === 'success' ? 'fa-check-circle' : 
+                            type === 'error' ? 'fa-exclamation-circle' : 
+                            type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+            
+            const bgColor = type === 'success' ? '#28a745' : 
+                           type === 'error' ? '#dc3545' : 
+                           type === 'warning' ? '#ffc107' : '#17a2b8';
+            
+            const iconBg = type === 'success' ? '#1e7e34' : 
+                          type === 'error' ? '#c82333' : 
+                          type === 'warning' ? '#e0a800' : '#138496';
+            
+            toastContainer.innerHTML = `
+                <div class="toast show align-items-center text-white border-0" 
+                     role="alert" 
+                     style="background-color: ${bgColor} !important; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+                     data-bs-autohide="true" 
+                     data-bs-delay="4000">
+                    <div class="d-flex align-items-center p-3">
+                        <div class="toast-icon me-3" style="width: 40px; height: 40px; background-color: ${iconBg}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas ${iconClass} fa-lg"></i>
+                        </div>
+                        <div class="toast-body flex-grow-1">
+                            <strong style="font-size: 1rem;">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                            <div style="font-size: 0.9rem; margin-top: 4px;">${message}</div>
+                        </div>
+                        <button type="button" 
+                                class="btn-close btn-close-white ms-2" 
+                                data-bs-dismiss="toast" 
+                                aria-label="Close"
+                                onclick="this.closest('.custom-toast-container').remove()"></button>
                     </div>
                 </div>
             `;
             
-            document.body.appendChild(toast);
+            document.body.appendChild(toastContainer);
             
+            // Auto remove after 5 seconds
             setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.remove();
+                if (toastContainer.parentElement) {
+                    toastContainer.style.opacity = '0';
+                    toastContainer.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => {
+                        toastContainer.remove();
+                    }, 300);
                 }
             }, 5000);
+        }
+        
+        // Toggle Scope 3 fields visibility based on scope selection
+        function toggleScope3Fields() {
+            const scopeSelect = document.getElementById('scopeSelect');
+            const scope3Section = document.getElementById('scope3SpecificSection');
+            
+            if (scopeSelect && scope3Section) {
+                if (scopeSelect.value === '3') {
+                    scope3Section.style.display = 'block';
+                } else {
+                    scope3Section.style.display = 'none';
+                }
+            }
+
+            // Also filter emission sources list based on selected scope
+            rebuildEmissionSourceOptionsForScope(scopeSelect?.value || '');
+        }
+        
+        // Toggle calculation method for Scope 3
+        function toggleScope3CalculationMethod() {
+            const method = document.getElementById('calculationMethod').value;
+            const spendFields = document.getElementById('spendBasedFields');
+            
+            if (method === 'spend-based' || method === 'hybrid') {
+                spendFields.style.display = 'block';
+            } else {
+                spendFields.style.display = 'none';
+            }
+        }
+        
+        // Calculate emissions from spend amount (Scope 3 spend-based)
+        function calculateScope3SpendBased() {
+            const spendAmount = parseFloat(document.getElementById('spendAmount').value) || 0;
+            const sectorCode = document.getElementById('sectorCode').value;
+            const country = document.getElementById('country').value;
+            const currency = document.getElementById('spendCurrency').value;
+            const resultDiv = document.getElementById('spendCalculationResult');
+            const resultText = document.getElementById('spendCalculationText');
+            
+            if (!spendAmount || !sectorCode) {
+                resultDiv.style.display = 'none';
+                return;
+            }
+            
+            // Call API to calculate emissions
+            fetch('{{ route("eio_factors.calculate") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    spend_amount: spendAmount,
+                    sector_code: sectorCode,
+                    country: country,
+                    currency: currency
+                })
+            })
+            .then(async res => {
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    const emissionsT = data.emissions_t_co2e || 0;
+                    resultText.innerHTML = `<strong>Calculated Emissions:</strong> ${emissionsT.toFixed(4)} tCO₂e from ${spendAmount.toFixed(2)} ${currency}`;
+                    resultDiv.className = 'alert alert-success';
+                    resultDiv.style.display = 'block';
+                    
+                    // Auto-fill CO2e value if spend-based
+                    const method = document.getElementById('calculationMethod').value;
+                    if (method === 'spend-based') {
+                        const co2eValueInput = document.getElementById('co2eValue');
+                        const co2eValueHidden = document.getElementById('co2eValueHidden');
+                        if (co2eValueInput) {
+                            co2eValueInput.value = emissionsT.toFixed(4);
+                        }
+                        if (co2eValueHidden) {
+                            co2eValueHidden.value = emissionsT.toFixed(4);
+                        }
+                    }
+                } else {
+                    resultText.innerHTML = `<strong>Error:</strong> ${data.message || 'Could not calculate emissions. Please check sector code.'}`;
+                    resultDiv.className = 'alert alert-warning';
+                    resultDiv.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                resultText.innerHTML = `<strong>Error:</strong> Could not calculate emissions. Please try again.`;
+                resultDiv.className = 'alert alert-warning';
+                resultDiv.style.display = 'block';
+            });
         }
         
         // Sidebar toggle for mobile

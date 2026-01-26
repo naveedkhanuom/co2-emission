@@ -26,6 +26,7 @@ class HomeController extends Controller
         $categoryFilter = $request->get('category', '');
         
         // Build base query with filters
+        // Note: EmissionRecord uses HasCompanyScope trait, so it's automatically scoped to current company
         $baseQuery = function() use ($dateRange, $facilityFilter, $departmentFilter, $categoryFilter) {
             $query = EmissionRecord::where('status', 'active');
             
@@ -82,6 +83,7 @@ class HomeController extends Controller
         $previousMonthEnd = Carbon::now()->subMonth()->endOfMonth();
         
         // Current month totals (with filters except date)
+        // Automatically scoped to current company via HasCompanyScope trait
         $currentMonthQuery = EmissionRecord::where('status', 'active')
             ->whereBetween('entry_date', [$currentMonthStart, $currentMonthEnd]);
         if (!empty($facilityFilter)) {
@@ -102,6 +104,7 @@ class HomeController extends Controller
         $currentMonthTotal = $currentMonthQuery->sum('co2e_value');
         
         // Previous month totals (with filters except date)
+        // Automatically scoped to current company via HasCompanyScope trait
         $previousMonthQuery = EmissionRecord::where('status', 'active')
             ->whereBetween('entry_date', [$previousMonthStart, $previousMonthEnd]);
         if (!empty($facilityFilter)) {
@@ -127,6 +130,7 @@ class HomeController extends Controller
             : ($currentMonthTotal > 0 ? 100 : 0);
         
         // Previous month scope totals (with filters)
+        // Automatically scoped to current company via HasCompanyScope trait
         $prevScope1 = EmissionRecord::where('status', 'active')
             ->where('scope', 1)
             ->whereBetween('entry_date', [$previousMonthStart, $previousMonthEnd]);
@@ -147,6 +151,7 @@ class HomeController extends Controller
         }
         $prevScope1 = $prevScope1->sum('co2e_value');
         
+        // Automatically scoped to current company via HasCompanyScope trait
         $prevScope2 = EmissionRecord::where('status', 'active')
             ->where('scope', 2)
             ->whereBetween('entry_date', [$previousMonthStart, $previousMonthEnd]);
@@ -167,6 +172,7 @@ class HomeController extends Controller
         }
         $prevScope2 = $prevScope2->sum('co2e_value');
         
+        // Automatically scoped to current company via HasCompanyScope trait
         $prevScope3 = EmissionRecord::where('status', 'active')
             ->where('scope', 3)
             ->whereBetween('entry_date', [$previousMonthStart, $previousMonthEnd]);
@@ -188,6 +194,7 @@ class HomeController extends Controller
         $prevScope3 = $prevScope3->sum('co2e_value');
         
         // Current month scope totals (with filters)
+        // Automatically scoped to current company via HasCompanyScope trait
         $currentScope1 = EmissionRecord::where('status', 'active')
             ->where('scope', 1)
             ->whereBetween('entry_date', [$currentMonthStart, $currentMonthEnd]);
@@ -208,6 +215,7 @@ class HomeController extends Controller
         }
         $currentScope1 = $currentScope1->sum('co2e_value');
         
+        // Automatically scoped to current company via HasCompanyScope trait
         $currentScope2 = EmissionRecord::where('status', 'active')
             ->where('scope', 2)
             ->whereBetween('entry_date', [$currentMonthStart, $currentMonthEnd]);
@@ -228,6 +236,7 @@ class HomeController extends Controller
         }
         $currentScope2 = $currentScope2->sum('co2e_value');
         
+        // Automatically scoped to current company via HasCompanyScope trait
         $currentScope3 = EmissionRecord::where('status', 'active')
             ->where('scope', 3)
             ->whereBetween('entry_date', [$currentMonthStart, $currentMonthEnd]);
@@ -268,6 +277,7 @@ class HomeController extends Controller
             $months[] = $date->format('M');
             
             // For monthly trend, always show last 12 months but apply other filters
+            // Automatically scoped to current company via HasCompanyScope trait
             $monthQuery = EmissionRecord::where('status', 'active')
                 ->whereBetween('entry_date', [$monthStart, $monthEnd]);
             
@@ -303,6 +313,7 @@ class HomeController extends Controller
         }
         
         // Emissions by source (top 10) with filters
+        // Automatically scoped to current company via HasCompanyScope trait
         $sourceQuery = $baseQuery()
             ->select('emission_source', DB::raw('SUM(co2e_value) as total'))
             ->groupBy('emission_source')
@@ -322,6 +333,7 @@ class HomeController extends Controller
         }
         
         // Recent emission records (latest 8) with filters
+        // Automatically scoped to current company via HasCompanyScope trait
         $recentRecords = $baseQuery()
             ->orderBy('entry_date', 'desc')
             ->orderBy('created_at', 'desc')
@@ -329,13 +341,15 @@ class HomeController extends Controller
             ->get();
         
         // Total record count with filters
+        // Automatically scoped to current company via HasCompanyScope trait
         $totalRecords = $baseQuery()->count();
         
-        // Get facilities and departments for filters
+        // Get facilities and departments for filters (automatically scoped to current company via HasCompanyScope)
         $facilities = Facilities::all();
         $departments = Department::all();
         
         // Get unique emission sources for filter
+        // Automatically scoped to current company via HasCompanyScope trait
         $emissionCategories = EmissionRecord::where('status', 'active')
             ->distinct()
             ->pluck('emission_source')

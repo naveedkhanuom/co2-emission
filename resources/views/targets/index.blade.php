@@ -331,14 +331,6 @@
         margin-bottom: 20px;
     }
     
-    /* Target Summary */
-    .target-summary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px;
-        padding: 25px;
-        margin-bottom: 20px;
-    }
     
     :root {
         --success-teal: #009688;
@@ -353,16 +345,18 @@
         @include('layouts.top-nav')
         
         <!-- Target Summary Banner -->
-        <div class="target-summary">
-            <div class="row">
-                <div class="col-md-8">
-                    <h3 class="mb-3">Emission Reduction Targets</h3>
-                    <p class="mb-0">Track progress towards your climate goals and science-based targets. Set new targets, monitor progress, and adjust strategies.</p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#newTargetModal">
-                        <i class="fas fa-plus me-2"></i>Set New Target
-                    </button>
+        <div class="card mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+            <div class="card-body text-white">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3 class="mb-3 text-white">Emission Reduction Targets</h3>
+                        <p class="mb-0 text-white-50">Track progress towards your climate goals and science-based targets. Set new targets, monitor progress, and adjust strategies.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#newTargetModal">
+                            <i class="fas fa-plus me-2"></i>Set New Target
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -370,70 +364,81 @@
         <!-- KPI Cards -->
         <div class="row mt-4">
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="kpi-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="kpi-label">ACTIVE TARGETS</div>
-                            <div class="kpi-value">8</div>
-                            <div class="d-flex align-items-center">
-                                <span class="text-success fw-bold">+2</span>
-                                <span class="text-muted ms-2">this quarter</span>
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">ACTIVE TARGETS</div>
+                                <div class="kpi-value">{{ $activeTargets ?? 0 }}</div>
+                                <div class="d-flex align-items-center mt-2">
+                                    <span class="text-muted small">Saved targets in database</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-icon" style="background-color: var(--primary-green);">
-                            <i class="fas fa-bullseye"></i>
+                            <div class="kpi-icon" style="background-color: var(--primary-green);">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="kpi-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="kpi-label">ON TRACK</div>
-                            <div class="kpi-value">5</div>
-                            <div class="progress mt-2" style="height: 6px;">
-                                <div class="progress-bar bg-success" style="width: 63%"></div>
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">ON TRACK</div>
+                                <div class="kpi-value">{{ $onTrackCount ?? 0 }}</div>
+                                <div class="progress mt-2" style="height: 6px;">
+                                    @php
+                                        $totalTargets = isset($statusDistribution) ? array_sum($statusDistribution) : 0;
+                                        $onTrackPct = $totalTargets > 0 ? round((($onTrackCount ?? 0) / $totalTargets) * 100) : 0;
+                                    @endphp
+                                    <div class="progress-bar bg-success" style="width: {{ $onTrackPct }}%"></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-icon" style="background-color: var(--light-green);">
-                            <i class="fas fa-check-circle"></i>
+                            <div class="kpi-icon" style="background-color: var(--light-green);">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="kpi-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="kpi-label">TOTAL REDUCTION</div>
-                            <div class="kpi-value">2,450 <span class="fs-6">tCO₂e</span></div>
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-arrow-down text-success me-2"></i>
-                                <span class="text-success fw-bold">18% achieved</span>
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">TOTAL REDUCTION</div>
+                                <div class="kpi-value">{{ number_format((float) ($totalReduction ?? 0), 2) }} <span class="fs-6">tCO₂e</span></div>
+                                <div class="d-flex align-items-center mt-2">
+                                    <i class="fas fa-arrow-down text-success me-2"></i>
+                                    <span class="text-success fw-bold small">Estimated vs baseline</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="kpi-icon" style="background-color: var(--primary-blue);">
-                            <i class="fas fa-chart-line"></i>
+                            <div class="kpi-icon" style="background-color: var(--primary-blue);">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-xl-3 col-md-6 mb-4">
-                <div class="kpi-card">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="kpi-label">AT RISK</div>
-                            <div class="kpi-value">2</div>
-                            <button class="btn btn-sm btn-warning mt-2" onclick="showAtRiskTargets()">
-                                <i class="fas fa-external-link-alt me-1"></i>Review Now
-                            </button>
-                        </div>
-                        <div class="kpi-icon" style="background-color: var(--warning-orange);">
-                            <i class="fas fa-exclamation-triangle"></i>
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label">AT RISK</div>
+                                <div class="kpi-value">{{ $atRiskCount ?? 0 }}</div>
+                                <button class="btn btn-sm btn-warning mt-2" onclick="showAtRiskTargets()">
+                                    <i class="fas fa-external-link-alt me-1"></i>Review Now
+                                </button>
+                            </div>
+                            <div class="kpi-icon" style="background-color: var(--warning-orange);">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -507,7 +512,7 @@
         </div>
         
         <!-- Charts Row -->
-        <div class="row">
+        <div class="row mt-4">
             <div class="col-lg-8 mb-4">
                 <div class="chart-container">
                     <div class="chart-title">Target Progress Overview</div>
@@ -524,7 +529,7 @@
         </div>
         
         <!-- Active Targets -->
-        <div class="row">
+        <div class="row mt-4">
             <div class="col-lg-8">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 class="mb-0">Active Targets</h4>
@@ -535,265 +540,135 @@
                 
                 <!-- Target Cards -->
                 <div class="row" id="targetsGrid">
-                    <!-- Net Zero Target -->
-                    <div class="col-md-6 mb-4">
-                        <div class="target-card on-track">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="mb-1">Net Zero 2050</h5>
-                                    <span class="goal-type type-net-zero">
-                                        <i class="fas fa-globe-europe me-1"></i>Net Zero
+                    @php
+                        $activeList = isset($targets) ? $targets->where('status', '!=', 'completed') : collect();
+                    @endphp
+
+                    @forelse($activeList as $t)
+                        @php
+                            $cardClass = match($t->status) {
+                                'on-track' => 'on-track',
+                                'at-risk' => 'at-risk',
+                                'off-track' => 'off-track',
+                                'completed' => 'completed',
+                                default => 'on-track',
+                            };
+
+                            $statusClass = match($t->status) {
+                                'on-track' => 'status-on-track',
+                                'at-risk' => 'status-at-risk',
+                                'off-track' => 'status-off-track',
+                                'completed' => 'status-completed',
+                                default => 'status-on-track',
+                            };
+
+                            $typeClass = match($t->type) {
+                                'sbt' => 'type-sbt',
+                                'net-zero' => 'type-net-zero',
+                                'carbon-neutral' => 'type-carbon-neutral',
+                                'regulatory' => 'type-regulatory',
+                                'internal' => 'type-internal',
+                                default => 'type-internal',
+                            };
+
+                            $typeLabel = match($t->type) {
+                                'sbt' => 'Science-Based',
+                                'net-zero' => 'Net Zero',
+                                'carbon-neutral' => 'Carbon Neutral',
+                                'regulatory' => 'Regulatory',
+                                'internal' => 'Internal',
+                                default => 'Internal',
+                            };
+
+                            $icon = match($t->type) {
+                                'sbt' => 'fa-temperature-low',
+                                'net-zero' => 'fa-globe-europe',
+                                'carbon-neutral' => 'fa-leaf',
+                                'regulatory' => 'fa-balance-scale',
+                                'internal' => 'fa-bullseye',
+                                default => 'fa-bullseye',
+                            };
+
+                            $progress = (float) ($t->progress_percent ?? 0);
+                            $progress01 = max(0, min(1, $progress / 100));
+                            $strokeColor = $t->status === 'at-risk' ? '#ffc107' : ($t->status === 'off-track' ? 'var(--danger-red)' : 'var(--light-green)');
+                        @endphp
+
+                        <div class="col-md-6 mb-4">
+                            <div class="target-card {{ $cardClass }}">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h5 class="mb-1">{{ $t->name }}</h5>
+                                        <span class="goal-type {{ $typeClass }}">
+                                            <i class="fas {{ $icon }} me-1"></i>{{ $typeLabel }}
+                                        </span>
+                                    </div>
+                                    <span class="target-status {{ $statusClass }}">
+                                        <i class="fas {{ $t->status === 'on-track' ? 'fa-check-circle' : ($t->status === 'at-risk' ? 'fa-exclamation-triangle' : ($t->status === 'off-track' ? 'fa-times-circle' : 'fa-trophy')) }}"></i>
+                                        {{ ucwords(str_replace('-', ' ', $t->status)) }}
                                     </span>
                                 </div>
-                                <span class="target-status status-on-track">
-                                    <i class="fas fa-check-circle"></i>On Track
-                                </span>
-                            </div>
-                            
-                            <p class="text-muted small mb-3">Achieve net-zero emissions across all scopes by 2050</p>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Target Details</div>
-                                <div class="small">
-                                    <i class="fas fa-calendar me-1"></i> Deadline: 2050
-                                    <br>
-                                    <i class="fas fa-bullseye me-1"></i> Baseline: 2020
-                                    <br>
-                                    <i class="fas fa-weight me-1"></i> Reduction: 100%
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Progress</div>
-                                <div class="d-flex align-items-center">
-                                    <div class="progress-circle" style="--progress: 0.18">
-                                        <svg>
-                                            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
-                                            <circle class="progress-circle-fill" cx="40" cy="40" r="36" style="stroke: var(--light-green);"></circle>
-                                        </svg>
-                                        <div class="progress-circle-value">18%</div>
-                                    </div>
-                                    <div class="ms-3 flex-grow-1">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <span class="small">Current: 12,450 tCO₂e</span>
-                                            <span class="small fw-bold">2,450 tCO₂e reduced</span>
-                                        </div>
-                                        <div class="target-progress">
-                                            <div class="target-progress-bar" style="width: 18%; background-color: var(--light-green);"></div>
-                                        </div>
-                                        <div class="small text-muted">Target: 0 tCO₂e by 2050</div>
+
+                                <p class="text-muted small mb-3">{{ $t->description ?: 'No description provided.' }}</p>
+
+                                <div class="mb-3">
+                                    <div class="config-label">Target Details</div>
+                                    <div class="small">
+                                        <i class="fas fa-calendar me-1"></i> Deadline: {{ $t->target_year }}
+                                        <br>
+                                        <i class="fas fa-bullseye me-1"></i> Baseline: {{ $t->baseline_year ?: 'N/A' }}
+                                        <br>
+                                        <i class="fas fa-weight me-1"></i> Reduction: {{ $t->reduction_percent !== null ? number_format((float)$t->reduction_percent, 1) . '%' : 'N/A' }}
+                                        <br>
+                                        <i class="fas fa-layer-group me-1"></i> Scope: {{ $t->scope }}
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="target-actions">
-                                <a href="#" class="action-btn update-btn" onclick="updateProgress('net-zero-2050')">
-                                    <i class="fas fa-chart-line"></i> Update
-                                </a>
-                                <a href="#" class="action-btn report-btn" onclick="viewTargetReport('net-zero-2050')">
-                                    <i class="fas fa-file-alt"></i> Report
-                                </a>
-                                <a href="#" class="action-btn edit-btn" onclick="editTarget('net-zero-2050')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
+
+                                <div class="mb-3">
+                                    <div class="config-label">Progress (current year)</div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress-circle" style="--progress: {{ $progress01 }}">
+                                            <svg>
+                                                <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
+                                                <circle class="progress-circle-fill" cx="40" cy="40" r="36" style="stroke: {{ $strokeColor }};"></circle>
+                                            </svg>
+                                            <div class="progress-circle-value">{{ number_format($progress, 0) }}%</div>
+                                        </div>
+                                        <div class="ms-3 flex-grow-1">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <span class="small">Current: {{ number_format((float) ($t->current_emissions ?? 0), 2) }} tCO₂e</span>
+                                                <span class="small fw-bold">
+                                                    Baseline: {{ $t->baseline_emissions !== null ? number_format((float) $t->baseline_emissions, 2) : 'N/A' }} tCO₂e
+                                                </span>
+                                            </div>
+                                            <div class="target-progress">
+                                                <div class="target-progress-bar" style="width: {{ $progress }}%; background-color: {{ $strokeColor }};"></div>
+                                            </div>
+                                            <div class="small text-muted">Target: {{ $t->target_emissions !== null ? number_format((float) $t->target_emissions, 2) : 'N/A' }} tCO₂e by {{ $t->target_year }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="target-actions">
+                                    <a href="#" class="action-btn report-btn" onclick="viewTargetReport({{ $t->id }}); return false;">
+                                        <i class="fas fa-file-alt"></i> Report
+                                    </a>
+                                    <a href="#" class="action-btn edit-btn" onclick="editTarget({{ $t->id }}); return false;">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="#" class="action-btn delete-btn" onclick="deleteTarget({{ $t->id }}); return false;">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- SBTi Target -->
-                    <div class="col-md-6 mb-4">
-                        <div class="target-card on-track">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="mb-1">SBTi 1.5°C Aligned</h5>
-                                    <span class="goal-type type-sbt">
-                                        <i class="fas fa-temperature-low me-1"></i>Science-Based
-                                    </span>
-                                </div>
-                                <span class="target-status status-on-track">
-                                    <i class="fas fa-check-circle"></i>On Track
-                                </span>
-                            </div>
-                            
-                            <p class="text-muted small mb-3">Reduce Scope 1+2 emissions by 50% by 2030 (vs 2020 baseline)</p>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Target Details</div>
-                                <div class="small">
-                                    <i class="fas fa-calendar me-1"></i> Deadline: 2030
-                                    <br>
-                                    <i class="fas fa-bullseye me-1"></i> Baseline: 2020
-                                    <br>
-                                    <i class="fas fa-weight me-1"></i> Reduction: 50%
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Progress</div>
-                                <div class="d-flex align-items-center">
-                                    <div class="progress-circle" style="--progress: 0.32">
-                                        <svg>
-                                            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
-                                            <circle class="progress-circle-fill" cx="40" cy="40" r="36" style="stroke: var(--light-green);"></circle>
-                                        </svg>
-                                        <div class="progress-circle-value">32%</div>
-                                    </div>
-                                    <div class="ms-3 flex-grow-1">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <span class="small">Current: 7,970 tCO₂e</span>
-                                            <span class="small fw-bold">3,750 tCO₂e reduced</span>
-                                        </div>
-                                        <div class="target-progress">
-                                            <div class="target-progress-bar" style="width: 32%; background-color: var(--light-green);"></div>
-                                        </div>
-                                        <div class="small text-muted">Target: 5,860 tCO₂e by 2030</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="target-actions">
-                                <a href="#" class="action-btn update-btn" onclick="updateProgress('sbti-2030')">
-                                    <i class="fas fa-chart-line"></i> Update
-                                </a>
-                                <a href="#" class="action-btn report-btn" onclick="viewTargetReport('sbti-2030')">
-                                    <i class="fas fa-file-alt"></i> Report
-                                </a>
-                                <a href="#" class="action-btn edit-btn" onclick="editTarget('sbti-2030')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
+                    @empty
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0">
+                                No targets yet. Click <strong>Set New Target</strong> to create your first one.
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- At Risk Target -->
-                    <div class="col-md-6 mb-4">
-                        <div class="target-card at-risk">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="mb-1">Scope 3 Reduction</h5>
-                                    <span class="goal-type type-internal">
-                                        <i class="fas fa-truck me-1"></i>Internal Target
-                                    </span>
-                                </div>
-                                <span class="target-status status-at-risk">
-                                    <i class="fas fa-exclamation-triangle"></i>At Risk
-                                </span>
-                            </div>
-                            
-                            <p class="text-muted small mb-3">Reduce Scope 3 emissions by 25% by 2025 (vs 2022 baseline)</p>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Target Details</div>
-                                <div class="small">
-                                    <i class="fas fa-calendar me-1"></i> Deadline: 2025
-                                    <br>
-                                    <i class="fas fa-bullseye me-1"></i> Baseline: 2022
-                                    <br>
-                                    <i class="fas fa-weight me-1"></i> Reduction: 25%
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Progress</div>
-                                <div class="d-flex align-items-center">
-                                    <div class="progress-circle" style="--progress: 0.15">
-                                        <svg>
-                                            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
-                                            <circle class="progress-circle-fill" cx="40" cy="40" r="36" style="stroke: #ffc107;"></circle>
-                                        </svg>
-                                        <div class="progress-circle-value">15%</div>
-                                    </div>
-                                    <div class="ms-3 flex-grow-1">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <span class="small">Current: 4,480 tCO₂e</span>
-                                            <span class="small fw-bold">790 tCO₂e reduced</span>
-                                        </div>
-                                        <div class="target-progress">
-                                            <div class="target-progress-bar" style="width: 15%; background-color: #ffc107;"></div>
-                                        </div>
-                                        <div class="small text-muted">Target: 3,960 tCO₂e by 2025</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="target-actions">
-                                <a href="#" class="action-btn update-btn" onclick="updateProgress('scope3-2025')">
-                                    <i class="fas fa-chart-line"></i> Update
-                                </a>
-                                <a href="#" class="action-btn report-btn" onclick="viewTargetReport('scope3-2025')">
-                                    <i class="fas fa-file-alt"></i> Report
-                                </a>
-                                <a href="#" class="action-btn edit-btn" onclick="editTarget('scope3-2025')">
-                                    <i class="fas fa-edit"></i> Adjust
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Completed Target -->
-                    <div class="col-md-6 mb-4">
-                        <div class="target-card completed">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="mb-1">RE100 Commitment</h5>
-                                    <span class="goal-type type-carbon-neutral">
-                                        <i class="fas fa-sun me-1"></i>Carbon Neutral
-                                    </span>
-                                </div>
-                                <span class="target-status status-completed">
-                                    <i class="fas fa-trophy"></i>Completed
-                                </span>
-                            </div>
-                            
-                            <p class="text-muted small mb-3">Achieve 100% renewable electricity by 2023 for all facilities</p>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Target Details</div>
-                                <div class="small">
-                                    <i class="fas fa-calendar me-1"></i> Completed: 2023
-                                    <br>
-                                    <i class="fas fa-bullseye me-1"></i> Baseline: 2020
-                                    <br>
-                                    <i class="fas fa-weight me-1"></i> Reduction: 100% Scope 2
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <div class="config-label">Achievement</div>
-                                <div class="d-flex align-items-center">
-                                    <div class="progress-circle" style="--progress: 1">
-                                        <svg>
-                                            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
-                                            <circle class="progress-circle-fill" cx="40" cy="40" r="36" style="stroke: var(--success-teal);"></circle>
-                                        </svg>
-                                        <div class="progress-circle-value">100%</div>
-                                    </div>
-                                    <div class="ms-3 flex-grow-1">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <span class="small">Achieved: Oct 2023</span>
-                                            <span class="small fw-bold">4,120 tCO₂e eliminated</span>
-                                        </div>
-                                        <div class="target-progress">
-                                            <div class="target-progress-bar" style="width: 100%; background-color: var(--success-teal);"></div>
-                                        </div>
-                                        <div class="small text-muted">Target: 0 tCO₂e from purchased electricity</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="target-actions">
-                                <a href="#" class="action-btn report-btn" onclick="viewTargetReport('re100-2023')">
-                                    <i class="fas fa-file-alt"></i> Report
-                                </a>
-                                <a href="#" class="action-btn edit-btn" onclick="celebrateAchievement('re100-2023')">
-                                    <i class="fas fa-trophy"></i> Celebrate
-                                </a>
-                                <a href="#" class="action-btn" onclick="setNewTarget()">
-                                    <i class="fas fa-plus"></i> New Goal
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </div>
             
@@ -880,7 +755,7 @@
         </div>
         
         <!-- Scenario Modeling -->
-        <div class="row mt-5">
+        <div class="row mt-4">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header bg-white">
@@ -964,6 +839,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" id="targetId" value="">
                     <div class="target-wizard">
                         <div class="wizard-header">
                             <h6 class="mb-3">Target Configuration</h6>
@@ -978,11 +854,11 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Target Name</label>
-                                    <input type="text" class="form-control" placeholder="e.g., Net Zero 2050">
+                                    <input type="text" class="form-control" id="targetName" placeholder="e.g., Net Zero 2050">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Target Type</label>
-                                    <select class="form-select">
+                                    <select class="form-select" id="targetType">
                                         <option value="">Select type...</option>
                                         <option value="sbt">Science-Based Target (SBTi)</option>
                                         <option value="net-zero">Net Zero</option>
@@ -994,7 +870,7 @@
                                 
                                 <div class="col-md-6">
                                     <label class="form-label">Target Scope</label>
-                                    <select class="form-select">
+                                    <select class="form-select" id="targetScope">
                                         <option value="">Select scope...</option>
                                         <option value="1">Scope 1 Only</option>
                                         <option value="2">Scope 2 Only</option>
@@ -1005,19 +881,12 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Target Deadline</label>
-                                    <select class="form-select">
-                                        <option value="">Select deadline...</option>
-                                        <option value="2025">2025</option>
-                                        <option value="2030">2030</option>
-                                        <option value="2040">2040</option>
-                                        <option value="2050">2050</option>
-                                        <option value="custom">Custom Year</option>
-                                    </select>
+                                    <input type="number" class="form-control" id="targetDeadline" placeholder="e.g., 2030" min="2000" max="2100">
                                 </div>
                                 
                                 <div class="col-12">
                                     <label class="form-label">Target Description</label>
-                                    <textarea class="form-control" rows="3" placeholder="Describe your target and its importance..."></textarea>
+                                    <textarea class="form-control" rows="3" id="targetDescription" placeholder="Describe your target and its importance..."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1028,18 +897,12 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Baseline Year</label>
-                                    <select class="form-select">
-                                        <option value="">Select baseline year...</option>
-                                        <option value="2020">2020</option>
-                                        <option value="2021">2021</option>
-                                        <option value="2022">2022</option>
-                                        <option value="2023">2023</option>
-                                    </select>
+                                    <input type="number" class="form-control" id="baselineYear" placeholder="e.g., 2020" min="2000" max="2100">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Baseline Emissions</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" placeholder="0.00">
+                                        <input type="number" class="form-control" id="baselineEmissions" placeholder="0.00" min="0" step="0.01">
                                         <span class="input-group-text">tCO₂e</span>
                                     </div>
                                 </div>
@@ -1047,21 +910,21 @@
                                 <div class="col-md-6">
                                     <label class="form-label">Reduction Percentage</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" placeholder="0.00" min="0" max="100" step="0.1">
+                                        <input type="number" class="form-control" id="reductionPercent" placeholder="0.00" min="0" max="100" step="0.1">
                                         <span class="input-group-text">%</span>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Target Emissions</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" placeholder="0.00">
+                                        <input type="number" class="form-control" id="targetEmissions" placeholder="0.00" min="0" step="0.01">
                                         <span class="input-group-text">tCO₂e</span>
                                     </div>
                                 </div>
                                 
                                 <div class="col-12">
                                     <label class="form-label">Reduction Strategy</label>
-                                    <select class="form-select">
+                                    <select class="form-select" id="reductionStrategy">
                                         <option value="">Select primary strategy...</option>
                                         <option value="energy-efficiency">Energy Efficiency</option>
                                         <option value="renewables">Renewable Energy</option>
@@ -1080,7 +943,7 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Review Frequency</label>
-                                    <select class="form-select">
+                                    <select class="form-select" id="reviewFrequency">
                                         <option value="monthly">Monthly</option>
                                         <option value="quarterly" selected>Quarterly</option>
                                         <option value="biannual">Biannual</option>
@@ -1089,12 +952,16 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Responsible Person</label>
-                                    <select class="form-select">
-                                        <option value="">Select person...</option>
-                                        <option value="sarah">Sarah Manager</option>
-                                        <option value="john">John Analyst</option>
-                                        <option value="emma">Emma Operator</option>
-                                        <option value="team">Sustainability Team</option>
+                                    <input type="text" class="form-control" id="responsiblePerson" placeholder="e.g., Sustainability Team">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" id="targetStatus">
+                                        <option value="on-track" selected>On Track</option>
+                                        <option value="at-risk">At Risk</option>
+                                        <option value="off-track">Off Track</option>
+                                        <option value="completed">Completed</option>
                                     </select>
                                 </div>
                                 
@@ -1202,6 +1069,13 @@
 <script>
     let currentWizardStep = 1;
     let selectedScenario = 'baseline';
+    const targetsStoreUrl = "{{ route('targets.storeOrUpdate') }}";
+    const targetsBaseUrl = "{{ url('targets') }}";
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    // Chart data from backend
+    const progressChartData = @json($progressChartData);
+    const scenarioChartData = @json($scenarioChartData);
     
     // Initialize charts when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -1210,11 +1084,11 @@
             series: [
                 {
                     name: 'Actual Emissions',
-                    data: [15000, 14500, 14200, 13800, 13500, 13200, 12900, 12600, 12450, 12200, 12000, 11800]
+                    data: progressChartData.actual || []
                 },
                 {
                     name: 'Target Trajectory',
-                    data: [15000, 14500, 14000, 13500, 13000, 12500, 12000, 11500, 11000, 10500, 10000, 9500]
+                    data: progressChartData.target || []
                 }
             ],
             chart: {
@@ -1236,7 +1110,7 @@
                 width: 3
             },
             xaxis: {
-                categories: ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030', '2031'],
+                categories: progressChartData.years || [],
                 title: {
                     text: 'Year'
                 }
@@ -1245,8 +1119,7 @@
                 title: {
                     text: 'Emissions (tCO₂e)'
                 },
-                min: 8000,
-                max: 16000
+                min: 0
             },
             legend: {
                 position: 'top',
@@ -1260,9 +1133,14 @@
         const progressChart = new ApexCharts(document.querySelector("#targetProgressChart"), progressOptions);
         progressChart.render();
         
-        // Status Distribution Chart
+        // Status Distribution Chart (dynamic)
         const distributionOptions = {
-            series: [5, 2, 1, 1],
+            series: [
+                {{ (int)($statusDistribution['on-track'] ?? 0) }},
+                {{ (int)($statusDistribution['at-risk'] ?? 0) }},
+                {{ (int)($statusDistribution['off-track'] ?? 0) }},
+                {{ (int)($statusDistribution['completed'] ?? 0) }},
+            ],
             chart: {
                 height: 250,
                 type: 'donut',
@@ -1300,23 +1178,23 @@
             series: [
                 {
                     name: 'Baseline',
-                    data: [12450, 12000, 11600, 11200, 10800, 10400, 10000, 9600, 9200, 8800, 8400, 8240]
+                    data: scenarioChartData.baseline || []
                 },
                 {
                     name: 'Accelerated',
-                    data: [12450, 11500, 10600, 9800, 9100, 8500, 8000, 7600, 7200, 6800, 6400, 5860]
+                    data: scenarioChartData.accelerated || []
                 },
                 {
                     name: 'Innovative',
-                    data: [12450, 11000, 9800, 8700, 7800, 7100, 6500, 6000, 5600, 5300, 5000, 4920]
+                    data: scenarioChartData.innovative || []
                 },
                 {
                     name: 'Transformational',
-                    data: [12450, 10500, 8800, 7400, 6300, 5400, 4700, 4200, 3800, 3500, 3300, 3150]
+                    data: scenarioChartData.transformational || []
                 },
                 {
                     name: 'SBTi Target',
-                    data: [11720, 11720, 11720, 11720, 11720, 11720, 11720, 11720, 11720, 11720, 11720, 5860]
+                    data: scenarioChartData.sbtiTarget || []
                 }
             ],
             chart: {
@@ -1338,7 +1216,7 @@
                 width: 3
             },
             xaxis: {
-                categories: ['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032', '2033', '2034'],
+                categories: scenarioChartData.years || [],
                 title: {
                     text: 'Year'
                 }
@@ -1347,8 +1225,7 @@
                 title: {
                     text: 'Emissions (tCO₂e)'
                 },
-                min: 2000,
-                max: 13000
+                min: 0
             },
             legend: {
                 position: 'top',
@@ -1386,79 +1263,110 @@
         showToast(`Updating progress for ${targetId}`, 'info');
     }
     
-    function viewTargetReport(targetId) {
-        const details = `
-            <div class="row">
-                <div class="col-md-6">
-                    <h6>Target Information</h6>
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Target ID:</strong></td>
-                            <td><code>${targetId}</code></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Name:</strong></td>
-                            <td>Net Zero 2050</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Type:</strong></td>
-                            <td>Net Zero Target</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Deadline:</strong></td>
-                            <td>2050</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Status:</strong></td>
-                            <td><span class="badge bg-success">On Track</span></td>
-                        </tr>
-                    </table>
+    async function viewTargetReport(targetId) {
+        try {
+            const res = await fetch(`${targetsBaseUrl}/${targetId}`, { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.message || 'Failed to load target');
+
+            const statusBadge = data.status === 'on-track' ? 'bg-success' :
+                                data.status === 'at-risk' ? 'bg-warning text-dark' :
+                                data.status === 'off-track' ? 'bg-danger' : 'bg-info';
+
+            const details = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Target Information</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>ID:</strong></td><td><code>${data.id}</code></td></tr>
+                            <tr><td><strong>Name:</strong></td><td>${data.name}</td></tr>
+                            <tr><td><strong>Type:</strong></td><td>${data.type}</td></tr>
+                            <tr><td><strong>Scope:</strong></td><td>${data.scope}</td></tr>
+                            <tr><td><strong>Deadline:</strong></td><td>${data.target_year}</td></tr>
+                            <tr><td><strong>Status:</strong></td><td><span class="badge ${statusBadge}">${data.status}</span></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Metrics</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Baseline Year:</strong></td><td>${data.baseline_year ?? '-'}</td></tr>
+                            <tr><td><strong>Baseline Emissions:</strong></td><td>${data.baseline_emissions ?? '-'} tCO₂e</td></tr>
+                            <tr><td><strong>Target Emissions:</strong></td><td>${data.target_emissions ?? '-'} tCO₂e</td></tr>
+                            <tr><td><strong>Reduction %:</strong></td><td>${data.reduction_percent ?? '-'}%</td></tr>
+                        </table>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <h6>Progress Metrics</h6>
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Baseline (2020):</strong></td>
-                            <td>14,900 tCO₂e</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Current (2023):</strong></td>
-                            <td>12,450 tCO₂e</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Target (2050):</strong></td>
-                            <td>0 tCO₂e</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Reduction Achieved:</strong></td>
-                            <td>2,450 tCO₂e (16.4%)</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Annual Reduction Needed:</strong></td>
-                            <td>461 tCO₂e/year</td>
-                        </tr>
-                    </table>
+                <div class="mt-3">
+                    <h6>Description</h6>
+                    <div class="p-3 rounded" style="background-color:#f8f9fa;">${data.description ?? '—'}</div>
                 </div>
-            </div>
-            
-            <div class="mt-4">
-                <h6>Progress Chart</h6>
-                <div class="text-center p-4" style="background-color: #f8f9fa; border-radius: 8px;">
-                    <i class="fas fa-chart-line fa-2x text-muted mb-3"></i>
-                    <p class="text-muted">Detailed progress chart would appear here</p>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('targetDetailsContent').innerHTML = details;
-        const modal = new bootstrap.Modal(document.getElementById('targetDetailsModal'));
-        modal.show();
+            `;
+
+            document.getElementById('targetDetailsContent').innerHTML = details;
+            const modal = new bootstrap.Modal(document.getElementById('targetDetailsModal'));
+            modal.show();
+        } catch (e) {
+            showToast(e.message || 'Error loading target', 'error');
+        }
     }
     
-    function editTarget(targetId) {
-        const newTargetModal = new bootstrap.Modal(document.getElementById('newTargetModal'));
-        newTargetModal.show();
-        showToast(`Editing ${targetId}`, 'info');
+    async function editTarget(targetId) {
+        try {
+            const res = await fetch(`${targetsBaseUrl}/${targetId}`, { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.message || 'Failed to load target');
+
+            // Fill form fields
+            document.getElementById('targetId').value = data.id;
+            document.getElementById('targetName').value = data.name ?? '';
+            document.getElementById('targetType').value = data.type ?? '';
+            document.getElementById('targetScope').value = data.scope ?? '';
+            document.getElementById('targetDeadline').value = data.target_year ?? '';
+            document.getElementById('targetDescription').value = data.description ?? '';
+
+            document.getElementById('baselineYear').value = data.baseline_year ?? '';
+            document.getElementById('baselineEmissions').value = data.baseline_emissions ?? '';
+            document.getElementById('reductionPercent').value = data.reduction_percent ?? '';
+            document.getElementById('targetEmissions').value = data.target_emissions ?? '';
+            document.getElementById('reductionStrategy').value = data.strategy ?? '';
+
+            document.getElementById('reviewFrequency').value = data.review_frequency ?? 'quarterly';
+            document.getElementById('responsiblePerson').value = data.responsible_person ?? '';
+            document.getElementById('targetStatus').value = data.status ?? 'on-track';
+
+            // Reset wizard to step 1
+            currentWizardStep = 1;
+            document.querySelectorAll('.wizard-step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('wizardProgress').style.width = '33%';
+            document.getElementById('prevBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'block';
+            document.getElementById('saveBtn').style.display = 'none';
+
+            const newTargetModal = new bootstrap.Modal(document.getElementById('newTargetModal'));
+            newTargetModal.show();
+        } catch (e) {
+            showToast(e.message || 'Error loading target', 'error');
+        }
+    }
+
+    async function deleteTarget(targetId) {
+        if (!confirm('Delete this target?')) return;
+        try {
+            const res = await fetch(`${targetsBaseUrl}/${targetId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.message || 'Delete failed');
+            showToast('Target deleted', 'success');
+            window.location.reload();
+        } catch (e) {
+            showToast(e.message || 'Error deleting target', 'error');
+        }
     }
     
     function celebrateAchievement(targetId) {
@@ -1505,19 +1413,50 @@
     }
     
     function saveTarget() {
-        showToast('Target saved successfully!', 'success');
-        document.getElementById('newTargetModal').querySelector('.btn-close').click();
-        
-        // Reset wizard
-        currentWizardStep = 1;
-        document.querySelectorAll('.wizard-step').forEach(step => {
-            step.classList.remove('active');
+        // Basic required checks
+        const payload = {
+            id: document.getElementById('targetId').value || null,
+            name: document.getElementById('targetName').value,
+            type: document.getElementById('targetType').value,
+            scope: document.getElementById('targetScope').value,
+            target_year: document.getElementById('targetDeadline').value,
+            description: document.getElementById('targetDescription').value,
+            baseline_year: document.getElementById('baselineYear').value || null,
+            baseline_emissions: document.getElementById('baselineEmissions').value || null,
+            reduction_percent: document.getElementById('reductionPercent').value || null,
+            target_emissions: document.getElementById('targetEmissions').value || null,
+            strategy: document.getElementById('reductionStrategy').value || null,
+            review_frequency: document.getElementById('reviewFrequency').value,
+            responsible_person: document.getElementById('responsiblePerson').value || null,
+            status: document.getElementById('targetStatus').value,
+        };
+
+        // Convert blank strings to null for numeric fields
+        ['baseline_year','baseline_emissions','reduction_percent','target_emissions'].forEach(k => {
+            if (payload[k] === '') payload[k] = null;
         });
-        document.getElementById('step1').classList.add('active');
-        document.getElementById('wizardProgress').style.width = '33%';
-        document.getElementById('prevBtn').style.display = 'none';
-        document.getElementById('nextBtn').style.display = 'block';
-        document.getElementById('saveBtn').style.display = 'none';
+
+        fetch(targetsStoreUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.message || 'Validation error');
+            return data;
+        })
+        .then(() => {
+            showToast('Target saved successfully!', 'success');
+            window.location.reload();
+        })
+        .catch(err => {
+            showToast(err.message || 'Failed to save target', 'error');
+        });
     }
     
     // Scenario selection
@@ -1540,7 +1479,16 @@
     
     // Filter functionality
     document.getElementById('applyFilters').addEventListener('click', function() {
-        showToast('Filters applied successfully', 'success');
+        const status = document.getElementById('statusFilter').value;
+        const type = document.getElementById('typeFilter').value;
+        const scope = document.getElementById('scopeFilter').value;
+
+        const params = new URLSearchParams();
+        if (status && status !== 'all') params.set('status', status);
+        if (type && type !== 'all') params.set('type', type);
+        if (scope && scope !== 'all') params.set('scope', scope);
+
+        window.location.href = `${window.location.pathname}?${params.toString()}`;
     });
     
     document.getElementById('resetFilters').addEventListener('click', function() {
@@ -1554,13 +1502,11 @@
     function showAtRiskTargets() {
         document.getElementById('statusFilter').value = 'at-risk';
         document.getElementById('applyFilters').click();
-        showToast('Showing targets at risk', 'info');
     }
     
     function showAllTargets() {
         document.getElementById('statusFilter').value = 'all';
         document.getElementById('applyFilters').click();
-        showToast('Showing all targets', 'info');
     }
     
     function downloadTargetReport() {

@@ -5,6 +5,8 @@
         <!-- <h3><i class="fas fa-leaf me-2"></i> GHG Monitor</h3> -->
     </div>
     
+    @include('components.company-switcher')
+    
     <ul class="sidebar-menu">
         <li>
             <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">
@@ -62,7 +64,8 @@
         </li>
 
         <li>
-            <a href="#">
+            <a href="{{ route('data_source.index') }}" 
+               class="{{ request()->routeIs('data_source.*') ? 'active' : '' }}">
                 <i class="fas fa-database"></i>
                 <span>Data Source</span>
             </a>
@@ -70,9 +73,17 @@
 
         <li>
             <a href="{{ route('reports.index') }}" 
-               class="{{ request()->routeIs('reports.*') ? 'active' : '' }}">
+               class="{{ request()->routeIs('reports.index') || request()->routeIs('reports.statistics') || request()->routeIs('reports.data') ? 'active' : '' }}">
                 <i class="fas fa-file-alt"></i>
                 <span>Reports</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('reports.ghg_protocol') }}" 
+               class="{{ request()->routeIs('reports.ghg_protocol') ? 'active' : '' }}">
+                <i class="fas fa-chart-bar"></i>
+                <span>GHG Protocol Report</span>
             </a>
         </li>
 
@@ -81,6 +92,38 @@
                class="{{ request()->routeIs('targets.*') ? 'active' : '' }}">
                 <i class="fas fa-bullseye"></i>
                 <span>Targets & Goals</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('scope3.index') }}" 
+               class="{{ request()->routeIs('scope3.*') ? 'active' : '' }}">
+                <i class="fas fa-layer-group"></i>
+                <span>Scope 3 Emissions</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('suppliers.index') }}" 
+               class="{{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                <i class="fas fa-truck"></i>
+                <span>Suppliers</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('supplier_surveys.index') }}" 
+               class="{{ request()->routeIs('supplier_surveys.*') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Supplier Surveys</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('data_quality.index') }}" 
+               class="{{ request()->routeIs('data_quality.*') ? 'active' : '' }}">
+                <i class="fas fa-check-circle"></i>
+                <span>Data Quality</span>
             </a>
         </li>
 
@@ -126,6 +169,18 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('emission_sources.index') }}">
+                        <i class="fas fa-industry"></i>
+                        <span>Emission Sources</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('emission_factors.index') }}">
+                        <i class="fas fa-calculator"></i>
+                        <span>Emission Factors</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
@@ -137,13 +192,20 @@
                         <span>Reporting Settings</span>
                     </a>
                 </li>
-                <li>
-                    <a href="{{ route('users.index') }}" 
-                       class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
-                        <i class="fas fa-users-cog"></i>
-                        <span>Users</span>
-                    </a>
-                </li>
+        <li>
+            <a href="{{ route('companies.index') }}" 
+               class="{{ request()->routeIs('companies.*') ? 'active' : '' }}">
+                <i class="fas fa-building"></i>
+                <span>Companies</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('users.index') }}" 
+               class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
+                <i class="fas fa-users-cog"></i>
+                <span>Users</span>
+            </a>
+        </li>
                 <li>
                     <a href="{{ route('roles.index') }}">
                         <i class="fas fa-shield-alt"></i>

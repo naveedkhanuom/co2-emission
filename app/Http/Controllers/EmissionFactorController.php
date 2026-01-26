@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EmissionFactor;
 use App\Models\EmissionSource;
 use Illuminate\Http\Request;
-use Yajra\DataTables\DataTables;
+use Yajra\DataTables\Facades\DataTables;
 
 class EmissionFactorController extends Controller
 {

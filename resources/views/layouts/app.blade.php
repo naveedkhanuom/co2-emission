@@ -12,6 +12,16 @@
     <!-- Bootstrap 5 JS Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- jQuery (required for DataTables + Select2 in some pages) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+    <!-- Bootstrap Icons (used by some CRUD action buttons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -44,7 +54,6 @@
         }
         
         /* Sidebar Styles */
-        /* Sidebar Styles */
         #sidebar {
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
@@ -55,9 +64,35 @@
             width: 250px;
             z-index: 1000;
             padding-top: 0px;
+            padding-bottom: 20px;
             transition: all 0.3s;
             overflow-y: auto;
             overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(46, 125, 50, 0.3) transparent;
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom Scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #sidebar::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 10px 0;
+        }
+        
+        #sidebar::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(46, 125, 50, 0.4) 0%, rgba(46, 125, 50, 0.6) 100%);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #sidebar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(46, 125, 50, 0.6) 0%, rgba(46, 125, 50, 0.8) 100%);
+            border: 1px solid rgba(46, 125, 50, 0.2);
         }
         
         .sidebar-header {
@@ -124,48 +159,138 @@
         
         /* Top Navigation */
         .top-navbar {
-            background-color: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            padding: 15px 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            padding: 10px 20px;
             position: sticky;
-            top: 0;
+            top: 20px;
             z-index: 999;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-radius: 16px;
+            margin: 0 0 20px 0;
+            border: 1px solid rgba(46, 125, 50, 0.08);
+        }
+        
+        .top-navbar .btn {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
+            border: none;
+            color: white;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.2);
+        }
+        
+        .top-navbar .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+            background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
         }
         
         .top-navbar h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--primary-green);
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin: 0;
         }
         
         .user-profile {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 18px;
         }
         
         .notifications {
             position: relative;
             cursor: pointer;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(46, 125, 50, 0.08);
+            transition: all 0.3s ease;
+            color: var(--gray-600);
+        }
+        
+        .notifications:hover {
+            background: rgba(46, 125, 50, 0.15);
+            color: var(--primary-green);
+            transform: translateY(-2px);
+        }
+        
+        .notifications i {
+            font-size: 18px;
         }
         
         .notification-badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
-            background-color: var(--danger-red);
+            top: 6px;
+            right: 6px;
+            background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
             color: white;
             border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 2px 6px rgba(211, 47, 47, 0.4);
+            border: 2px solid white;
+        }
+        
+        .user-profile .dropdown > a {
+            padding: 8px 16px 8px 8px;
+            border-radius: 12px;
+            background: rgba(46, 125, 50, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .user-profile .dropdown > a:hover {
+            background: rgba(46, 125, 50, 0.1);
+            border-color: rgba(46, 125, 50, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.1);
+        }
+        
+        .user-profile .dropdown > a .rounded-circle {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.25);
+        }
+        
+        .user-profile .dropdown-menu {
+            border: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-radius: 12px;
+            padding: 8px;
+            margin-top: 8px;
+            min-width: 220px;
+        }
+        
+        .user-profile .dropdown-item {
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .user-profile .dropdown-item:hover {
+            background: rgba(46, 125, 50, 0.1);
+            color: var(--primary-green);
+        }
+        
+        .user-profile .dropdown-item i {
+            width: 20px;
         }
         
         /* KPI Cards */
@@ -297,17 +422,31 @@
         
         /* Toggle button for mobile */
         #sidebarCollapse {
-            background-color: var(--primary-green);
-            border: none;
-            color: white;
-            border-radius: 5px;
-            padding: 8px 12px;
             display: none;
         }
         
         @media (max-width: 768px) {
             #sidebarCollapse {
-                display: block;
+                display: flex;
+            }
+            
+            .top-navbar {
+                padding: 14px 18px;
+                margin: 0 0 15px 0;
+                top: 10px;
+            }
+            
+            .top-navbar h1 {
+                font-size: 1.3rem;
+            }
+            
+            .user-profile {
+                gap: 12px;
+            }
+            
+            .notifications {
+                width: 40px;
+                height: 40px;
             }
         }
 

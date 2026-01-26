@@ -21,6 +21,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'company_id',
+        'is_super_admin',
+        'company_access',
     ];
 
     /**
@@ -43,6 +46,54 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_super_admin' => 'boolean',
+            'company_access' => 'array',
         ];
+    }
+
+    /**
+     * Get the company that owns the user.
+     */
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Get all companies the user can access.
+     */
+    public function accessibleCompanies()
+    {
+        if ($this->is_super_admin) {
+            return Company::query();
+        }
+        
+        $companyIds = $this->company_access ?? [];
+        if ($this->company_id) {
+            $companyIds[] = $this->company_id;
+        }
+        
+        if (empty($companyIds)) {
+            // Return empty query if no companies assigned
+            return Company::whereRaw('1 = 0');
+        }
+        
+        return Company::whereIn('id', array_unique($companyIds));
+    }
+
+    /**
+     * Check if user can access a company.
+     */
+    public function canAccessCompany($companyId)
+    {
+        if ($this->is_super_admin) {
+            return true;
+        }
+        
+        if ($this->company_id == $companyId) {
+            return true;
+        }
+        
+        return in_array($companyId, $this->company_access ?? []);
     }
 }
