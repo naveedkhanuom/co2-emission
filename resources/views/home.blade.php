@@ -587,6 +587,31 @@
                         <option value="3" {{ $dateRange == '3' ? 'selected' : '' }}>Last Quarter</option>
                         <option value="custom" {{ $dateRange == 'custom' ? 'selected' : '' }}>Custom Range</option>
                     </select>
+                    <div id="customDateRangeWrap" class="mt-2" style="display: none;">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="customStartDate"
+                                    value="{{ request('start_date', '') }}"
+                                    aria-label="Start date"
+                                >
+                            </div>
+                            <div class="col-6">
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="customEndDate"
+                                    value="{{ request('end_date', '') }}"
+                                    aria-label="End date"
+                                >
+                            </div>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Select start and end date (inclusive).
+                        </div>
+                    </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-3">
                     <div class="filter-label"><i class="fas fa-building me-2"></i>Facility</div>
@@ -943,8 +968,8 @@
                         color: '#dee2e6'
                     }
                     @if(count($monthlyTrend) > 0)
-                    ,min: {{ floor(min($monthlyTrend) * 0.85) }}
-                    ,max: {{ ceil(max($monthlyTrend) * 1.15) }}
+                    ,min: {{ max(0, floor(min($monthlyTrend) * 0.85)) }}
+                    ,max: {{ max(1, ceil(max($monthlyTrend) * 1.15)) }}
                     @endif
                 },
                 legend: {
@@ -1024,9 +1049,11 @@
             const trendChart = new ApexCharts(document.querySelector("#trendChart"), trendOptions);
             trendChart.render();
             
-            // Chart 2: Emissions by Scope
+            // Chart 2: Emissions by Scope (use JSON so locale/decimals never break JS)
+            const scopeSeries = @json([(float)$scope1Emissions, (float)$scope2Emissions, (float)$scope3Emissions]);
+            const scopeTotal = {{ (float)$totalEmissions }};
             const scopeOptions = {
-                series: [{{ number_format($scope1Emissions, 2) }}, {{ number_format($scope2Emissions, 2) }}, {{ number_format($scope3Emissions, 2) }}],
+                series: scopeSeries,
                 chart: {
                     type: 'donut',
                     height: 360,
@@ -1055,7 +1082,7 @@
                                     fontSize: '14px',
                                     fontWeight: 600,
                                     formatter: function() {
-                                        return '{{ number_format($totalEmissions, 2) }}';
+                                        return scopeTotal.toFixed(2);
                                     }
                                 },
                                 value: {
@@ -1279,6 +1306,8 @@
                 const facility = document.getElementById('facilityFilter').value;
                 const department = document.getElementById('departmentFilter').value;
                 const category = document.getElementById('categoryFilter').value;
+                const customStartDate = document.getElementById('customStartDate') ? document.getElementById('customStartDate').value : '';
+                const customEndDate = document.getElementById('customEndDate') ? document.getElementById('customEndDate').value : '';
                 
                 // Build query string
                 const params = new URLSearchParams();
@@ -1286,6 +1315,10 @@
                 if (facility) params.append('facility', facility);
                 if (department) params.append('department', department);
                 if (category) params.append('category', category);
+                if (dateRange === 'custom') {
+                    if (customStartDate) params.append('start_date', customStartDate);
+                    if (customEndDate) params.append('end_date', customEndDate);
+                }
                 
                 // Redirect with filter parameters
                 const url = '{{ route("home") }}' + (params.toString() ? '?' + params.toString() : '');
@@ -1297,6 +1330,16 @@
                 // Redirect to home without any parameters
                 window.location.href = '{{ route("home") }}';
             });
+
+            // Custom date range UI toggle
+            const dateRangeFilterEl = document.getElementById('dateRangeFilter');
+            const customDateRangeWrap = document.getElementById('customDateRangeWrap');
+            const toggleCustomRange = () => {
+                if (!dateRangeFilterEl || !customDateRangeWrap) return;
+                customDateRangeWrap.style.display = (dateRangeFilterEl.value === 'custom') ? 'block' : 'none';
+            };
+            toggleCustomRange();
+            dateRangeFilterEl.addEventListener('change', toggleCustomRange);
         });
     </script>
 @endsection

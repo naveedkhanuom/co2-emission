@@ -24,10 +24,29 @@ class HomeController extends Controller
         $facilityFilter = $request->get('facility', '');
         $departmentFilter = $request->get('department', '');
         $categoryFilter = $request->get('category', '');
+        $customStartDate = $request->get('start_date');
+        $customEndDate = $request->get('end_date');
+
+        $parsedCustomStart = null;
+        $parsedCustomEnd = null;
+        if (!empty($customStartDate)) {
+            try {
+                $parsedCustomStart = Carbon::parse($customStartDate)->startOfDay();
+            } catch (\Throwable $e) {
+                $parsedCustomStart = null;
+            }
+        }
+        if (!empty($customEndDate)) {
+            try {
+                $parsedCustomEnd = Carbon::parse($customEndDate)->endOfDay();
+            } catch (\Throwable $e) {
+                $parsedCustomEnd = null;
+            }
+        }
         
         // Build base query with filters
         // Note: EmissionRecord uses HasCompanyScope trait, so it's automatically scoped to current company
-        $baseQuery = function() use ($dateRange, $facilityFilter, $departmentFilter, $categoryFilter) {
+        $baseQuery = function() use ($dateRange, $facilityFilter, $departmentFilter, $categoryFilter, $parsedCustomStart, $parsedCustomEnd) {
             $query = EmissionRecord::where('status', 'active');
             
             // Apply date range filter
@@ -36,9 +55,16 @@ class HomeController extends Controller
             } elseif ($dateRange === '3') {
                 $query->where('entry_date', '>=', Carbon::now()->subMonths(3)->startOfMonth());
             } elseif ($dateRange === 'custom') {
-                // Custom range would need additional parameters
-                // For now, default to last 12 months
-                $query->where('entry_date', '>=', Carbon::now()->subMonths(12)->startOfMonth());
+                if ($parsedCustomStart && $parsedCustomEnd) {
+                    // If user swapped dates, normalize them.
+                    if ($parsedCustomEnd->lt($parsedCustomStart)) {
+                        [$parsedCustomStart, $parsedCustomEnd] = [$parsedCustomEnd->copy()->startOfDay(), $parsedCustomStart->copy()->endOfDay()];
+                    }
+                    $query->whereBetween('entry_date', [$parsedCustomStart, $parsedCustomEnd]);
+                } else {
+                    // If custom dates not provided/invalid, fallback to last 12 months
+                    $query->where('entry_date', '>=', Carbon::now()->subMonths(12)->startOfMonth());
+                }
             } else {
                 // Default: last 12 months
                 $query->where('entry_date', '>=', Carbon::now()->subMonths(12)->startOfMonth());
@@ -262,26 +288,38 @@ class HomeController extends Controller
         $scope2Change = $prevScope2 > 0 ? (($currentScope2 - $prevScope2) / $prevScope2) * 100 : ($currentScope2 > 0 ? 100 : 0);
         $scope3Change = $prevScope3 > 0 ? (($currentScope3 - $prevScope3) / $prevScope3) * 100 : ($currentScope3 > 0 ? 100 : 0);
         
-        // Monthly trend data (last 12 months)
+        // Resolve effective date range for monthly trend (same logic as baseQuery)
+        $trendStart = Carbon::now()->subMonths(12)->startOfMonth();
+        $trendEnd = Carbon::now()->endOfMonth();
+        if ($dateRange === 'ytd') {
+            $trendStart = Carbon::now()->startOfYear();
+            $trendEnd = Carbon::now()->endOfMonth();
+        } elseif ($dateRange === '3') {
+            $trendStart = Carbon::now()->subMonths(3)->startOfMonth();
+        } elseif ($dateRange === 'custom' && $parsedCustomStart && $parsedCustomEnd) {
+            $trendStart = $parsedCustomStart->copy()->startOfMonth();
+            $trendEnd = $parsedCustomEnd->copy()->endOfMonth();
+            if ($trendEnd->lt($trendStart)) {
+                $trendEnd = $trendStart->copy()->endOfMonth();
+            }
+        }
+
+        // Monthly trend: one point per month within the effective range
         $monthlyTrend = [];
         $monthlyTarget = [];
         $months = [];
-        
-        // Calculate average monthly emission for target calculation
-        $avgMonthlyEmission = $totalEmissions > 0 ? ($totalEmissions / 12) : 0;
-        
-        for ($i = 11; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
-            $monthStart = $date->copy()->startOfMonth();
-            $monthEnd = $date->copy()->endOfMonth();
-            $months[] = $date->format('M');
-            
-            // For monthly trend, always show last 12 months but apply other filters
-            // Automatically scoped to current company via HasCompanyScope trait
+        $cursor = $trendStart->copy();
+        $monthIndex = 0;
+        $numMonths = max(1, (int) $cursor->diffInMonths($trendEnd) + 1);
+        $avgMonthlyEmission = $numMonths > 0 && $totalEmissions > 0 ? ($totalEmissions / $numMonths) : 0;
+
+        while ($cursor->lte($trendEnd)) {
+            $monthStart = $cursor->copy()->startOfMonth();
+            $monthEnd = $cursor->copy()->endOfMonth();
+            $months[] = $cursor->format('M Y');
+
             $monthQuery = EmissionRecord::where('status', 'active')
                 ->whereBetween('entry_date', [$monthStart, $monthEnd]);
-            
-            // Apply filters (except date range - monthly chart always shows last 12 months)
             if (!empty($facilityFilter)) {
                 $facility = Facilities::find($facilityFilter);
                 if ($facility) {
@@ -297,19 +335,19 @@ class HomeController extends Controller
             if (!empty($categoryFilter)) {
                 $monthQuery->where('emission_source', $categoryFilter);
             }
-            
             $monthTotal = $monthQuery->sum('co2e_value');
-            
             $monthlyTrend[] = round((float) $monthTotal, 2);
-            // Target: 5% reduction goal (example calculation)
-            $reductionPercent = ($i * 0.005); // Gradually reduce target by 0.5% per month
+            $reductionPercent = $monthIndex * 0.005;
             $monthlyTarget[] = round($avgMonthlyEmission * (1 - $reductionPercent), 2);
+
+            $cursor->addMonth();
+            $monthIndex++;
         }
-        
-        // Ensure arrays are not empty for charts
+
         if (empty($monthlyTrend)) {
-            $monthlyTrend = array_fill(0, 12, 0);
-            $monthlyTarget = array_fill(0, 12, 0);
+            $monthlyTrend = [0];
+            $monthlyTarget = [0];
+            $months = [$trendStart->format('M Y')];
         }
         
         // Emissions by source (top 10) with filters
@@ -377,7 +415,9 @@ class HomeController extends Controller
             'dateRange',
             'facilityFilter',
             'departmentFilter',
-            'categoryFilter'
+            'categoryFilter',
+            'customStartDate',
+            'customEndDate'
         ));
     }
 }
