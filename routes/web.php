@@ -26,6 +26,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierSurveyController;
 use App\Http\Controllers\EioFactorController;
 use App\Http\Controllers\DataQualityController;
+use App\Http\Controllers\CountryController;
 
 
 Auth::routes();
@@ -94,6 +95,15 @@ Route::prefix('emission-factors')->name('emission_factors.')->group(function () 
     Route::get('/{id}', [EmissionFactorController::class, 'show']);
     Route::post('/store-or-update', [EmissionFactorController::class, 'storeOrUpdate'])->name('storeOrUpdate');
     Route::delete('/{id}', [EmissionFactorController::class, 'destroy']);
+});
+
+// Countries (Settings)
+Route::prefix('countries')->name('countries.')->middleware('auth')->group(function () {
+    Route::get('/', [CountryController::class, 'index'])->name('index');
+    Route::get('/data', [CountryController::class, 'getData'])->name('data');
+    Route::get('/{id}', [CountryController::class, 'show']);
+    Route::post('/store-or-update', [CountryController::class, 'storeOrUpdate'])->name('storeOrUpdate');
+    Route::delete('/{id}', [CountryController::class, 'destroy']);
 });
 
 

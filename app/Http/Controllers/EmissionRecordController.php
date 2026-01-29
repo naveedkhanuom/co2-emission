@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\EmissionRecord;
 use App\Models\EmissionSource;
 use App\Models\EmissionFactor;
+use App\Models\FactorOrganization;
 use App\Models\Company;
 use App\Models\Site;
+use App\Models\Country;
 use Illuminate\Http\Request;
 use DataTables;
 use Illuminate\Support\Facades\Storage;
@@ -73,13 +75,39 @@ class EmissionRecordController extends Controller
             $query->where('scope', 3)->orWhereNull('scope');
         })->with('emissionFactors')->orderBy('name')->get();
 
-        // Build emission factors map for JavaScript (by source name)
+        $factorOrganizations = FactorOrganization::orderBy('name')->get();
+        $defaultOrganizationId = FactorOrganization::where('code', 'IPCC')->value('id') ?: $factorOrganizations->first()?->id;
+        $countrySpecificOrgId = FactorOrganization::where('code', 'COUNTRY')->value('id');
+
+        // Company country (used to prefer country-specific factors when available)
+        $company = $this->getCurrentCompanyId() ? Company::find($this->getCurrentCompanyId()) : null;
+        $companyCountryDisplay = $company?->country ?? null;
+        $companyCountryCode = function_exists('country_to_factor_region')
+            ? country_to_factor_region($companyCountryDisplay)
+            : 'default';
+
+        // Countries list for country-specific factors (Settings → Countries)
+        $countries = Country::where('is_active', true)->orderBy('name')->get();
+
+        // Build emission factors map for JavaScript:
+        //   [sourceName][orgId] => [ { region, unit, factor }, ... ]
+        // Front-end will pick: country-specific (if selected) -> default -> first
         $emissionFactorsMap = [];
-        $allSources = EmissionSource::with('emissionFactors')->get();
+        $allSources = EmissionSource::with(['emissionFactors' => function ($q) {
+            $q->orderByRaw("CASE WHEN COALESCE(region,'default') = 'default' THEN 1 ELSE 0 END")
+              ->orderBy('id', 'desc');
+        }, 'emissionFactors.country'])->get();
+
         foreach ($allSources as $source) {
-            $factor = $source->emissionFactors->first();
-            if ($factor) {
-                $emissionFactorsMap[$source->name] = [
+            foreach ($source->emissionFactors as $factor) {
+                $orgId = $factor->organization_id ?: 0;
+                $key = (string) $orgId;
+                if (!isset($emissionFactorsMap[$source->name][$key])) {
+                    $emissionFactorsMap[$source->name][$key] = [];
+                }
+                $emissionFactorsMap[$source->name][$key][] = [
+                    // Prefer Countries module code when set, else fallback to legacy region string
+                    'region' => $factor->country?->code ?? ($factor->region ?? 'default'),
                     'unit' => $factor->unit,
                     'factor' => (float) $factor->factor_value,
                 ];
@@ -100,12 +128,18 @@ class EmissionRecordController extends Controller
             'scope2Sources' => $scope2Sources,
             'scope3Sources' => $scope3Sources,
             'emissionFactorsMap' => $emissionFactorsMap,
+            'factorOrganizations' => $factorOrganizations,
+            'defaultOrganizationId' => $defaultOrganizationId,
             'allEmissionSourceNames' => $allEmissionSourceNames,
             'emissionSourceNamesByScope' => [
                 1 => $scope1Sources->pluck('name')->values()->toArray(),
                 2 => $scope2Sources->pluck('name')->values()->toArray(),
                 3 => $scope3Sources->pluck('name')->values()->toArray(),
             ],
+            'companyCountryCode' => $companyCountryCode,
+            'companyCountryDisplay' => $companyCountryDisplay,
+            'countries' => $countries,
+            'countrySpecificOrgId' => $countrySpecificOrgId,
         ]);
     }
 
@@ -125,13 +159,18 @@ class EmissionRecordController extends Controller
             $query->where('scope', 3)->orWhereNull('scope');
         })->with('emissionFactors')->orderBy('name')->get();
         
-        // Build emission factors map for JavaScript
+        $factorOrganizations = FactorOrganization::orderBy('name')->get();
+        $defaultOrganizationId = FactorOrganization::where('code', 'IPCC')->value('id') ?: $factorOrganizations->first()?->id;
+
+        // Build emission factors map for JavaScript: [sourceName][orgId] => { unit, factor }
         $emissionFactorsMap = [];
-        $allSources = EmissionSource::with('emissionFactors')->get();
+        $allSources = EmissionSource::with(['emissionFactors' => function ($q) {
+            $q->orderBy('id', 'desc');
+        }])->get();
         foreach ($allSources as $source) {
-            $factor = $source->emissionFactors->first(); // Get first factor (can be enhanced to select by region)
-            if ($factor) {
-                $emissionFactorsMap[$source->name] = [
+            foreach ($source->emissionFactors as $factor) {
+                $orgId = $factor->organization_id ?: 0;
+                $emissionFactorsMap[$source->name][(string) $orgId] = [
                     'unit' => $factor->unit,
                     'factor' => (float) $factor->factor_value,
                 ];
@@ -143,6 +182,8 @@ class EmissionRecordController extends Controller
             'scope2Sources' => $scope2Sources,
             'scope3Sources' => $scope3Sources,
             'emissionFactorsMap' => $emissionFactorsMap,
+            'factorOrganizations' => $factorOrganizations,
+            'defaultOrganizationId' => $defaultOrganizationId,
         ]);
     }
 
@@ -184,6 +225,7 @@ class EmissionRecordController extends Controller
                     'siteSelect'            => 'nullable|exists:sites,id',
                     'scopeSelect'           => 'required|in:1,2,3',
                     'emissionSourceSelect'  => 'required|string|max:100',
+                    'emission_source_other' => 'required_if:emissionSourceSelect,__other__|nullable|string|max:255',
                     'co2eValue'             => 'required|numeric|min:0',
                     'confidenceLevel'       => 'required|in:low,medium,high',
                     'departmentSelect'      => 'nullable|string|max:100',
@@ -196,6 +238,7 @@ class EmissionRecordController extends Controller
                     'data_quality'          => 'nullable|in:primary,secondary,estimated',
                     'spend_amount'          => 'nullable|numeric|min:0',
                     'spend_currency'        => 'nullable|string|size:3',
+                    'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
                 ]);
 
                 if ($validator->fails()) {
@@ -231,14 +274,25 @@ class EmissionRecordController extends Controller
 
             // Save all entries
             foreach ($entries as $data) {
+                $emissionSourceName = ($data['emissionSourceSelect'] ?? '') === '__other__'
+                    ? trim($data['emission_source_other'] ?? '')
+                    : ($data['emissionSourceSelect'] ?? '');
+                if ($emissionSourceName !== '') {
+                    EmissionSource::firstOrCreate(
+                        ['name' => $emissionSourceName],
+                        ['scope' => (int) ($data['scopeSelect'] ?? 1), 'description' => 'Added from emission record']
+                    );
+                }
+
                 $entryData = [
                     'company_id'        => $companyId,
                     'entry_date'        => $data['entryDate'],
                     'facility'          => $data['facilitySelect'],
                     'site_id'           => !empty($data['siteSelect']) ? $data['siteSelect'] : null,
                     'scope'             => $data['scopeSelect'],
-                    'emission_source'   => $data['emissionSourceSelect'],
+                    'emission_source'   => $emissionSourceName,
                     'co2e_value'        => $data['co2eValue'],
+                    'factor_organization_id' => $data['factor_organization_id'] ?? null,
                     'confidence_level'  => $data['confidenceLevel'] ?? 'medium',
                     'department'        => $data['departmentSelect'] ?? null,
                     'data_source'       => $data['dataSource'] ?? 'manual',
@@ -273,9 +327,11 @@ class EmissionRecordController extends Controller
             'siteSelect'            => 'nullable|exists:sites,id',
             'scopeSelect'           => 'required|in:1,2,3',
             'emissionSourceSelect'  => 'required|string|max:100',
+            'emission_source_other' => 'required_if:emissionSourceSelect,__other__|nullable|string|max:255',
             'activityData'          => 'required|numeric|min:0',
             'emissionFactor'        => 'required|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
+            'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
             'confidenceLevel'       => 'required|in:low,medium,high',
             'departmentSelect'      => 'nullable|string|max:100',
             'dataSource'            => 'required|in:manual,import,api,meter,invoice,estimate',
@@ -315,6 +371,17 @@ class EmissionRecordController extends Controller
             }
         }
 
+        // Resolve emission source name (allow "Other" with free-text)
+        $emissionSourceName = ($request->emissionSourceSelect ?? '') === '__other__'
+            ? trim($request->emission_source_other ?? '')
+            : ($request->emissionSourceSelect ?? '');
+        if ($emissionSourceName !== '') {
+            EmissionSource::firstOrCreate(
+                ['name' => $emissionSourceName],
+                ['scope' => (int) ($request->scopeSelect ?? 1), 'description' => 'Added from emission record']
+            );
+        }
+
         // Prepare data array
         $data = [
             'company_id'        => $companyId,
@@ -322,9 +389,10 @@ class EmissionRecordController extends Controller
             'facility'          => $request->facilitySelect,
             'site_id'           => $request->siteSelect ?: null,
             'scope'             => $request->scopeSelect,
-            'emission_source'   => $request->emissionSourceSelect,
+            'emission_source'   => $emissionSourceName,
             'activity_data'     => $request->activityData,
             'emission_factor'   => $request->emissionFactor,
+            'factor_organization_id' => $request->factor_organization_id,
             'co2e_value'        => $request->co2eValue,
             'confidence_level'  => $request->confidenceLevel,
             'department'        => $request->departmentSelect ?: null,
@@ -408,6 +476,7 @@ class EmissionRecordController extends Controller
             'activityData'          => 'required|numeric|min:0',
             'emissionFactor'        => 'required|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
+            'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
             'confidenceLevel'       => 'required|in:low,medium,high',
             'departmentSelect'      => 'nullable|string|max:100',
             'dataSource'            => 'required|in:manual,import,api,meter,invoice,estimate',
@@ -442,6 +511,7 @@ class EmissionRecordController extends Controller
             'emission_source'   => $request->emissionSourceSelect,
             'activity_data'     => $request->activityData,
             'emission_factor'   => $request->emissionFactor,
+            'factor_organization_id' => $request->factor_organization_id,
             'co2e_value'        => $request->co2eValue,
             'confidence_level'  => $request->confidenceLevel,
             'department'        => $request->departmentSelect ?: null,
@@ -562,6 +632,7 @@ class EmissionRecordController extends Controller
             'activityData'          => 'required|numeric|min:0',
             'emissionFactor'        => 'required|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
+            'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
             'confidenceLevel'       => 'required|in:low,medium,high',
             'departmentSelect'      => 'nullable|string|max:100',
             'dataSource'            => 'required|in:manual,import,api,meter,invoice,estimate',
@@ -608,6 +679,7 @@ class EmissionRecordController extends Controller
             'emission_source'   => $request->emissionSourceSelect,
             'activity_data'     => $request->activityData,
             'emission_factor'   => $request->emissionFactor,
+            'factor_organization_id' => $request->factor_organization_id,
             'co2e_value'        => $request->co2eValue,
             'confidence_level'  => $request->confidenceLevel,
             'department'        => $request->departmentSelect ?: null,

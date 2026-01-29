@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Safety: avoid failing if table already exists (common in dev DBs)
+        if (Schema::hasTable('supplier_surveys')) {
+            return;
+        }
+
         Schema::create('supplier_surveys', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained()->onDelete('cascade');
@@ -27,7 +32,8 @@ return new class extends Migration
             $table->timestamp('reminder_sent_at')->nullable();
             $table->integer('reminder_count')->default(0);
             $table->text('notes')->nullable();
-            $table->foreignId('created_by')->constrained('users')->onDelete('set null');
+            // created_by can be null if user deleted
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             
             $table->index('company_id');

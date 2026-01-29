@@ -181,6 +181,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('countries.index') }}">
+                        <i class="fas fa-flag"></i>
+                        <span>Countries</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>

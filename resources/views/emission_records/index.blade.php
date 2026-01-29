@@ -220,10 +220,75 @@
                                             <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
                                         @endforeach
                                     </optgroup>
+                                    <option value="__other__">Other (specify below)</option>
+                                </select>
+                                <div id="emissionSourceOtherWrapper" class="mt-2" style="display: none;">
+                                    <input type="text"
+                                           class="form-control form-control-lg"
+                                           id="emissionSourceOther"
+                                           name="emission_source_other"
+                                           placeholder="e.g. Hydrogen, Biogas, Custom fuel"
+                                           maxlength="255"
+                                           autocomplete="off">
+                                    <div class="field-help mt-1">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        Type the emission source name if it is not in the list
+                                    </div>
+                                </div>
+                                <div class="field-help d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
+                                    <span>
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        Select the specific source of emissions
+                                    </span>
+                                    <a href="#" class="small text-primary" id="addCustomSourceLink" onclick="openCustomSourceModal(event)">
+                                        <i class="fas fa-plus-circle me-1"></i>Add custom source (saved to list)
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-field-wrapper">
+                                <label class="form-label required-label">
+                                    <i class="fas fa-book me-1"></i>Factor Organization
+                                </label>
+                                <select class="form-select form-select-lg"
+                                        id="factorOrganizationSelect"
+                                        name="factor_organization_id"
+                                        required>
+                                    @foreach(($factorOrganizations ?? collect()) as $org)
+                                        @if(($org->code ?? '') === 'COUNTRY')
+                                            <option value="{{ $org->id }}" data-factor-mode="country">{{ $org->code }} - {{ $org->name }}</option>
+                                        @else
+                                            <option value="{{ $org->id }}" @if(($defaultOrganizationId ?? null) == $org->id) selected @endif>
+                                                {{ $org->code }} - {{ $org->name }}
+                                            </option>
+                                        @endif
+                                    @endforeach
                                 </select>
                                 <div class="field-help">
                                     <i class="fas fa-lightbulb me-1"></i>
-                                    Select the specific source of emissions
+                                    Select which standard to use (e.g., DEFRA / EPA / IPCC)
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6" id="factorCountryWrapper" style="display:none;">
+                            <div class="form-field-wrapper">
+                                <label class="form-label required-label">
+                                    <i class="fas fa-flag me-1"></i>Country
+                                </label>
+                                <select class="form-select form-select-lg"
+                                        id="factorCountrySelect"
+                                        onchange="updateUnitOptions();">
+                                    <option value="">Select country…</option>
+                                    @foreach(($countries ?? collect()) as $c)
+                                        <option value="{{ $c->code }}">{{ $c->name }} ({{ $c->code }})</option>
+                                    @endforeach
+                                </select>
+                                <div class="field-help">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Select the country used for country-specific emission factors.
                                 </div>
                             </div>
                         </div>
@@ -731,9 +796,14 @@
                 </div>
             </div>
             
-            <div class="alert alert-info mb-4">
-                <i class="fas fa-info-circle me-2"></i>
-                Enter multiple emission records quickly. All required fields are marked with an asterisk (*).
+            <div class="alert alert-info mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span>
+                    <i class="fas fa-info-circle me-2"></i>
+                    Enter multiple emission records quickly. All required fields are marked with an asterisk (*).
+                </span>
+                <a href="#" class="small text-primary text-nowrap" onclick="openCustomSourceModal(event)">
+                    <i class="fas fa-plus-circle me-1"></i>Add custom source
+                </a>
             </div>
             
             <div class="quick-entry-table">
@@ -746,6 +816,7 @@
                                 <th>Facility *</th>
                                 <th>Scope *</th>
                                 <th>Source *</th>
+                                <th>Org *</th>
                                 <th>CO₂e (t) *</th>
                                 <th>Notes</th>
                                 <th width="120">Actions</th>
@@ -791,6 +862,49 @@
             </div>
         </div>
     </div>
+
+    <!-- Add Custom Source Modal -->
+    <div class="modal fade" id="customSourceModal" tabindex="-1" aria-labelledby="customSourceModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customSourceModalLabel">
+                        <i class="fas fa-plus-circle me-2"></i>Add custom emission source
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Add a source not in the list. You can add an emission factor for it in <strong>Settings → Emission Factors</strong> afterwards.</p>
+                    <form id="customSourceForm">
+                        @csrf
+                        <div class="mb-3">
+                            <label class="form-label">Name *</label>
+                            <input type="text" class="form-control" name="name" id="customSourceName" required maxlength="255" placeholder="e.g. Hydrogen Combustion, Biogas">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Scope *</label>
+                            <select class="form-select" name="scope" id="customSourceScope" required>
+                                <option value="1">Scope 1</option>
+                                <option value="2">Scope 2</option>
+                                <option value="3">Scope 3</option>
+                            </select>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" id="customSourceDescription" rows="2" placeholder="Optional"></textarea>
+                        </div>
+                    </form>
+                    <div class="alert alert-danger mt-3 d-none" id="customSourceError"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="saveCustomSourceBtn">
+                        <i class="fas fa-plus me-1"></i>Add source
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -808,6 +922,9 @@
     const emissionFactors = @json($emissionFactorsMap ?? []);
     const allEmissionSourceNames = @json($allEmissionSourceNames ?? []);
     const emissionSourceNamesByScope = @json($emissionSourceNamesByScope ?? []);
+    const defaultOrganizationId = @json($defaultOrganizationId ?? null);
+    const companyCountryCode = @json($companyCountryCode ?? 'default');
+    const companyCountryDisplay = @json($companyCountryDisplay ?? null);
 </script>
 
 <script>
@@ -816,20 +933,117 @@
         let calculationMode = 'activity';
         let quickEntryRows = 0;
 
+function isCountryModeEnabled() {
+    const orgEl = document.getElementById('factorOrganizationSelect');
+    const opt = orgEl ? orgEl.options[orgEl.selectedIndex] : null;
+    return !!(opt && opt.dataset && opt.dataset.factorMode === 'country');
+}
+
+function onFactorOrganizationChange() {
+    const wrapper = document.getElementById('factorCountryWrapper');
+    const countryEl = document.getElementById('factorCountrySelect');
+    const enabled = isCountryModeEnabled();
+
+    if (wrapper) wrapper.style.display = enabled ? 'block' : 'none';
+    if (countryEl) {
+        if (enabled) {
+            countryEl.setAttribute('required', 'required');
+        } else {
+            countryEl.removeAttribute('required');
+            countryEl.value = '';
+        }
+    }
+    updateUnitOptions();
+}
+
+function getEffectiveFactorRegion() {
+    if (isCountryModeEnabled()) {
+        const cEl = document.getElementById('factorCountrySelect');
+        const v = cEl ? cEl.value : '';
+        return v ? String(v) : ''; // no country selected = don't auto-pick a factor
+    }
+    return 'default';
+}
+
 // Build unit/factor helpers from DB-driven emissionFactors map
 const allowedUnits = {};
 const emissionUnits = { default: { unit: 'unit', factorUnit: 'tCO₂e/unit' } };
 Object.keys(emissionFactors || {}).forEach((name) => {
-    const unit = emissionFactors[name]?.unit || 'unit';
+    const bySource = emissionFactors[name];
+    const orgId = String(defaultOrganizationId || '');
+    const list = bySource && orgId && bySource[orgId]
+        ? (Array.isArray(bySource[orgId]) ? bySource[orgId] : [bySource[orgId]])
+        : null;
+    const unit = (list && list.length && list[0]?.unit) ? list[0].unit : 'unit';
     allowedUnits[name] = [unit];
     emissionUnits[name] = { unit, factorUnit: `tCO₂e/${unit}` };
 });
 
+function getSelectedOrganizationId() {
+    const el = document.getElementById('factorOrganizationSelect');
+    const v = el ? el.value : (defaultOrganizationId || '');
+    return v ? String(v) : '';
+}
+
+function resolveFactorMeta(sourceName) {
+    const orgId = getSelectedOrganizationId();
+    const bySource = emissionFactors?.[sourceName];
+    const effectiveRegion = getEffectiveFactorRegion();
+
+    // New structure: emissionFactors[source][orgId] => [ { region, unit, factor }, ... ]
+    if (bySource && typeof bySource === 'object' && orgId && bySource[orgId]) {
+        const list = Array.isArray(bySource[orgId]) ? bySource[orgId] : [bySource[orgId]];
+        if (list.length && typeof list[0]?.region !== 'undefined') {
+            let chosen = list.find((f) => (f.region || 'default') === effectiveRegion);
+            if (!chosen && effectiveRegion) chosen = list.find((f) => (f.region || 'default') === 'default');
+            if (!chosen && effectiveRegion) chosen = list[0];
+            return chosen || null;
+        }
+        return list[0] || null;
+    }
+
+    // Fallback: try default orgId
+    const def = defaultOrganizationId ? String(defaultOrganizationId) : '';
+    if (bySource && typeof bySource === 'object' && def && bySource[def]) {
+        const list = Array.isArray(bySource[def]) ? bySource[def] : [bySource[def]];
+        if (list.length && typeof list[0]?.region !== 'undefined') {
+            let chosen = list.find((f) => (f.region || 'default') === effectiveRegion);
+            if (!chosen && effectiveRegion) chosen = list.find((f) => (f.region || 'default') === 'default');
+            if (!chosen && effectiveRegion) chosen = list[0];
+            return chosen || null;
+        }
+        return list[0] || null;
+    }
+
+    // Backward compatibility: old structure { unit, factor }
+    if (bySource && typeof bySource === 'object' && (bySource.unit || bySource.factor)) {
+        return bySource;
+    }
+
+    // If nested but org missing, pick first available org
+    if (bySource && typeof bySource === 'object') {
+        const keys = Object.keys(bySource);
+        if (keys.length) return bySource[keys[0]];
+    }
+
+    return null;
+}
+
 // Update activity unit options based on selected emission source
 function updateUnitOptions() {
-    const source = document.getElementById('emissionSourceSelect').value;
+    const sourceSelect = document.getElementById('emissionSourceSelect');
+    const source = sourceSelect ? sourceSelect.value : '';
+    const otherWrapper = document.getElementById('emissionSourceOtherWrapper');
+    const otherInput = document.getElementById('emissionSourceOther');
+    if (source === '__other__') {
+        if (otherWrapper) otherWrapper.style.display = 'block';
+        if (otherInput) { otherInput.setAttribute('required', 'required'); otherInput.removeAttribute('disabled'); }
+    } else {
+        if (otherWrapper) otherWrapper.style.display = 'none';
+        if (otherInput) { otherInput.removeAttribute('required'); otherInput.value = ''; }
+    }
     const unitSelect = document.getElementById('activityUnitSelect');
-    const validUnits = allowedUnits[source] || [];
+    const validUnits = source === '__other__' ? [] : (allowedUnits[source] || []);
 
     Array.from(unitSelect.options).forEach(option => {
         option.disabled = !validUnits.includes(option.value);
@@ -850,15 +1064,10 @@ function updateUnitOptions() {
         unitSelect.value = '';
     }
 
-    // Auto-fill emission factor + unit label (prefer option dataset; fallback to map)
-    const option = document.getElementById('emissionSourceSelect').selectedOptions?.[0];
-    const unitFromOpt = option?.dataset?.unit;
-    const factorFromOpt = option?.dataset?.factor;
-
-    const unitResolved = unitFromOpt || emissionFactors[source]?.unit || validUnits[0] || 'unit';
-    const factorResolved = (factorFromOpt !== undefined && factorFromOpt !== null && factorFromOpt !== '')
-        ? factorFromOpt
-        : emissionFactors[source]?.factor;
+    // Auto-fill emission factor + unit label based on selected organization
+    const meta = resolveFactorMeta(source);
+    const unitResolved = meta?.unit || validUnits[0] || 'unit';
+    const factorResolved = meta?.factor;
 
     const factorLabel = document.getElementById('factorUnitLabel');
     if (factorLabel) {
@@ -876,9 +1085,16 @@ function updateUnitOptions() {
         unitSelect.value = unitResolved;
     }
 
-    if (typeof factorResolved !== 'undefined' && factorResolved !== null && factorResolved !== '') {
+    if (source === '__other__') {
+        // User types custom source; factor/unit can be entered manually or use Direct Entry
+        const factorInput = document.getElementById('emissionFactor');
+        if (factorInput && !factorInput.value) factorInput.value = '';
+    } else if (typeof factorResolved !== 'undefined' && factorResolved !== null && factorResolved !== '') {
         const factorInput = document.getElementById('emissionFactor');
         if (factorInput) factorInput.value = parseFloat(factorResolved) || 0;
+    } else {
+        // No factor found for selected org; keep current value but alert user
+        showToast('No emission factor found for the selected organization and source.', 'warning');
     }
 
     updateCalculation();
@@ -919,17 +1135,22 @@ function rebuildEmissionSourceOptionsForScope(scopeValue) {
             opt.value = name;
             opt.textContent = name;
 
-            // Preserve metadata for auto-fill
-            const meta = emissionFactors?.[name];
+            // Preserve metadata for auto-fill (uses selected org via resolveFactorMeta)
+            const meta = resolveFactorMeta(name);
             if (meta?.unit) opt.dataset.unit = meta.unit;
             if (typeof meta?.factor !== 'undefined' && meta?.factor !== null) opt.dataset.factor = meta.factor;
 
             select.appendChild(opt);
         });
     }
+    // Always append "Other (specify below)" so user can type a free-form source
+    const otherOpt = document.createElement('option');
+    otherOpt.value = '__other__';
+    otherOpt.textContent = 'Other (specify below)';
+    select.appendChild(otherOpt);
 
-    // If previous selection no longer valid, clear it
-    if (current && !names.includes(current)) {
+    // If previous selection no longer valid, clear it (except __other__)
+    if (current && current !== '__other__' && !names.includes(current)) {
         select.value = '';
     } else if (current) {
         select.value = current;
@@ -970,9 +1191,85 @@ function updateCalculation() {
 
 // Event listeners
 document.getElementById('emissionSourceSelect').addEventListener('change', updateUnitOptions);
+document.getElementById('factorOrganizationSelect')?.addEventListener('change', onFactorOrganizationChange);
 document.getElementById('activityData').addEventListener('input', updateCalculation);
 document.getElementById('emissionFactor').addEventListener('input', updateCalculation);
 document.getElementById('activityUnitSelect').addEventListener('change', updateCalculation);
+
+        // ----- Add custom source -----
+        const customSourceModalEl = document.getElementById('customSourceModal');
+        const customSourceModal = customSourceModalEl ? new bootstrap.Modal(customSourceModalEl) : null;
+        const urlEmissionSourcesStore = "{{ route('emission_sources.storeOrUpdate') }}";
+
+        function openCustomSourceModal(e) {
+            if (e) e.preventDefault();
+            const scopeSelect = document.getElementById('scopeSelect');
+            const scopeOpt = document.getElementById('customSourceScope');
+            if (scopeOpt && scopeSelect && scopeSelect.value) scopeOpt.value = scopeSelect.value;
+            document.getElementById('customSourceForm')?.reset();
+            const errEl = document.getElementById('customSourceError');
+            if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+            if (customSourceModal) customSourceModal.show();
+        }
+
+        function addCustomSourceThenUpdateDropdown() {
+            const name = document.getElementById('customSourceName')?.value?.trim();
+            const scope = document.getElementById('customSourceScope')?.value;
+            const description = document.getElementById('customSourceDescription')?.value?.trim() || '';
+            const errEl = document.getElementById('customSourceError');
+            const btn = document.getElementById('saveCustomSourceBtn');
+
+            if (!name) {
+                if (errEl) { errEl.textContent = 'Name is required.'; errEl.classList.remove('d-none'); }
+                return;
+            }
+            if (errEl) { errEl.classList.add('d-none'); errEl.textContent = ''; }
+
+            const form = document.getElementById('customSourceForm');
+            const formData = new FormData(form);
+            formData.set('name', name);
+            formData.set('scope', scope || '1');
+            formData.set('description', description);
+
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...'; }
+
+            fetch(urlEmissionSourcesStore, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '' },
+                body: formData
+            })
+            .then(async (r) => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(data?.message || data?.errors?.name?.[0] || 'Could not add source.');
+                return data;
+            })
+            .then((data) => {
+                const created = data?.data;
+                const sourceName = created?.name || name;
+                const sourceScope = String(created?.scope || scope || '1');
+
+                if (!emissionSourceNamesByScope[sourceScope]) emissionSourceNamesByScope[sourceScope] = [];
+                if (!emissionSourceNamesByScope[sourceScope].includes(sourceName)) emissionSourceNamesByScope[sourceScope].push(sourceName);
+                if (!Array.isArray(allEmissionSourceNames)) allEmissionSourceNames = [];
+                if (!allEmissionSourceNames.includes(sourceName)) allEmissionSourceNames.push(sourceName);
+
+                rebuildEmissionSourceOptionsForScope(document.getElementById('scopeSelect')?.value || '');
+                const sel = document.getElementById('emissionSourceSelect');
+                if (sel) sel.value = sourceName;
+                if (typeof $ !== 'undefined' && $.fn.select2) $(sel).trigger('change.select2');
+                updateUnitOptions();
+                if (typeof refreshQuickEntrySourceDropdowns === 'function') refreshQuickEntrySourceDropdowns();
+
+                if (customSourceModal) customSourceModal.hide();
+                showToast('Source added. Add an emission factor in Settings → Emission Factors to use it for calculations.', 'info');
+            })
+            .catch((err) => {
+                if (errEl) { errEl.textContent = err.message || 'Could not add source.'; errEl.classList.remove('d-none'); }
+            })
+            .finally(() => {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus me-1"></i>Add source'; }
+            });
+        }
 
         
         // Initialize components
@@ -1021,6 +1318,15 @@ document.getElementById('activityUnitSelect').addEventListener('change', updateC
             toggleScope3Fields();
             // Filter emission sources by selected scope
             rebuildEmissionSourceOptionsForScope(document.getElementById('scopeSelect')?.value || '');
+
+            // Ensure country dropdown visibility matches the selected option
+            onFactorOrganizationChange();
+
+            // Default organization select (if not already selected)
+            const orgSelect = document.getElementById('factorOrganizationSelect');
+            if (orgSelect && !orgSelect.value && defaultOrganizationId) {
+                orgSelect.value = String(defaultOrganizationId);
+            }
             
             // Set Activity-Based as default calculation mode
             setCalculationMode('activity');
@@ -1029,9 +1335,13 @@ document.getElementById('activityUnitSelect').addEventListener('change', updateC
             document.getElementById('activityData')?.addEventListener('input', updateCalculation);
             document.getElementById('emissionFactor')?.addEventListener('input', updateCalculation);
             document.getElementById('emissionSourceSelect')?.addEventListener('change', updateUnitOptions);
+            document.getElementById('factorOrganizationSelect')?.addEventListener('change', updateUnitOptions);
             
             // Add first quick entry row
             addQuickEntryRow();
+
+            // Custom source modal save
+            document.getElementById('saveCustomSourceBtn')?.addEventListener('click', addCustomSourceThenUpdateDropdown);
         });
         
         // Set entry mode
@@ -1107,6 +1417,30 @@ document.getElementById('activityUnitSelect').addEventListener('change', updateC
 // NOTE: updateCalculation/updateUnitOptions are defined earlier (single source of truth).
 
         
+function buildQuickEntrySourceOptionsHtml(scopeValue) {
+    const names = emissionSourceNamesByScope?.[scopeValue] || allEmissionSourceNames || [];
+    let html = `<option value="">Select source...</option>`;
+    (names || []).forEach(name => {
+        html += `<option value="${String(name).replace(/"/g, '&quot;')}">${name}</option>`;
+    });
+    html += `<option value="__other__">Other (specify)</option>`;
+    return html;
+}
+
+function refreshQuickEntrySourceDropdowns() {
+    document.querySelectorAll('#quickEntryTableBody tr .quick-entry-source').forEach(sourceEl => {
+        const row = sourceEl.closest('tr');
+        const scopeEl = row?.querySelector('.quick-entry-scope');
+        const scope = scopeEl?.value || '';
+        const selected = sourceEl.value;
+        sourceEl.innerHTML = buildQuickEntrySourceOptionsHtml(scope);
+        if (selected) {
+            const names = emissionSourceNamesByScope?.[scope] || allEmissionSourceNames || [];
+            if (names.includes(selected)) sourceEl.value = selected;
+        }
+    });
+}
+
 function addQuickEntryRow() {
     if (!facilitiesData.length) {
         alert('No facilities available!');
@@ -1127,13 +1461,14 @@ function addQuickEntryRow() {
         facilityOptions += `<option value="${String(f.name).replace(/"/g, '&quot;')}">${f.name}</option>`;
     });
 
-    function buildSourceOptionsForScope(scopeValue) {
-        const names = emissionSourceNamesByScope?.[scopeValue] || allEmissionSourceNames || [];
-        let html = `<option value=\"\">Select source...</option>`;
-        (names || []).forEach(name => {
-            html += `<option value=\"${String(name).replace(/\"/g, '&quot;')}\">${name}</option>`;
-        });
-        return html;
+    function buildOrgOptions() {
+        // Build from server-rendered select options to avoid duplicating org list in JS
+        const orgSelect = document.getElementById('factorOrganizationSelect');
+        if (!orgSelect) return `<option value=\"\">Select org...</option>`;
+        return [...orgSelect.options].map(o => {
+            const selected = (o.value && String(o.value) === String(orgSelect.value)) ? 'selected' : '';
+            return `<option value=\"${String(o.value).replace(/\"/g, '&quot;')}\" ${selected}>${o.textContent}</option>`;
+        }).join('');
     }
 
     row.innerHTML = `
@@ -1156,7 +1491,13 @@ function addQuickEntryRow() {
         </td>
         <td>
             <select class="form-select form-select-sm quick-entry-source" required>
-                ${buildSourceOptionsForScope('')}
+                ${buildQuickEntrySourceOptionsHtml('')}
+            </select>
+            <input type="text" class="form-control form-control-sm quick-entry-source-other mt-1" placeholder="Type source name" style="display: none;" maxlength="255">
+        </td>
+        <td>
+            <select class="form-select form-select-sm quick-entry-org" required>
+                ${buildOrgOptions()}
             </select>
         </td>
         <td>
@@ -1182,19 +1523,31 @@ function addQuickEntryRow() {
     // Filter sources when scope changes (per-row)
     const scopeEl = row.querySelector('.quick-entry-scope');
     const sourceEl = row.querySelector('.quick-entry-source');
+    const sourceOtherEl = row.querySelector('.quick-entry-source-other');
+    function toggleQuickEntrySourceOther() {
+        if (sourceOtherEl) {
+            if (sourceEl && sourceEl.value === '__other__') {
+                sourceOtherEl.style.display = 'block';
+                sourceOtherEl.setAttribute('required', 'required');
+            } else {
+                sourceOtherEl.style.display = 'none';
+                sourceOtherEl.removeAttribute('required');
+                sourceOtherEl.value = '';
+            }
+        }
+    }
     if (scopeEl && sourceEl) {
         scopeEl.addEventListener('change', () => {
             const selected = sourceEl.value;
-            sourceEl.innerHTML = buildSourceOptionsForScope(scopeEl.value);
+            sourceEl.innerHTML = buildQuickEntrySourceOptionsHtml(scopeEl.value);
             if (selected) {
-                // try keep selection if still valid
-                const names = emissionSourceNamesByScope?.[scopeEl.value] || [];
-                if (names.includes(selected)) {
-                    sourceEl.value = selected;
-                }
+                const names = emissionSourceNamesByScope?.[scopeEl.value] || allEmissionSourceNames || [];
+                if (names.includes(selected)) sourceEl.value = selected;
             }
+            toggleQuickEntrySourceOther();
         });
     }
+    if (sourceEl) sourceEl.addEventListener('change', toggleQuickEntrySourceOther);
 
     // Initialize date picker
     flatpickr(row.querySelector('.quick-entry-date'), {
@@ -1202,6 +1555,8 @@ function addQuickEntryRow() {
         defaultDate: new Date(),
         maxDate: new Date()
     });
+
+    updateRowCount();
 }
 
         
@@ -1271,7 +1626,16 @@ function addQuickEntryRow() {
         const facilityEl = row.querySelector('.quick-entry-facility');
         const scopeEl = row.querySelector('.quick-entry-scope');
         const sourceEl = row.querySelector('.quick-entry-source');
+        const sourceOtherEl = row.querySelector('.quick-entry-source-other');
+        const orgEl = row.querySelector('.quick-entry-org');
         const co2eEl = row.querySelector('.quick-entry-co2e');
+
+        const isOtherSource = sourceEl?.value === '__other__';
+        const otherSourceName = sourceOtherEl?.value?.trim() || '';
+        if (isOtherSource && !otherSourceName) {
+            valid = false;
+            if (sourceOtherEl) sourceOtherEl.classList.add('is-invalid');
+        } else if (sourceOtherEl) sourceOtherEl.classList.remove('is-invalid');
 
         // Validate required fields (row-level)
         const required = [
@@ -1279,6 +1643,7 @@ function addQuickEntryRow() {
             { el: facilityEl, name: 'Facility' },
             { el: scopeEl, name: 'Scope' },
             { el: sourceEl, name: 'Emission Source' },
+            { el: orgEl, name: 'Organization' },
             { el: co2eEl, name: 'CO₂e' },
         ];
 
@@ -1292,7 +1657,9 @@ function addQuickEntryRow() {
             entryDate: dateEl?.value,
             facilitySelect: facilityEl?.value,
             scopeSelect: scopeEl?.value,
-            emissionSourceSelect: sourceEl?.value,
+            emissionSourceSelect: isOtherSource ? '__other__' : sourceEl?.value,
+            emission_source_other: isOtherSource ? otherSourceName : null,
+            factor_organization_id: orgEl?.value || null,
             co2eValue: co2eEl?.value,
                     confidenceLevel: 'medium', // default for quick entry
                     entryNotes: row.querySelector('.quick-entry-notes').value,
@@ -1417,6 +1784,18 @@ function addQuickEntryRow() {
             event.preventDefault(); // Prevent default form submission
             
             const form = event.target; // Get the form from the event
+            const sourceSelect = document.getElementById('emissionSourceSelect');
+            const otherInput = document.getElementById('emissionSourceOther');
+            if (sourceSelect && sourceSelect.value === '__other__') {
+                const otherName = otherInput ? otherInput.value.trim() : '';
+                if (!otherName) {
+                    showToast('Please specify the emission source name when "Other" is selected.', 'error');
+                    if (otherInput) { otherInput.classList.add('is-invalid'); otherInput.focus(); }
+                    return;
+                }
+                if (otherInput) otherInput.classList.remove('is-invalid');
+            }
+            
             const formData = new FormData(form);
             const submitButton = document.activeElement; // Get the clicked button
             
@@ -1528,6 +1907,12 @@ function addQuickEntryRow() {
                 if (scope3Category) scope3Category.value = '';
                 if (supplier) supplier.value = '';
             }
+            
+            // Hide "Other" emission source wrapper and clear value
+            const otherWrapper = document.getElementById('emissionSourceOtherWrapper');
+            const otherInput = document.getElementById('emissionSourceOther');
+            if (otherWrapper) otherWrapper.style.display = 'none';
+            if (otherInput) { otherInput.value = ''; otherInput.classList.remove('is-invalid'); }
             
             // Hide Scope 3 section
             const scope3Section = document.getElementById('scope3SpecificSection');

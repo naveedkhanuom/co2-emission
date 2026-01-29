@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\EmissionFactor;
 use App\Models\EmissionSource;
+use App\Models\FactorOrganization;
 use Illuminate\Database\Seeder;
 
 class EmissionFactorsSeeder extends Seeder
@@ -71,6 +72,9 @@ class EmissionFactorsSeeder extends Seeder
             ['source' => 'Scope 3 - 15. Investments', 'unit' => 'unit', 'factor_value' => 0.000000, 'region' => 'placeholder'],
         ];
 
+        // All current starter factors are treated as IPCC by default.
+        $defaultOrgId = FactorOrganization::where('code', 'IPCC')->value('id');
+
         foreach ($defaults as $row) {
             $source = EmissionSource::where('name', $row['source'])->first();
             if (!$source) {
@@ -80,6 +84,7 @@ class EmissionFactorsSeeder extends Seeder
             EmissionFactor::updateOrCreate(
                 [
                     'emission_source_id' => $source->id,
+                    'organization_id' => $defaultOrgId,
                     'unit' => $row['unit'],
                     'region' => $row['region'] ?? null,
                 ],

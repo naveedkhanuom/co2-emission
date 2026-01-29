@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Safety: avoid failing if table already exists (common in dev DBs)
+        if (Schema::hasTable('eio_factors')) {
+            return;
+        }
+
         Schema::create('eio_factors', function (Blueprint $table) {
             $table->id();
             $table->string('sector_code')->nullable(); // Industry/sector code
