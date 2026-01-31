@@ -119,7 +119,7 @@
                                         required>
                                     <option value="">Choose a facility...</option>
                                     @foreach(facilities() as $facility)
-                                        <option value="{{ $facility->id }}">{{ $facility->name }}</option>
+                                        <option value="{{ e($facility->name) }}">{{ $facility->name }}</option>
                                     @endforeach
                                 </select>
                                 <div class="field-help">
@@ -160,15 +160,9 @@
                                         required
                                         onchange="toggleScope3Fields()">
                                     <option value="">Select scope category...</option>
-                                    <option value="1">
-                                        <span class="scope-option">Scope 1</span> - Direct Emissions
-                                    </option>
-                                    <option value="2">
-                                        <span class="scope-option">Scope 2</span> - Indirect Emissions (Purchased Energy)
-                                    </option>
-                                    <option value="3">
-                                        <span class="scope-option">Scope 3</span> - Other Indirect Emissions
-                                    </option>
+                                    <option value="1">Scope 1 - Direct Emissions</option>
+                                    <option value="2">Scope 2 - Indirect Emissions (Purchased Energy)</option>
+                                    <option value="3">Scope 3 - Other Indirect Emissions</option>
                                 </select>
                                 <div class="field-help">
                                     <i class="fas fa-lightbulb me-1"></i>
@@ -408,7 +402,7 @@
                                                step="0.01" 
                                                min="0" 
                                                placeholder="0.00">
-                                        <select class="form-select" id="activityUnitSelect">
+                                        <select class="form-select" id="activityUnitSelect" name="activity_unit">
                                             <option value="kWh">kWh</option>
                                             <option value="liters">Liters</option>
                                             <option value="m³">m³</option>
@@ -677,11 +671,10 @@
                                 </label>
                                 <select class="form-select form-select-lg" 
                                         id="departmentSelect" 
-                                        name="departmentSelect" 
-                                        required>
-                                    <option value="">Select department...</option>
+                                        name="departmentSelect">
+                                    <option value="">Select department (optional)...</option>
                                     @foreach(departments() as $department)
-                                        <option value="{{ $department->id }}">{{ $department->name }}</option>
+                                        <option value="{{ e($department->name) }}">{{ $department->name }}</option>
                                     @endforeach
                                 </select>
                                 <div class="field-help">
@@ -743,9 +736,10 @@
                                     multiple
                                     accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.xls,.csv"
                                 >
+                                <div id="supportingDocumentsPreview" class="mt-2 small text-muted"></div>
                                 <div class="field-help">
                                     <i class="fas fa-lightbulb me-1"></i>
-                                    Optional: Upload invoices, meter screenshots, spreadsheets, or other evidence (max 10MB per file)
+                                    Optional: Upload invoices, meter screenshots, spreadsheets, or other evidence (max 10MB per file). Click × to remove before submit.
                                 </div>
                             </div>
                         </div>
@@ -781,6 +775,51 @@
           </form>
         </div>
 
+        <!-- Template Based Entry (Hidden by default) -->
+        <div class="form-container" id="templateEntryForm" style="display: none;">
+            <div class="form-header mb-4">
+                <h4 class="mb-1"><i class="fas fa-clipboard-list text-info me-2"></i>Choose a Template</h4>
+                <p class="text-muted mb-0 small">Select a template to pre-fill the single entry form with common settings</p>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('electricity')" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <i class="fas fa-bolt text-warning fa-2x mb-2"></i>
+                            <h6 class="card-title">Electricity</h6>
+                            <p class="card-text small text-muted mb-0">Scope 2 – Purchased electricity</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('fleet')" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <i class="fas fa-truck text-primary fa-2x mb-2"></i>
+                            <h6 class="card-title">Fleet / Vehicles</h6>
+                            <p class="card-text small text-muted mb-0">Scope 1 – Gasoline, diesel, CNG</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('travel')" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <i class="fas fa-plane text-info fa-2x mb-2"></i>
+                            <h6 class="card-title">Business Travel</h6>
+                            <p class="card-text small text-muted mb-0">Scope 3 – Travel & commuting</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('waste')" style="cursor: pointer;">
+                        <div class="card-body text-center">
+                            <i class="fas fa-recycle text-success fa-2x mb-2"></i>
+                            <h6 class="card-title">Waste</h6>
+                            <p class="card-text small text-muted mb-0">Scope 3 – Waste generated</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Quick Entry Table (Hidden by default) -->
         <div class="form-container" id="quickEntryForm" style="display: none;">
@@ -814,10 +853,12 @@
                                 <th width="50">#</th>
                                 <th>Date *</th>
                                 <th>Facility *</th>
+                                <th>Site</th>
                                 <th>Scope *</th>
                                 <th>Source *</th>
                                 <th>Org *</th>
                                 <th>CO₂e (t) *</th>
+                                <th>Dept</th>
                                 <th>Notes</th>
                                 <th width="120">Actions</th>
                             </tr>
@@ -918,6 +959,33 @@
 <script>
     // Convert PHP helper result to JS array
     const facilitiesData = @json(Facilities());
+    const sitesData = @json(sites());
+    const departmentsData = @json(departments());
+    window.selectedSupportingDocuments = [];
+
+    function renderSupportingDocumentsPreview() {
+        const el = document.getElementById('supportingDocumentsPreview');
+        if (!el) return;
+        const arr = window.selectedSupportingDocuments || [];
+        if (arr.length === 0) {
+            el.innerHTML = '';
+            return;
+        }
+        let html = '<div class="d-flex flex-wrap gap-2 align-items-center mt-1">';
+        arr.forEach(function(file, i) {
+            html += '<span class="badge bg-light text-dark d-inline-flex align-items-center gap-1">' +
+                (file.name || 'File ' + (i + 1)) +
+                ' <button type="button" class="btn btn-link btn-sm p-0 text-danger" onclick="removeSupportingDocument(' + i + ')" aria-label="Remove">×</button></span>';
+        });
+        html += '</div>';
+        el.innerHTML = html;
+    }
+
+    function removeSupportingDocument(index) {
+        (window.selectedSupportingDocuments || []).splice(index, 1);
+        renderSupportingDocumentsPreview();
+    }
+
     // Dynamic emission factors loaded from database (keyed by emission source name)
     const emissionFactors = @json($emissionFactorsMap ?? []);
     const allEmissionSourceNames = @json($allEmissionSourceNames ?? []);
@@ -1342,6 +1410,18 @@ document.getElementById('activityUnitSelect').addEventListener('change', updateC
 
             // Custom source modal save
             document.getElementById('saveCustomSourceBtn')?.addEventListener('click', addCustomSourceThenUpdateDropdown);
+
+            // Supporting documents: add selected files to array and show preview
+            document.getElementById('supportingDocuments')?.addEventListener('change', function() {
+                const input = this;
+                if (input.files && input.files.length) {
+                    for (let i = 0; i < input.files.length; i++) {
+                        window.selectedSupportingDocuments.push(input.files[i]);
+                    }
+                    input.value = '';
+                    renderSupportingDocumentsPreview();
+                }
+            });
         });
         
         // Set entry mode
@@ -1358,7 +1438,8 @@ document.getElementById('activityUnitSelect').addEventListener('change', updateC
             // Show/hide forms
             document.getElementById('singleEntryForm').style.display = mode === 'single' ? 'block' : 'none';
             document.getElementById('quickEntryForm').style.display = mode === 'quick' ? 'block' : 'none';
-            document.getElementById('templateEntryForm').style.display = mode === 'template' ? 'block' : 'none';
+            const templateForm = document.getElementById('templateEntryForm');
+            if (templateForm) templateForm.style.display = mode === 'template' ? 'block' : 'none';
         }
 
         // Set calculation mode
@@ -1461,6 +1542,16 @@ function addQuickEntryRow() {
         facilityOptions += `<option value="${String(f.name).replace(/"/g, '&quot;')}">${f.name}</option>`;
     });
 
+    let siteOptions = `<option value="">—</option>`;
+    (sitesData || []).forEach(s => {
+        siteOptions += `<option value="${s.id || ''}">${(s.name || '').replace(/"/g, '&quot;')}</option>`;
+    });
+    let departmentOptions = `<option value="">—</option>`;
+    (departmentsData || []).forEach(d => {
+        const name = d.name || '';
+        departmentOptions += `<option value="${String(name).replace(/"/g, '&quot;')}">${name}</option>`;
+    });
+
     function buildOrgOptions() {
         // Build from server-rendered select options to avoid duplicating org list in JS
         const orgSelect = document.getElementById('factorOrganizationSelect');
@@ -1479,6 +1570,11 @@ function addQuickEntryRow() {
         <td>
             <select class="form-select form-select-sm quick-entry-facility" required>
                 ${facilityOptions}
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm quick-entry-site">
+                ${siteOptions}
             </select>
         </td>
         <td>
@@ -1502,6 +1598,11 @@ function addQuickEntryRow() {
         </td>
         <td>
             <input type="number" class="form-control form-control-sm quick-entry-co2e" step="0.01" min="0" placeholder="0.00" required>
+        </td>
+        <td>
+            <select class="form-select form-select-sm quick-entry-department">
+                ${departmentOptions}
+            </select>
         </td>
         <td>
             <input type="text" class="form-control form-control-sm quick-entry-notes" placeholder="Optional notes">
@@ -1624,11 +1725,13 @@ function addQuickEntryRow() {
 
         const dateEl = row.querySelector('.quick-entry-date');
         const facilityEl = row.querySelector('.quick-entry-facility');
+        const siteEl = row.querySelector('.quick-entry-site');
         const scopeEl = row.querySelector('.quick-entry-scope');
         const sourceEl = row.querySelector('.quick-entry-source');
         const sourceOtherEl = row.querySelector('.quick-entry-source-other');
         const orgEl = row.querySelector('.quick-entry-org');
         const co2eEl = row.querySelector('.quick-entry-co2e');
+        const departmentEl = row.querySelector('.quick-entry-department');
 
         const isOtherSource = sourceEl?.value === '__other__';
         const otherSourceName = sourceOtherEl?.value?.trim() || '';
@@ -1656,15 +1759,16 @@ function addQuickEntryRow() {
                 const entry = {
             entryDate: dateEl?.value,
             facilitySelect: facilityEl?.value,
+            siteSelect: siteEl?.value || null,
             scopeSelect: scopeEl?.value,
             emissionSourceSelect: isOtherSource ? '__other__' : sourceEl?.value,
             emission_source_other: isOtherSource ? otherSourceName : null,
             factor_organization_id: orgEl?.value || null,
             co2eValue: co2eEl?.value,
-                    confidenceLevel: 'medium', // default for quick entry
-                    entryNotes: row.querySelector('.quick-entry-notes').value,
-                    dataSource: 'manual',
-                    departmentSelect: null
+            confidenceLevel: 'medium',
+            entryNotes: row.querySelector('.quick-entry-notes').value,
+            dataSource: 'manual',
+            departmentSelect: departmentEl?.value || null
                 };
 
                 entries.push(entry);
@@ -1798,7 +1902,18 @@ function addQuickEntryRow() {
             
             const formData = new FormData(form);
             const submitButton = document.activeElement; // Get the clicked button
-            
+
+            // Append supporting documents from our array (so remove-before-submit works)
+            const docInput = document.getElementById('supportingDocuments');
+            if (docInput && docInput.name) {
+                formData.delete(docInput.name);
+                docInput.removeAttribute('name');
+            }
+            (window.selectedSupportingDocuments || []).forEach(function(f) {
+                formData.append('supporting_documents[]', f);
+            });
+            if (docInput) docInput.setAttribute('name', 'supporting_documents[]');
+
             // Determine status from the button clicked
             const status = submitButton.name === 'status' ? submitButton.value : 'active';
             formData.set('status', status);
@@ -1834,6 +1949,8 @@ function addQuickEntryRow() {
                 
                 // Reset form
                 form.reset();
+                window.selectedSupportingDocuments = [];
+                renderSupportingDocumentsPreview();
                 // Reset Select2 dropdowns if jQuery is available
                 if (typeof $ !== 'undefined' && $.fn.select2) {
                     $('.facility-select').val(null).trigger('change');
@@ -1886,7 +2003,8 @@ function addQuickEntryRow() {
             if (form) {
                 form.reset();
             }
-            
+            window.selectedSupportingDocuments = [];
+            renderSupportingDocumentsPreview();
             // Reset Select2 dropdowns if jQuery is available
             if (typeof $ !== 'undefined' && $.fn.select2) {
                 $('.facility-select').val(null).trigger('change');

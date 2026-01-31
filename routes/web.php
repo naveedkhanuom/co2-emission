@@ -35,7 +35,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
+});
 
 Route::resources([
     'roles' => RoleController::class,
@@ -54,26 +56,32 @@ Route::middleware(['auth'])->group(function () {
     Route::get('company/accessible', [CompanySwitcherController::class, 'getAccessibleCompanies'])->name('company.accessible');
 });
 
-Route::get('companies', [CompanyController::class, 'index'])->name('companies.index');
-Route::post('companies', [CompanyController::class, 'store'])->name('companies.store');
-Route::get('companies/{id}', [CompanyController::class, 'show'])->name('companies.show');
-Route::get('companies/{id}/edit', [CompanyController::class, 'edit'])->name('companies.edit');
-Route::put('companies/{id}', [CompanyController::class, 'update'])->name('companies.update');
-Route::delete('companies/{id}', [CompanyController::class, 'destroy'])->name('companies.destroy');
+Route::middleware(['auth'])->group(function () {
+    Route::get('companies', [CompanyController::class, 'index'])->name('companies.index');
+    Route::post('companies', [CompanyController::class, 'store'])->name('companies.store');
+    Route::get('companies/{id}', [CompanyController::class, 'show'])->name('companies.show');
+    Route::get('companies/{id}/edit', [CompanyController::class, 'edit'])->name('companies.edit');
+    Route::put('companies/{id}', [CompanyController::class, 'update'])->name('companies.update');
+    Route::delete('companies/{id}', [CompanyController::class, 'destroy'])->name('companies.destroy');
+});
 
 
 
-Route::resource('departments', DepartmentController::class);
+Route::middleware(['auth'])->group(function () {
+    Route::resource('departments', DepartmentController::class);
+});
 
 
-Route::get('/facilities', [FacilitiesController::class, 'index'])->name('facilities.index');
-Route::post('/facilities', [FacilitiesController::class, 'store'])->name('facilities.store');
-Route::put('/facilities/{facility}', [FacilitiesController::class, 'update'])->name('facilities.update');
-Route::delete('/facilities/{facility}', [FacilitiesController::class, 'destroy'])->name('facilities.destroy');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/facilities', [FacilitiesController::class, 'index'])->name('facilities.index');
+    Route::post('/facilities', [FacilitiesController::class, 'store'])->name('facilities.store');
+    Route::put('/facilities/{facility}', [FacilitiesController::class, 'update'])->name('facilities.update');
+    Route::delete('/facilities/{facility}', [FacilitiesController::class, 'destroy'])->name('facilities.destroy');
+});
 
 
 
-Route::prefix('sites')->group(function () {
+Route::prefix('sites')->middleware('auth')->group(function () {
     Route::get('/', [SiteController::class, 'index'])->name('sites.index');
     Route::get('/getSites', [SiteController::class, 'getSites'])->name('sites.getSites');
     Route::post('/storeOrUpdate', [SiteController::class, 'storeOrUpdate'])->name('sites.storeOrUpdate');
@@ -81,7 +89,7 @@ Route::prefix('sites')->group(function () {
     Route::delete('/{id}', [SiteController::class, 'destroy']);
 });
 
-Route::prefix('emission-sources')->name('emission_sources.')->group(function () {
+Route::prefix('emission-sources')->name('emission_sources.')->middleware('auth')->group(function () {
     Route::get('/', [EmissionSourceController::class, 'index'])->name('index');
     Route::get('/data', [EmissionSourceController::class, 'getData'])->name('data');
     Route::get('/{id}', [EmissionSourceController::class, 'show']);
@@ -108,7 +116,7 @@ Route::prefix('countries')->name('countries.')->middleware('auth')->group(functi
 
 
 
-Route::prefix('emission-records')->group(function() {
+Route::prefix('emission-records')->middleware('auth')->group(function() {
     Route::get('/', [EmissionRecordController::class,'index'])->name('emission_records.index');
     Route::get('/scope-entry', [EmissionRecordController::class,'scopeEntry'])->name('emission_records.scope_entry');
     Route::get('/data', [EmissionRecordController::class,'getData'])->name('emission_records.data');
@@ -120,9 +128,11 @@ Route::prefix('emission-records')->group(function() {
 });
 
 
-Route::get('emissions/import', [EmissionImportController::class, 'showImportForm'])->name('emissions.import.form');
-Route::post('emissions/import', [EmissionImportController::class, 'import'])->name('emissions.import');
-Route::get('emissions/sample', [EmissionImportController::class, 'downloadSample'])->name('emissions.sample');
+Route::middleware(['auth'])->group(function () {
+    Route::get('emissions/import', [EmissionImportController::class, 'showImportForm'])->name('emissions.import.form');
+    Route::post('emissions/import', [EmissionImportController::class, 'import'])->name('emissions.import');
+    Route::get('emissions/sample', [EmissionImportController::class, 'downloadSample'])->name('emissions.sample');
+});
 
 // Import History Routes
 Route::prefix('import-history')->name('import_history.')->middleware('auth')->group(function() {
@@ -209,7 +219,7 @@ Route::prefix('data-quality')->name('data_quality.')->middleware('auth')->group(
     Route::put('/record/{id}', [DataQualityController::class, 'updateQuality'])->name('update_quality');
 });
 
-Route::prefix('reports')->group(function() {
+Route::prefix('reports')->middleware('auth')->group(function() {
     Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
     Route::get('/statistics', [App\Http\Controllers\ReportController::class, 'statistics'])->name('reports.statistics');
     Route::get('/data', [App\Http\Controllers\ReportController::class, 'getData'])->name('reports.data');
