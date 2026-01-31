@@ -136,7 +136,10 @@ class EmissionsImport implements ToModel, WithHeadingRow
             return $row[$normalized] ?? $row[$column] ?? null;
         };
 
+        $companyId = function_exists('current_company_id') ? current_company_id() : (auth()->check() ? auth()->user()->company_id : null);
+
         $data = [
+            'company_id'       => $companyId,
             'entry_date'       => $dateValue,
             'facility'         => $facility->name, // Store as string name, not ID
             'department'       => $department->name, // Store as string name, not ID
@@ -159,15 +162,14 @@ class EmissionsImport implements ToModel, WithHeadingRow
          */
 
         if ($this->overwrite) {
-            EmissionRecord::updateOrCreate(
-                [
-                    'entry_date'      => $data['entry_date'],
-                    'facility'        => $data['facility'],
-                    'department'      => $data['department'],
-                    'emission_source' => $data['emission_source'],
-                ],
-                $data
-            );
+            $match = [
+                'company_id'      => $companyId,
+                'entry_date'      => $data['entry_date'],
+                'facility'        => $data['facility'],
+                'department'      => $data['department'],
+                'emission_source' => $data['emission_source'],
+            ];
+            EmissionRecord::updateOrCreate($match, $data);
 
             return null; // REQUIRED when using updateOrCreate
         }

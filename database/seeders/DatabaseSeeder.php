@@ -17,8 +17,10 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
             DefaultUserSeeder::class,
+            CountriesSeeder::class,
             Scope3CategoriesSeeder::class,
             EmissionSourcesSeeder::class,
+            FactorOrganizationsSeeder::class,
             EmissionFactorsSeeder::class,
             EioFactorsSeeder::class,
         ]);

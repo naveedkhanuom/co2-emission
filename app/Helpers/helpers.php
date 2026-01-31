@@ -115,3 +115,28 @@ if (!function_exists('suppliers')) {
         return $query->orderBy('name'); // allows further chaining
     }
 }
+
+if (!function_exists('demo_route_restricted')) {
+    /**
+     * Check if a route is restricted in demo mode (for sidebar / UI).
+     */
+    function demo_route_restricted(string $routeName): bool
+    {
+        if (! config('demo.enabled', false)) {
+            return false;
+        }
+        $restricted = config('demo.restricted_routes', []);
+        foreach ($restricted as $pattern) {
+            if (str_ends_with($pattern, '.')) {
+                if (str_starts_with($routeName, $pattern)) {
+                    return true;
+                }
+            } else {
+                if ($routeName === $pattern) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+}

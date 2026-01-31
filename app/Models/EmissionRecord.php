@@ -23,6 +23,7 @@ class EmissionRecord extends Model
         'spend_amount',
         'spend_currency',
         'emission_factor',
+        'factor_organization_id',
         'calculation_method',
         'data_quality',
         'co2e_value',

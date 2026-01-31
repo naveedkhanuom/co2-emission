@@ -57,9 +57,11 @@
 
         <li>
             <a href="{{ route('import_history.index') }}" 
-               class="{{ request()->routeIs('import_history.*') ? 'active' : '' }}">
+               class="{{ request()->routeIs('import_history.*') ? 'active' : '' }}{{ demo_route_restricted('import_history.index') ? ' demo-restricted' : '' }}"
+               @if(demo_route_restricted('import_history.index')) title="Not available in demo" @endif>
                 <i class="fas fa-history"></i>
                 <span>Import History</span>
+                @if(demo_route_restricted('import_history.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
             </a>
         </li>
 
@@ -181,6 +183,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ route('countries.index') }}">
+                        <i class="fas fa-flag"></i>
+                        <span>Countries</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
@@ -194,22 +202,29 @@
                 </li>
         <li>
             <a href="{{ route('companies.index') }}" 
-               class="{{ request()->routeIs('companies.*') ? 'active' : '' }}">
+               class="{{ request()->routeIs('companies.*') ? 'active' : '' }}{{ demo_route_restricted('companies.index') ? ' demo-restricted' : '' }}"
+               @if(demo_route_restricted('companies.index')) title="Not available in demo" @endif>
                 <i class="fas fa-building"></i>
                 <span>Companies</span>
+                @if(demo_route_restricted('companies.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
             </a>
         </li>
         <li>
             <a href="{{ route('users.index') }}" 
-               class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
+               class="{{ request()->routeIs('users.*') ? 'active' : '' }}{{ demo_route_restricted('users.index') ? ' demo-restricted' : '' }}"
+               @if(demo_route_restricted('users.index')) title="Not available in demo" @endif>
                 <i class="fas fa-users-cog"></i>
                 <span>Users</span>
+                @if(demo_route_restricted('users.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
             </a>
         </li>
                 <li>
-                    <a href="{{ route('roles.index') }}">
+                    <a href="{{ route('roles.index') }}"
+                       class="{{ demo_route_restricted('roles.index') ? ' demo-restricted' : '' }}"
+                       @if(demo_route_restricted('roles.index')) title="Not available in demo" @endif>
                         <i class="fas fa-shield-alt"></i>
                         <span>Roles & Permissions</span>
+                        @if(demo_route_restricted('roles.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
                     </a>
                 </li>
                 <li>
