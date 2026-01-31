@@ -26,18 +26,17 @@ class RoleController extends Controller
     public function index(): View
     {
         return view('roles.index', [
-            'roles' => Role::with('permissions')->orderBy('id', 'DESC')->paginate(3)
+            'roles' => Role::with('permissions')->orderBy('id', 'DESC')->paginate(10),
+            'permissions' => Permission::get()
         ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): View
+    public function create(): RedirectResponse
     {
-        return view('roles.create', [
-            'permissions' => Permission::get()
-        ]);
+        return redirect()->route('roles.index');
     }
 
     /**
@@ -66,21 +65,9 @@ class RoleController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Role $role): View
+    public function edit(Role $role): RedirectResponse
     {
-        if($role->name=='Super Admin'){
-            abort(403, 'SUPER ADMIN ROLE CAN NOT BE EDITED');
-        }
-
-        $rolePermissions = DB::table("role_has_permissions")->where("role_id",$role->id)
-            ->pluck('permission_id')
-            ->all();
-
-        return view('roles.edit', [
-            'role' => $role,
-            'permissions' => Permission::get(),
-            'rolePermissions' => $rolePermissions
-        ]);
+        return redirect()->route('roles.index');
     }
 
     /**
@@ -96,7 +83,7 @@ class RoleController extends Controller
 
         $role->syncPermissions($permissions);    
         
-        return redirect()->back()
+        return redirect()->route('roles.index')
                 ->withSuccess('Role is updated successfully.');
     }
 

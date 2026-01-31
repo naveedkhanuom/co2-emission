@@ -1,94 +1,165 @@
 @extends('layouts.app')
 
+@section('title', 'Edit User')
+@section('page-title', 'Edit User')
+
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <div class="float-start">
-                    Edit User
+<div id="content">
+    @include('layouts.top-nav')
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user-edit me-2"></i>Edit User
+                            </h5>
+                            <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if(session('success'))
+                            <div class="alert alert-success alert-dismissible fade show">
+                                {{ session('success') }}
+                                <button class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        @endif
+
+                        @if($errors->any())
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                <strong>Please fix the following errors:</strong>
+                                <ul class="mb-0 mt-2">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                                <button class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        @endif
+
+                        <form action="{{ route('users.update', $user->id) }}" method="post">
+                            @csrf
+                            @method("PUT")
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control @error('name') is-invalid @enderror" 
+                                           id="name" 
+                                           name="name" 
+                                           value="{{ old('name', $user->name) }}"
+                                           placeholder="Enter full name"
+                                           required>
+                                    @error('name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                    <input type="email" 
+                                           class="form-control @error('email') is-invalid @enderror" 
+                                           id="email" 
+                                           name="email" 
+                                           value="{{ old('email', $user->email) }}"
+                                           placeholder="user@example.com"
+                                           required>
+                                    @error('email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" 
+                                           class="form-control @error('password') is-invalid @enderror" 
+                                           id="password" 
+                                           name="password"
+                                           placeholder="Leave blank to keep current password">
+                                    @error('password')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Leave blank if you don't want to change the password</small>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="password_confirmation" class="form-label">Confirm Password</label>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           id="password_confirmation" 
+                                           name="password_confirmation"
+                                           placeholder="Confirm new password">
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label for="roles" class="form-label">Roles <span class="text-danger">*</span></label>
+                                    <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                                        <div class="row">
+                                            @forelse ($roles as $role)
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="form-check">
+                                                        @if ($role != 'Super Admin')
+                                                            <input class="form-check-input" 
+                                                                   type="checkbox" 
+                                                                   name="roles[]" 
+                                                                   value="{{ $role }}" 
+                                                                   id="role_{{ $loop->index }}"
+                                                                   {{ in_array($role, old('roles', $userRoles ?? [])) ? 'checked' : '' }}>
+                                                            <label class="form-check-label" for="role_{{ $loop->index }}">
+                                                                {{ $role }}
+                                                            </label>
+                                                        @else
+                                                            @if (Auth::user()->hasRole('Super Admin'))
+                                                                <input class="form-check-input" 
+                                                                       type="checkbox" 
+                                                                       name="roles[]" 
+                                                                       value="{{ $role }}" 
+                                                                       id="role_{{ $loop->index }}"
+                                                                       {{ in_array($role, old('roles', $userRoles ?? [])) ? 'checked' : '' }}>
+                                                                <label class="form-check-label" for="role_{{ $loop->index }}">
+                                                                    {{ $role }}
+                                                                    <span class="badge bg-danger ms-2">Protected</span>
+                                                                </label>
+                                                            @endif
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @empty
+                                                <div class="col-12 text-muted">
+                                                    No roles available
+                                                </div>
+                                            @endforelse
+                                        </div>
+                                    </div>
+                                    @error('roles')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Select one or more roles for this user</small>
+                                </div>
+                            </div>
+
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="{{ route('users.index') }}" class="btn btn-secondary">
+                                            <i class="fas fa-times me-1"></i>Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-save me-1"></i>Update User
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="float-end">
-                    <a href="{{ route('users.index') }}" class="btn btn-primary btn-sm">&larr; Back</a>
-                </div>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('users.update', $user->id) }}" method="post">
-                    @csrf
-                    @method("PUT")
-
-                    <div class="mb-3 row">
-                        <label for="name" class="col-md-4 col-form-label text-md-end text-start">Name</label>
-                        <div class="col-md-6">
-                          <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ $user->name }}">
-                            @error('name')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="email" class="col-md-4 col-form-label text-md-end text-start">Email Address</label>
-                        <div class="col-md-6">
-                          <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ $user->email }}">
-                            @error('email')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="password" class="col-md-4 col-form-label text-md-end text-start">Password</label>
-                        <div class="col-md-6">
-                          <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password">
-                            @error('password')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="password_confirmation" class="col-md-4 col-form-label text-md-end text-start">Confirm Password</label>
-                        <div class="col-md-6">
-                          <input type="password" class="form-control" id="password_confirmation" name="password_confirmation">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 row">
-                        <label for="roles" class="col-md-4 col-form-label text-md-end text-start">Roles</label>
-                        <div class="col-md-6">           
-                            <select class="form-select @error('roles') is-invalid @enderror" multiple aria-label="Roles" id="roles" name="roles[]">
-                                @forelse ($roles as $role)
-
-                                    @if ($role!='Super Admin')
-                                    <option value="{{ $role }}" {{ in_array($role, $userRoles ?? []) ? 'selected' : '' }}>
-                                        {{ $role }}
-                                    </option>
-                                    @else
-                                        @if (Auth::user()->hasRole('Super Admin'))   
-                                        <option value="{{ $role }}" {{ in_array($role, $userRoles ?? []) ? 'selected' : '' }}>
-                                            {{ $role }}
-                                        </option>
-                                        @endif
-                                    @endif
-
-                                @empty
-
-                                @endforelse
-                            </select>
-                            @error('roles')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3 row">
-                        <input type="submit" class="col-md-3 offset-md-5 btn btn-primary" value="Update User">
-                    </div>
-                    
-                </form>
             </div>
         </div>
     </div>
-</div>    
+</div>
 @endsection

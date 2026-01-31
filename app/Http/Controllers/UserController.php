@@ -7,8 +7,11 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Yajra\DataTables\Facades\DataTables;
 
 class UserController extends Controller
 {
@@ -18,7 +21,7 @@ class UserController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:create-user|edit-user|delete-user', ['only' => ['index','show']]);
+        $this->middleware('permission:create-user|edit-user|delete-user', ['only' => ['index','show','getData']]);
         $this->middleware('permission:create-user', ['only' => ['create','store']]);
         $this->middleware('permission:edit-user', ['only' => ['edit','update']]);
         $this->middleware('permission:delete-user', ['only' => ['destroy']]);
@@ -29,9 +32,67 @@ class UserController extends Controller
      */
     public function index(): View
     {
-        return view('users.index', [
-            'users' => User::latest('id')->paginate(3)
-        ]);
+        return view('users.index');
+    }
+
+    /**
+     * Get users data for DataTables
+     */
+    public function getData(Request $request)
+    {
+        $query = User::query();
+
+        return DataTables::of($query)
+            ->addColumn('roles_badge', function ($user) {
+                $roles = $user->getRoleNames();
+                if ($roles->count() > 0) {
+                    $badges = '';
+                    foreach ($roles as $role) {
+                        $badges .= '<span class="badge bg-secondary me-1">' . $role . '</span>';
+                    }
+                    return $badges;
+                }
+                return '<span class="text-muted">No roles assigned</span>';
+            })
+            ->addColumn('name_with_badge', function ($user) {
+                $html = '<strong>' . $user->name . '</strong>';
+                if (in_array('Super Admin', $user->getRoleNames()->toArray() ?? [])) {
+                    $html .= ' <span class="badge bg-danger ms-2">Protected</span>';
+                }
+                return $html;
+            })
+            ->addColumn('actions', function ($user) {
+                $html = '<div class="d-flex gap-1">';
+                
+                if (in_array('Super Admin', $user->getRoleNames()->toArray() ?? [])) {
+                    if (Auth::user()->hasRole('Super Admin')) {
+                        $html .= '<a href="' . route('users.edit', $user->id) . '" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                  </a>';
+                    }
+                } else {
+                    if (auth()->user()->can('edit-user')) {
+                        $html .= '<a href="' . route('users.edit', $user->id) . '" class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                  </a>';
+                    }
+                    
+                    if (auth()->user()->can('delete-user') && Auth::user()->id != $user->id) {
+                        $html .= '<form method="POST" action="' . route('users.destroy', $user->id) . '" class="d-inline" onsubmit="return confirm(\'Are you sure you want to delete this user?\');">
+                                    ' . csrf_field() . '
+                                    ' . method_field('DELETE') . '
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                  </form>';
+                    }
+                }
+                
+                $html .= '</div>';
+                return $html;
+            })
+            ->rawColumns(['roles_badge', 'name_with_badge', 'actions'])
+            ->make(true);
     }
 
     /**

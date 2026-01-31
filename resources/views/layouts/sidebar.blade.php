@@ -1,45 +1,240 @@
-<div class="d-flex">
-    <!-- Sidebar -->
-    <div id="sidebar" class="sidebar p-2">
-        <!-- Logo -->
-        <div class="sidebar-logo mb-3">
-            <a href="{{ route('home') }}">
-                <img src="{{ asset('logo.png') }}" alt="Logo" class="img-fluid">
-            </a>
-        </div>
-
-        <!-- Dashboard -->
-        <a href="{{ route('home') }}" class="{{ request()->is('home') ? 'active' : '' }}">
-            <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
-        </a>
-
-        <!-- Logout -->
-        <a href="{{ route('logout') }}"
-           onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-            <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
-        </a>
-        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-            @csrf
-        </form>
-
-        <!-- Gold accent stripe -->
-        <div class="sidebar-accent"></div>
+<!-- Sidebar Navigation -->
+<nav id="sidebar">
+    <div class="sidebar-header1">
+        <img src="https://cdn.prod.website-files.com/68ce511f0ec3dbdca3e16b5b/68ce5272a15164172603c206_logo%20green.avif" style="width: 250px; padding-bottom: 20px; padding-top: 20px; padding-left: 6px;padding-right: 10px;">
+        <!-- <h3><i class="fas fa-leaf me-2"></i> GHG Monitor</h3> -->
     </div>
+    
+    @include('components.company-switcher')
+    
+    <ul class="sidebar-menu">
+        <li>
+            <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
 
-    <!-- Page Content -->
-    <div class="flex-grow-1">
-        <!-- Top Navbar -->
-        <nav class="navbar navbar-expand-lg">
-            <div class="container-fluid">
-                <button class="btn btn-outline-secondary me-3" id="toggleSidebar">
-                    <i class="bi bi-list"></i>
-                </button>
-                <span class="navbar-brand mb-0 h1">Dashboard</span>
-                <div class="ms-auto">
-                    <a class="btn btn-brand" href="{{ route('logout') }}"
-                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        {{ __('Logout') }}
+        <li>
+            <a href="{{ route('emission_records.index') }}" 
+               class="{{ request()->routeIs('emission_records.index') ? 'active' : '' }}">
+                <i class="fas fa-keyboard"></i>
+                <span>Manual Entry</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('emission_records.scope_entry') }}" 
+               class="{{ request()->routeIs('emission_records.scope_entry') ? 'active' : '' }}">
+                <i class="fas fa-layer-group"></i>
+                <span>Scope-Based Entry</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('emissions.import.form') }}" 
+               class="{{ request()->routeIs('emissions.import*') ? 'active' : '' }}">
+                <i class="fas fa-file-import"></i>
+                <span>Import Data</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('review_data.index') }}" 
+               class="{{ request()->routeIs('review_data.*') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Review Data</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('utility.create') }}" 
+               class="{{ request()->routeIs('utility.*') ? 'active' : '' }}">
+                <i class="fas fa-file-upload"></i>
+                <span>Upload Bills</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('import_history.index') }}" 
+               class="{{ request()->routeIs('import_history.*') ? 'active' : '' }}{{ demo_route_restricted('import_history.index') ? ' demo-restricted' : '' }}"
+               @if(demo_route_restricted('import_history.index')) title="Not available in demo" @endif>
+                <i class="fas fa-history"></i>
+                <span>Import History</span>
+                @if(demo_route_restricted('import_history.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('data_source.index') }}" 
+               class="{{ request()->routeIs('data_source.*') ? 'active' : '' }}">
+                <i class="fas fa-database"></i>
+                <span>Data Source</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('reports.index') }}" 
+               class="{{ request()->routeIs('reports.index') || request()->routeIs('reports.statistics') || request()->routeIs('reports.data') ? 'active' : '' }}">
+                <i class="fas fa-file-alt"></i>
+                <span>Reports</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('reports.ghg_protocol') }}" 
+               class="{{ request()->routeIs('reports.ghg_protocol') ? 'active' : '' }}">
+                <i class="fas fa-chart-bar"></i>
+                <span>GHG Protocol Report</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('targets.index') }}" 
+               class="{{ request()->routeIs('targets.*') ? 'active' : '' }}">
+                <i class="fas fa-bullseye"></i>
+                <span>Targets & Goals</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('scope3.index') }}" 
+               class="{{ request()->routeIs('scope3.*') ? 'active' : '' }}">
+                <i class="fas fa-layer-group"></i>
+                <span>Scope 3 Emissions</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('suppliers.index') }}" 
+               class="{{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                <i class="fas fa-truck"></i>
+                <span>Suppliers</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('supplier_surveys.index') }}" 
+               class="{{ request()->routeIs('supplier_surveys.*') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Supplier Surveys</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ route('data_quality.index') }}" 
+               class="{{ request()->routeIs('data_quality.*') ? 'active' : '' }}">
+                <i class="fas fa-check-circle"></i>
+                <span>Data Quality</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="#">
+                <i class="fas fa-project-diagram"></i>
+                <span>Projects & Initiatives</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="#">
+                <i class="fas fa-users"></i>
+                <span>Team Management</span>
+            </a>
+        </li>
+
+
+        <!-- Settings with Submenu -->
+        <li class="has-submenu">
+            <a href="#" class="submenu-toggle">
+                <i class="fas fa-sliders-h"></i>
+                <span>Settings</span>
+                <i class="fas fa-chevron-right dropdown-arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li>
+                    <a href="#">
+                        <i class="fas fa-cog"></i>
+                        <span>General Settings</span>
                     </a>
-                </div>
-            </div>
-        </nav>
+                </li>
+                <li>
+                    <a href="{{route('facilities.index')}}">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Facility / Location</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{route('departments.index')}}">
+                        <i class="fas fa-database"></i>
+                        <span>Department</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('emission_sources.index') }}">
+                        <i class="fas fa-industry"></i>
+                        <span>Emission Sources</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('emission_factors.index') }}">
+                        <i class="fas fa-calculator"></i>
+                        <span>Emission Factors</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('countries.index') }}">
+                        <i class="fas fa-flag"></i>
+                        <span>Countries</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-bell"></i>
+                        <span>Notifications</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Reporting Settings</span>
+                    </a>
+                </li>
+        <li>
+            <a href="{{ route('companies.index') }}" 
+               class="{{ request()->routeIs('companies.*') ? 'active' : '' }}{{ demo_route_restricted('companies.index') ? ' demo-restricted' : '' }}"
+               @if(demo_route_restricted('companies.index')) title="Not available in demo" @endif>
+                <i class="fas fa-building"></i>
+                <span>Companies</span>
+                @if(demo_route_restricted('companies.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('users.index') }}" 
+               class="{{ request()->routeIs('users.*') ? 'active' : '' }}{{ demo_route_restricted('users.index') ? ' demo-restricted' : '' }}"
+               @if(demo_route_restricted('users.index')) title="Not available in demo" @endif>
+                <i class="fas fa-users-cog"></i>
+                <span>Users</span>
+                @if(demo_route_restricted('users.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
+            </a>
+        </li>
+                <li>
+                    <a href="{{ route('roles.index') }}"
+                       class="{{ demo_route_restricted('roles.index') ? ' demo-restricted' : '' }}"
+                       @if(demo_route_restricted('roles.index')) title="Not available in demo" @endif>
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Roles & Permissions</span>
+                        @if(demo_route_restricted('roles.index'))<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;"></i>@endif
+                    </a>
+                </li>
+                <li>
+                    <a href="#">
+                        <i class="fas fa-plug"></i>
+                        <span>API Integrations</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+</nav>

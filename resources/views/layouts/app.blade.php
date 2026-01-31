@@ -1,245 +1,579 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Quality Registration Services</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>GHG Emissions Dashboard</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Bootstrap 5 & Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 5 JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- JS Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jQuery (required for DataTables + Select2 in some pages) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-  <style>
-  :root {
-    --primary-color: #1aa238;     
-    --secondary-color: #0d6620;   
-    --card-bg: #ffffff;
-    --hover-glow: rgba(26, 162, 56, 0.2);
-    --logo-bg: #f9f9f9;
-  }
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: #f4f6f9;
-  }
+    <!-- Bootstrap Icons (used by some CRUD action buttons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  /* Sidebar gradient like audit cards */
-  .sidebar {
-      min-height: 100vh;
-      width: 250px;
-      background: linear-gradient(135deg, green 0%, #3b3737 70%, gold 100%);
-      color: white;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
-      border-radius: 0 16px 16px 0;
-  }
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- ApexCharts CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.css">
+    
+    <style>
+        :root {
+            --primary-green: #2e7d32;
+            --light-green: #4caf50;
+            --dark-green: #1b5e20;
+            --primary-blue: #0277bd;
+            --light-blue: #03a9f4;
+            --gray-50: #f8f9fa;
+            --gray-100: #f1f3f4;
+            --gray-200: #e8eaed;
+            --gray-300: #dadce0;
+            --gray-600: #5f6368;
+            --gray-800: #3c4043;
+            --warning-orange: #f57c00;
+            --danger-red: #d32f2f;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-800);
+            overflow-x: hidden;
+        }
+        
+        /* Sidebar Styles */
+        #sidebar {
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            z-index: 1000;
+            padding-top: 0px;
+            padding-bottom: 20px;
+            transition: all 0.3s;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(46, 125, 50, 0.3) transparent;
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom Scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+        #sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #sidebar::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 10px 0;
+        }
+        
+        #sidebar::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(46, 125, 50, 0.4) 0%, rgba(46, 125, 50, 0.6) 100%);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #sidebar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(46, 125, 50, 0.6) 0%, rgba(46, 125, 50, 0.8) 100%);
+            border: 1px solid rgba(46, 125, 50, 0.2);
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background-color: var(--primary-green);
+            color: white;
+            margin: -70px -15px 20px -15px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--gray-800);
+            text-decoration: none;
+            border-radius: 0 30px 30px 0;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: var(--gray-100);
+            color: var(--primary-green);
+        }
+        
+        .sidebar-menu i {
+            width: 30px;
+            font-size: 18px;
+        }
+        
+        /* Main Content Styles */
+        #content {
+            margin-left: 250px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: -250px;
+            }
+            
+            #content {
+                margin-left: 0;
+            }
+            
+            #sidebar.active {
+                margin-left: 0;
+            }
+            
+            #content.active {
+                margin-left: 250px;
+            }
+        }
+        
+        /* Top Navigation */
+        .top-navbar {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            padding: 10px 20px;
+            position: sticky;
+            top: 20px;
+            z-index: 999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 16px;
+            margin: 0 0 20px 0;
+            border: 1px solid rgba(46, 125, 50, 0.08);
+        }
+        
+        .top-navbar .btn {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
+            border: none;
+            color: white;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.2);
+        }
+        
+        .top-navbar .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+            background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
+        }
+        
+        .top-navbar h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        
+        .notifications {
+            position: relative;
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: rgba(46, 125, 50, 0.08);
+            transition: all 0.3s ease;
+            color: var(--gray-600);
+        }
+        
+        .notifications:hover {
+            background: rgba(46, 125, 50, 0.15);
+            color: var(--primary-green);
+            transform: translateY(-2px);
+        }
+        
+        .notifications i {
+            font-size: 18px;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(211, 47, 47, 0.4);
+            border: 2px solid white;
+        }
+        
+        .user-profile .dropdown > a {
+            padding: 8px 16px 8px 8px;
+            border-radius: 12px;
+            background: rgba(46, 125, 50, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .user-profile .dropdown > a:hover {
+            background: rgba(46, 125, 50, 0.1);
+            border-color: rgba(46, 125, 50, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.1);
+        }
+        
+        .user-profile .dropdown > a .rounded-circle {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
+            box-shadow: 0 2px 8px rgba(46, 125, 50, 0.25);
+        }
+        
+        .user-profile .dropdown-menu {
+            border: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-radius: 12px;
+            padding: 8px;
+            margin-top: 8px;
+            min-width: 220px;
+        }
+        
+        .user-profile .dropdown-item {
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .user-profile .dropdown-item:hover {
+            background: rgba(46, 125, 50, 0.1);
+            color: var(--primary-green);
+        }
+        
+        .user-profile .dropdown-item i {
+            width: 20px;
+        }
+        
+        /* KPI Cards */
+        .kpi-card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+            height: 100%;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .kpi-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0 5px 0;
+        }
+        
+        .kpi-label {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+        
+        .kpi-change {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .change-positive {
+            color: var(--light-green);
+        }
+        
+        .change-negative {
+            color: var(--danger-red);
+        }
+        
+        /* Charts */
+        .chart-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            height: 100%;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 20px;
+        }
+        
+        /* Filters */
+        .filters-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+        
+        .filter-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--gray-800);
+        }
+        
+        /* Data Table */
+        .data-table-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+        
+        .table thead th {
+            border-top: none;
+            background-color: var(--gray-50);
+            color: var(--gray-800);
+            font-weight: 600;
+        }
+        
+        .scope-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .scope-1 {
+            background-color: rgba(46, 125, 50, 0.1);
+            color: var(--primary-green);
+        }
+        
+        .scope-2 {
+            background-color: rgba(3, 169, 244, 0.1);
+            color: var(--light-blue);
+        }
+        
+        .scope-3 {
+            background-color: rgba(121, 85, 72, 0.1);
+            color: #795548;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray-600);
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+        
+        /* Toggle button for mobile */
+        #sidebarCollapse {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            #sidebarCollapse {
+                display: flex;
+            }
+            
+            .top-navbar {
+                padding: 14px 18px;
+                margin: 0 0 15px 0;
+                top: 10px;
+            }
+            
+            .top-navbar h1 {
+                font-size: 1.3rem;
+            }
+            
+            .user-profile {
+                gap: 12px;
+            }
+            
+            .notifications {
+                width: 40px;
+                height: 40px;
+            }
+        }
 
- .sidebar a {
-    color: #fff;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    padding: 12px 20px;
-    border-radius: 8px;
-    margin-bottom: 4px;
-    transition: all 0.3s ease-in-out;
-}
 
-.sidebar a i {
-    margin-right: 10px;
-    color: limegreen; /* default icon color */
-    font-size: 20px;
-}
+        /* Submenu Styles */
+        .sidebar-menu .has-submenu {
+            position: relative;
+        }
 
-.sidebar a:hover {
-    background: rgba(255, 215, 0, 0.2);
-    transform: translateX(5px);
-}
+        .sidebar-menu .has-submenu > a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-.sidebar a:hover i {
-    color: gold; /* icon color on hover */
-}
+        .dropdown-arrow {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+            margin-left: auto;
+            margin-right: 5px;
+        }
 
-.sidebar a.active {
-    background: limegreen;
-    font-weight: 600;
-    box-shadow: inset 4px 0 0 gold;
-}
+        .has-submenu.active .dropdown-arrow {
+            transform: rotate(90deg);
+        }
 
-.sidebar a.active i {
-    color: white; /* icon visible on active button */
-}
+        .submenu {
+            list-style: none;
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background-color: var(--gray-50);
+            margin: 5px 0;
+            border-radius: 0 20px 20px 0;
+        }
 
+        .has-submenu.active .submenu {
+            max-height: 500px; /* Adjust based on content */
+        }
 
-  /* Accent stripe at the bottom */
-  .sidebar-accent {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 5px;
-      background-color: gold;
-      border-bottom-right-radius: 16px;
-  }
+        .submenu li {
+            margin: 0;
+        }
 
-  /* Sidebar Collapsed */
-  .sidebar-collapsed {
-      width: 70px;
-  }
-  .sidebar-collapsed a span {
-      display: none;
-  }
+        .submenu a {
+            padding: 10px 20px 10px 50px !important; /* Extra left padding for indentation */
+            font-size: 0.9rem;
+        }
 
-  /* Sidebar Logo with visible background */
-  .sidebar-logo {
-      padding: 10px;
-      text-align: center;
-      background: rgba(255, 255, 255, 0.85);
-      border-radius: 8px;
-      margin-bottom: 15px;
-  }
-  .sidebar-logo img {
-      max-width: 140px;
-      height: auto;
-  }
+        .submenu a:hover {
+            background-color: var(--gray-100) !important;
+        }
 
-  /* Navbar */
-  .navbar {
-      background: #fff;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-  }
-  .navbar-brand {
-      color: var(--primary-color);
-      font-weight: 600;
-  }
+        .submenu i {
+            width: 20px !important;
+            font-size: 0.9rem !important;
+        }
 
-  /* Content */
-  .content {
-      transition: margin-left 0.3s;
-      padding: 20px;
-  }
+        /* Active state for submenu items */
+        .submenu a.active {
+            background-color: var(--gray-100) !important;
+            color: var(--primary-green) !important;
+            border-left: 3px solid var(--primary-green);
+        }
+    </style>
 
-  /* Buttons */
-  .btn-brand {
-      background-color: var(--primary-color);
-      border: none;
-      color: #fff;
-  }
-  .btn-brand:hover {
-      background-color: var(--secondary-color);
-      color: #fff;
-  }
-  .btn-outline-brand {
-      border: 1px solid var(--primary-color);
-      color: var(--primary-color);
-  }
-  .btn-outline-brand:hover {
-      background-color: var(--primary-color);
-      color: #fff;
-  }
-
-  /* Tables */
-  #clientsTable thead {
-      background-color: var(--primary-color);
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-  }
-
-  /* Mobile Responsive */
-  @media (max-width: 768px) {
-      .sidebar {
-          position: fixed;
-          z-index: 1000;
-          left: -250px;
-          top: 0;
-      }
-      .sidebar.show {
-          left: 0;
-      }
-      .content {
-          margin-left: 0 !important;
-      }
-  }
-
-  .custom-btn {
-      background: linear-gradient(45deg, green, black, yellow);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-weight: bold;
-      transition: transform 0.2s;
-  }
-  .custom-btn:hover {
-      transform: scale(1.05);
-  }
-
-  .heading-bg{
-    /*background-color: #008000;*/
-    color: white;
-    background: linear-gradient(45deg, #1fb51f, #060606, #dada80);
-  }
-  </style>
+    @stack('styles')
 </head>
 <body>
-
-  @yield('content')
-
-<script>
-  const sidebar = document.getElementById('sidebar');
-  const toggleBtn = document.getElementById('toggleSidebar');
-
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.toggle('show');
-      } else {
-        sidebar.classList.toggle('sidebar-collapsed');
-      }
-    });
-  }
-</script>
+{{-- Sidebar include (blade) --}}
+@include('layouts.sidebar')
 
 
-<script>
-    // Pass userId to JS
-    window.userId = {{ auth()->id() }};
-</script>
+    <main class="p-4 bg-light flex-grow-1">
+        @yield('content')
+    </main>
 
-<script type="module">
+
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
-        if (window.Echo) {
-            window.Echo.private(`App.Models.User.${window.userId}`)
-                .notification((notification) => {
-                    console.log("📩 New Notification:", notification);
-                    // Display popup
-                    alert(notification.message);
-
-                    // Optional: Add to dropdown
-                    const dropdown = document.querySelector('#notification-dropdown');
-                    if(dropdown) {
-                        const item = document.createElement('li');
-                        item.textContent = notification.message;
-                        dropdown.prepend(item);
+        // Submenu toggle functionality
+        const submenuToggles = document.querySelectorAll('.submenu-toggle');
+        
+        submenuToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const parentLi = this.closest('.has-submenu');
+                
+                // Close other submenus if needed
+                document.querySelectorAll('.has-submenu.active').forEach(activeMenu => {
+                    if (activeMenu !== parentLi) {
+                        activeMenu.classList.remove('active');
                     }
                 });
-        } else {
-            console.error('Echo not initialized!');
+                
+                // Toggle current submenu
+                parentLi.classList.toggle('active');
+            });
+        });
+        
+        // Mobile sidebar toggle
+        const sidebarCollapse = document.getElementById('sidebarCollapse');
+        const sidebar = document.getElementById('sidebar');
+        const content = document.getElementById('content');
+        
+        if (sidebarCollapse) {
+            sidebarCollapse.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+                content.classList.toggle('active');
+            });
         }
+        
+        // Close submenus when clicking outside (for mobile)
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                if (!e.target.closest('#sidebar')) {
+                    document.querySelectorAll('.has-submenu.active').forEach(menu => {
+                        menu.classList.remove('active');
+                    });
+                }
+            }
+        });
     });
-</script>
-
-
-
-
+    </script>
+@stack('scripts')
 </body>
 </html>
