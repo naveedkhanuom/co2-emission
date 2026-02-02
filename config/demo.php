@@ -4,16 +4,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Demo Mode
+    | Demo Mode (per-user)
     |--------------------------------------------------------------------------
     |
-    | When enabled (DEMO_MODE=true in .env), users will see "You don't have
-    | permission" when they click on any route listed in restricted_routes.
-    | Use this when giving the system to someone for a demo.
+    | Restriction applies only to users marked as "Demo user" (is_demo_user = true).
+    | When enabled (DEMO_MODE=true), those users cannot access routes listed in
+    | restricted_routes and see a friendly "no permission" message. Other users
+    | have full access. Set to false to disable all demo restrictions globally.
     |
     */
 
-    'enabled' => env('DEMO_MODE', false),
+    'enabled' => env('DEMO_MODE', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -57,6 +58,43 @@ return [
         // Add more route names or prefixes (e.g. 'reports.ghg_protocol', 'targets.')
         // 'reports.ghg_protocol',
         // 'targets.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Restrictable Sidebar Options (per demo user)
+    |--------------------------------------------------------------------------
+    |
+    | When editing a demo user, admin can check which of these sidebar sections
+    | are restricted (link shows with lock; click shows no permission). Key is
+    | route prefix (with .) or exact route name; value is label in the form.
+    |
+    */
+
+    'restrictable_sidebar_options' => [
+        // Main menu
+        'home' => 'Dashboard',
+        'emission_records.' => 'Manual Entry & Scope-Based Entry',
+        'emissions.import.' => 'Import Data',
+        'review_data.' => 'Review Data',
+        'utility.' => 'Upload Bills',
+        'import_history.' => 'Import History',
+        'data_source.' => 'Data Source',
+        'reports.' => 'Reports & GHG Protocol Report',
+        'targets.' => 'Targets & Goals',
+        'scope3.' => 'Scope 3 Emissions',
+        'suppliers.' => 'Suppliers',
+        'supplier_surveys.' => 'Supplier Surveys',
+        'data_quality.' => 'Data Quality',
+        // Settings submenu
+        'facilities.' => 'Facility / Location',
+        'departments.' => 'Department',
+        'emission_sources.' => 'Emission Sources',
+        'emission_factors.' => 'Emission Factors',
+        'countries.' => 'Countries',
+        'companies.' => 'Companies',
+        'users.' => 'Users',
+        'roles.' => 'Roles & Permissions',
     ],
 
 ];

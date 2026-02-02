@@ -7,6 +7,15 @@ use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-companies|create-company|edit-company|delete-company', ['only' => ['index', 'show']]);
+        $this->middleware('permission:create-company', ['only' => ['store']]);
+        $this->middleware('permission:edit-company', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-company', ['only' => ['destroy']]);
+    }
+
     public function index(Request $request)
     {
         // If JSON request, return companies as JSON

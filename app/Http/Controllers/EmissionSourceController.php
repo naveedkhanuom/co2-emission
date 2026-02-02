@@ -8,6 +8,14 @@ use Yajra\DataTables\Facades\DataTables;
 
 class EmissionSourceController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-emission-sources|create-emission-source|edit-emission-source|delete-emission-source', ['only' => ['index', 'getData', 'show']]);
+        $this->middleware('permission:create-emission-source|edit-emission-source', ['only' => ['storeOrUpdate']]);
+        $this->middleware('permission:delete-emission-source', ['only' => ['destroy']]);
+    }
+
     /**
      * Display the main view.
      */

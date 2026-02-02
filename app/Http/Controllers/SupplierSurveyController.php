@@ -14,6 +14,10 @@ class SupplierSurveyController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-supplier-surveys|create-supplier-survey|edit-supplier-survey|delete-supplier-survey', ['only' => ['index', 'getData', 'show']]);
+        $this->middleware('permission:create-supplier-survey', ['only' => ['store']]);
+        $this->middleware('permission:edit-supplier-survey', ['only' => ['updateResponses', 'send', 'sendReminder']]);
+        $this->middleware('permission:delete-supplier-survey', ['only' => ['destroy']]);
     }
 
     /**

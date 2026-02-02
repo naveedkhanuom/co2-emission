@@ -24,6 +24,9 @@ class User extends Authenticatable
         'company_id',
         'is_super_admin',
         'company_access',
+        'is_demo_user',
+        'allowed_sidebar_routes',
+        'restricted_sidebar_routes',
     ];
 
     /**
@@ -48,6 +51,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
             'company_access' => 'array',
+            'is_demo_user' => 'boolean',
+            'allowed_sidebar_routes' => 'array',
+            'restricted_sidebar_routes' => 'array',
         ];
     }
 

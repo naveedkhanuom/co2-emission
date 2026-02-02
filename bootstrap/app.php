@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\SetCompanyConnection;
 use App\Http\Middleware\DemoRestrictAccess;
+use App\Http\Middleware\RestrictSidebarAccess;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web([
             SetCompanyConnection::class,
             DemoRestrictAccess::class,
+            RestrictSidebarAccess::class,
         ]);
 
         // ✅ Exclude Zoho webhook from CSRF

@@ -10,6 +10,14 @@ use App\Helpers\CompanyHelper;
 
 class SiteController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-sites|create-site|edit-site|delete-site', ['only' => ['index', 'getSites', 'show']]);
+        $this->middleware('permission:create-site|edit-site', ['only' => ['storeOrUpdate']]);
+        $this->middleware('permission:delete-site', ['only' => ['destroy']]);
+    }
+
     /**
      * Get current company ID from context.
      */

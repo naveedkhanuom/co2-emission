@@ -11,6 +11,10 @@ class EioFactorController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-eio-factors|create-eio-factor|edit-eio-factor|delete-eio-factor', ['only' => ['index', 'getData', 'getFactor', 'calculate']]);
+        $this->middleware('permission:create-eio-factor', ['only' => ['store']]);
+        $this->middleware('permission:edit-eio-factor', ['only' => ['update']]);
+        $this->middleware('permission:delete-eio-factor', ['only' => ['destroy']]);
     }
 
     /**

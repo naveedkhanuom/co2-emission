@@ -17,6 +17,9 @@ class BillOCRController extends Controller
 
     public function __construct(BillDataExtractor $extractor)
     {
+        $this->middleware('auth');
+        $this->middleware('permission:list-utility-bills|create-utility-bill', ['only' => ['showForm']]);
+        $this->middleware('permission:create-utility-bill', ['only' => ['upload']]);
         $this->extractor = $extractor;
     }
 

@@ -9,12 +9,21 @@ use Symfony\Component\HttpFoundation\Response;
 class DemoRestrictAccess
 {
     /**
-     * When demo mode is on, block access to restricted routes and show
-     * a friendly "You don't have permission" message.
+     * For users marked as "demo user" (is_demo_user = true), block access to
+     * restricted routes and show a friendly message. Other users are not affected.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! config('demo.enabled', false)) {
+        $user = $request->user();
+        if (! $user || ! $user->is_demo_user) {
+            return $next($request);
+        }
+        // Super Admin and Admin always have full access (no demo restriction)
+        if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
+            return $next($request);
+        }
+
+        if (! config('demo.enabled', true)) {
             return $next($request);
         }
 
@@ -28,16 +37,10 @@ class DemoRestrictAccess
             return $next($request);
         }
 
-        $restricted = config('demo.restricted_routes', []);
+        $restricted = get_demo_restricted_routes($user);
         foreach ($restricted as $pattern) {
-            if (str_ends_with($pattern, '.')) {
-                if (str_starts_with($routeName, $pattern)) {
-                    return $this->noPermissionResponse();
-                }
-            } else {
-                if ($routeName === $pattern) {
-                    return $this->noPermissionResponse();
-                }
+            if (route_matches_restricted_pattern($routeName, $pattern)) {
+                return $this->noPermissionResponse();
             }
         }
 

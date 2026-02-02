@@ -22,6 +22,9 @@ class UtilityBillController extends Controller
 
     public function __construct(BillDataExtractor $extractor)
     {
+        $this->middleware('auth');
+        $this->middleware('permission:list-utility-bills|create-utility-bill|edit-utility-bill|delete-utility-bill', ['only' => ['index', 'create']]);
+        $this->middleware('permission:create-utility-bill', ['only' => ['upload']]);
         $this->extractor = $extractor;
     }
 

@@ -11,6 +11,14 @@ use Yajra\DataTables\Facades\DataTables;
 
 class EmissionFactorController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-emission-factors|create-emission-factor|edit-emission-factor|delete-emission-factor', ['only' => ['index', 'getData', 'show']]);
+        $this->middleware('permission:create-emission-factor|edit-emission-factor', ['only' => ['storeOrUpdate']]);
+        $this->middleware('permission:delete-emission-factor', ['only' => ['destroy']]);
+    }
+
     public function index()
     {
         $sources = EmissionSource::orderBy('name')->get();

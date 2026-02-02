@@ -13,6 +13,9 @@ class TargetController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-targets|create-target|edit-target|delete-target', ['only' => ['index', 'getData', 'show']]);
+        $this->middleware('permission:create-target|edit-target', ['only' => ['storeOrUpdate']]);
+        $this->middleware('permission:delete-target', ['only' => ['destroy']]);
     }
     
     /**

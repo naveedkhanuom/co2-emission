@@ -14,6 +14,8 @@ class ImportHistoryController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-import-history|create-import-history|edit-import-history|delete-import-history', ['only' => ['index', 'getData', 'getStatistics', 'getTrendData', 'getStatusDistribution', 'show', 'getLogs', 'bulkAction']]);
+        $this->middleware('permission:delete-import-history', ['only' => ['destroy']]);
     }
 
     public function index()

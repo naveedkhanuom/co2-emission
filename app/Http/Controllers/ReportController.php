@@ -13,6 +13,14 @@ use Yajra\DataTables\Facades\DataTables;
 
 class ReportController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-reports|create-report|edit-report|delete-report', ['only' => ['index', 'statistics', 'getData', 'getReportsJson', 'getTemplates', 'getScheduledReports', 'getExportJobs', 'show', 'trackView']]);
+        $this->middleware('permission:create-report|edit-report', ['only' => ['storeOrUpdate', 'storeTemplate', 'storeScheduledReport', 'storeExportJob']]);
+        $this->middleware('permission:delete-report', ['only' => ['destroy']]);
+    }
+
     public function index() {
         $facilities = Facilities::all();
         $departments = Department::all();

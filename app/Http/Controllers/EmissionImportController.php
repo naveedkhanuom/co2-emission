@@ -13,6 +13,13 @@ use Carbon\Carbon;
 
 class EmissionImportController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-emissions-import|create-emissions-import|edit-emissions-import|delete-emissions-import', ['only' => ['showImportForm', 'downloadSample']]);
+        $this->middleware('permission:create-emissions-import', ['only' => ['import']]);
+    }
+
     public function showImportForm()
     {
         return view('emissions.import');

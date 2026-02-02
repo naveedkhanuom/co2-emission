@@ -21,7 +21,7 @@ class UserController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:create-user|edit-user|delete-user', ['only' => ['index','show','getData']]);
+        $this->middleware('permission:list-users|create-user|edit-user|delete-user', ['only' => ['index','show','getData']]);
         $this->middleware('permission:create-user', ['only' => ['create','store']]);
         $this->middleware('permission:edit-user', ['only' => ['edit','update']]);
         $this->middleware('permission:delete-user', ['only' => ['destroy']]);
@@ -58,6 +58,9 @@ class UserController extends Controller
                 $html = '<strong>' . $user->name . '</strong>';
                 if (in_array('Super Admin', $user->getRoleNames()->toArray() ?? [])) {
                     $html .= ' <span class="badge bg-danger ms-2">Protected</span>';
+                }
+                if ($user->is_demo_user) {
+                    $html .= ' <span class="badge bg-warning text-dark ms-1" title="Restricted access">Demo</span>';
                 }
                 return $html;
             })
@@ -101,7 +104,8 @@ class UserController extends Controller
     public function create(): View
     {
         return view('users.create', [
-            'roles' => Role::pluck('name')->all()
+            'roles' => Role::pluck('name')->all(),
+            'sidebarMenuItems' => config('sidebar.menu_items', []),
         ]);
     }
 
@@ -112,6 +116,9 @@ class UserController extends Controller
     {
         $input = $request->all();
         $input['password'] = Hash::make($request->password);
+        $input['is_demo_user'] = $request->boolean('is_demo_user');
+        $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
+        $input['restricted_sidebar_routes'] = $request->boolean('is_demo_user') ? $request->input('restricted_sidebar_routes', []) : null;
 
         $user = User::create($input);
         $user->assignRole($request->roles);
@@ -140,10 +147,17 @@ class UserController extends Controller
             }
         }
 
+        $sidebarMenuItems = config('sidebar.menu_items', []);
+        $allowedSidebarRoutes = $user->allowed_sidebar_routes;
+        $useDefaultSidebar = $allowedSidebarRoutes === null || ! is_array($allowedSidebarRoutes);
+
         return view('users.edit', [
             'user' => $user,
             'roles' => Role::pluck('name')->all(),
-            'userRoles' => $user->roles->pluck('name')->all()
+            'userRoles' => $user->roles->pluck('name')->all(),
+            'sidebarMenuItems' => $sidebarMenuItems,
+            'allowedSidebarRoutes' => is_array($allowedSidebarRoutes) ? $allowedSidebarRoutes : [],
+            'useDefaultSidebar' => $useDefaultSidebar,
         ]);
     }
 
@@ -153,13 +167,16 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
         $input = $request->all();
- 
-        if(!empty($request->password)){
+
+        if (!empty($request->password)) {
             $input['password'] = Hash::make($request->password);
-        }else{
+        } else {
             $input = $request->except('password');
         }
-        
+        $input['is_demo_user'] = $request->boolean('is_demo_user');
+        $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
+        $input['restricted_sidebar_routes'] = $request->boolean('is_demo_user') ? $request->input('restricted_sidebar_routes', []) : null;
+
         $user->update($input);
 
         $user->syncRoles($request->roles);
