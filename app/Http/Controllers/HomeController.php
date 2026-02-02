@@ -15,6 +15,7 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-dashboard', ['only' => ['index']]);
     }
 
     public function index(Request $request, $companyId = 1)

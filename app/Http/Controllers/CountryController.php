@@ -8,6 +8,14 @@ use Yajra\DataTables\Facades\DataTables;
 
 class CountryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-countries|create-country|edit-country|delete-country', ['only' => ['index', 'getData', 'show']]);
+        $this->middleware('permission:create-country|edit-country', ['only' => ['storeOrUpdate']]);
+        $this->middleware('permission:delete-country', ['only' => ['destroy']]);
+    }
+
     public function index()
     {
         return view('countries.index');

@@ -97,6 +97,37 @@
                                 </div>
 
                                 <div class="col-md-12">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" name="is_demo_user" value="1" id="is_demo_user"
+                                               {{ old('is_demo_user', $user->is_demo_user ?? false) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="is_demo_user">
+                                            Demo user (sidebar links you restrict below will show with a lock; clicking shows "no permission")
+                                        </label>
+                                    </div>
+                                </div>
+
+                                @php
+                                    $restrictableOptions = config('demo.restrictable_sidebar_options', []);
+                                    $restrictedSidebarRoutes = old('restricted_sidebar_routes', $user->restricted_sidebar_routes ?? []);
+                                    if (!is_array($restrictedSidebarRoutes)) {
+                                        $restrictedSidebarRoutes = [];
+                                    }
+                                @endphp
+                                <div id="restricted_sidebar_box" class="col-md-12 {{ old('is_demo_user', $user->is_demo_user ?? false) ? '' : 'd-none' }}">
+                                    <label class="form-label d-block">Restrict these sidebar links (demo user will see all links; checked ones show with lock and no access)</label>
+                                    <div class="border rounded p-3" style="background-color: #fff9e6;">
+                                        @foreach($restrictableOptions as $routeKey => $label)
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input restricted-route-cb" type="checkbox" name="restricted_sidebar_routes[]" value="{{ $routeKey }}" id="restrict_{{ md5($routeKey) }}"
+                                                       {{ in_array($routeKey, $restrictedSidebarRoutes, true) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="restrict_{{ md5($routeKey) }}">{{ $label }}</label>
+                                            </div>
+                                        @endforeach
+                                        <small class="text-muted">Checked items will appear in the sidebar with a lock; when the demo user clicks, they see "Demo user have no permission".</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
                                     <label for="roles" class="form-label">Roles <span class="text-danger">*</span></label>
                                     <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
                                         <div class="row">
@@ -141,6 +172,36 @@
                                     @enderror
                                     <small class="text-muted">Select one or more roles for this user</small>
                                 </div>
+
+                                {{-- Sidebar links: choose which menu items this user can see --}}
+                                <div class="col-md-12 mt-3">
+                                    <label class="form-label d-block">Sidebar access</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="use_default_sidebar" value="1" id="use_default_sidebar"
+                                               {{ old('use_default_sidebar', $useDefaultSidebar ?? true) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="use_default_sidebar">
+                                            Use default access (from role) — show all links the user has permission for
+                                        </label>
+                                    </div>
+                                    <div id="sidebar_routes_box" class="border rounded p-3 {{ old('use_default_sidebar', $useDefaultSidebar ?? true) ? 'd-none' : '' }}" style="max-height: 320px; overflow-y: auto; background-color: #f8f9fa;">
+                                        <p class="small text-muted mb-2">Or select specific sidebar links to enable for this user:</p>
+                                        @php $menuItems = $sidebarMenuItems ?? config('sidebar.menu_items', []); @endphp
+                                        @foreach($menuItems as $section => $items)
+                                            <div class="mb-3">
+                                                <strong class="text-uppercase small text-secondary">{{ $section }}</strong>
+                                                <div class="ms-2 mt-1">
+                                                    @foreach($items as $routeName => $label)
+                                                        <div class="form-check">
+                                                            <input class="form-check-input sidebar-route-cb" type="checkbox" name="sidebar_routes[]" value="{{ $routeName }}" id="sb_{{ $routeName }}"
+                                                                   {{ in_array($routeName, old('sidebar_routes', $allowedSidebarRoutes ?? []), true) ? 'checked' : '' }}>
+                                                            <label class="form-check-label" for="sb_{{ $routeName }}">{{ $label }}</label>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="row mt-4">
@@ -162,4 +223,25 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.getElementById('use_default_sidebar').addEventListener('change', function() {
+    document.getElementById('sidebar_routes_box').classList.toggle('d-none', this.checked);
+    document.querySelectorAll('.sidebar-route-cb').forEach(function(cb) { cb.disabled = this.checked; }.bind(this));
+});
+document.querySelectorAll('.sidebar-route-cb').forEach(function(cb) {
+    cb.disabled = document.getElementById('use_default_sidebar').checked;
+});
+document.getElementById('is_demo_user').addEventListener('change', function() {
+    var box = document.getElementById('restricted_sidebar_box');
+    if (this.checked) {
+        box.classList.remove('d-none');
+    } else {
+        box.classList.add('d-none');
+        document.querySelectorAll('.restricted-route-cb').forEach(function(cb) { cb.checked = false; });
+    }
+});
+</script>
+@endpush
 @endsection

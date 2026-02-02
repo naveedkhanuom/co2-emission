@@ -127,6 +127,22 @@
             color: var(--primary-green);
         }
         
+        /* Demo restricted: show lock; link still works so click shows "no permission" page */
+        .sidebar-menu a.demo-restricted {
+            opacity: 0.95;
+        }
+        .sidebar-menu a.demo-restricted .fa-lock {
+            flex-shrink: 0;
+        }
+        
+        /* User restricted (per-user sidebar access): show lock; access will be blocked by middleware */
+        .sidebar-menu a.user-restricted {
+            opacity: 0.85;
+        }
+        .sidebar-menu a.user-restricted .fa-lock {
+            flex-shrink: 0;
+        }
+        
         .sidebar-menu i {
             width: 30px;
             font-size: 18px;

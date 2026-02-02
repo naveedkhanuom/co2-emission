@@ -13,6 +13,8 @@ class DataQualityController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-data-quality|create-data-quality|edit-data-quality|delete-data-quality', ['only' => ['index', 'getSummary']]);
+        $this->middleware('permission:edit-data-quality', ['only' => ['updateQuality']]);
     }
 
     /**

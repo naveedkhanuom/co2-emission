@@ -25,7 +25,8 @@ class UpdateUserRequest extends FormRequest
             'name' => 'required|string|max:250',
             'email' => 'required|string|email:rfc,dns|max:250|unique:users,email,'.$this->user->id,
             'password' => 'nullable|string|min:8|confirmed',
-            'roles' => 'required'
+            'roles' => 'required',
+            'is_demo_user' => 'sometimes|boolean',
         ];
     }
 }

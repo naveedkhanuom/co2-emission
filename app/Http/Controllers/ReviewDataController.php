@@ -13,6 +13,8 @@ class ReviewDataController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-review-data|create-review-data|edit-review-data|delete-review-data', ['only' => ['index', 'getData', 'show']]);
+        $this->middleware('permission:edit-review-data', ['only' => ['updateStatus', 'bulkUpdate']]);
     }
 
     public function index()

@@ -12,6 +12,7 @@ class GHGReportController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-reports|create-report|edit-report|delete-report', ['only' => ['index']]);
     }
     
     public function index(Request $request)

@@ -22,7 +22,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('Super Admin') ? true : null;
+            // Super Admin and Admin have full access to everything
+            if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
+                return true;
+            }
+            return null;
         });
         
         Paginator::useBootstrapFive();

@@ -8,6 +8,15 @@ use App\Helpers\CompanyHelper;
 
 class FacilitiesController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-facilities|create-facility|edit-facility|delete-facility', ['only' => ['index']]);
+        $this->middleware('permission:create-facility', ['only' => ['store']]);
+        $this->middleware('permission:edit-facility', ['only' => ['update']]);
+        $this->middleware('permission:delete-facility', ['only' => ['destroy']]);
+    }
+
     /**
      * Get current company ID from context.
      */

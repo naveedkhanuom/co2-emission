@@ -14,6 +14,7 @@ class Scope3Controller extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:list-scope3|create-scope3|edit-scope3|delete-scope3', ['only' => ['index', 'getScope3Summary', 'getCategories', 'getCategoryDetails']]);
     }
 
     /**

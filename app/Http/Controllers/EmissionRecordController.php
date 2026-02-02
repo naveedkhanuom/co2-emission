@@ -16,6 +16,15 @@ use Illuminate\Support\Facades\Validator;
 
 class EmissionRecordController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-emission-records|create-emission-record|edit-emission-record|delete-emission-record', ['only' => ['index', 'scopeEntry', 'getData', 'show']]);
+        $this->middleware('permission:create-emission-record', ['only' => ['store', 'storeOrUpdate']]);
+        $this->middleware('permission:edit-emission-record', ['only' => ['update']]);
+        $this->middleware('permission:delete-emission-record', ['only' => ['destroy']]);
+    }
+
     /**
      * Store uploaded supporting documents and return stored paths.
      *

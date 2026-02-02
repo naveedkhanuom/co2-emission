@@ -9,6 +9,15 @@ use App\Helpers\CompanyHelper;
 
 class DepartmentController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $this->middleware('permission:list-departments|create-department|edit-department|delete-department', ['only' => ['index', 'show']]);
+        $this->middleware('permission:create-department', ['only' => ['store']]);
+        $this->middleware('permission:edit-department', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:delete-department', ['only' => ['destroy']]);
+    }
+
     /**
      * Get current company ID from context.
      */

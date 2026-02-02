@@ -37,15 +37,14 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+    // Roles & Permissions (Spatie)
+    Route::resource('roles', RoleController::class);
+
+    // Users - data route must come before resource route
+    Route::get('users/data', [UserController::class, 'getData'])->name('users.data');
+    Route::resource('users', UserController::class);
 });
-
-Route::resources([
-    'roles' => RoleController::class,
-]);
-
-// Users routes - data route must come before resource route
-Route::get('users/data', [UserController::class, 'getData'])->name('users.data');
-Route::resource('users', UserController::class);
 
 
 
@@ -147,7 +146,7 @@ Route::prefix('import-history')->name('import_history.')->middleware('auth')->gr
     Route::post('/bulk-action', [App\Http\Controllers\ImportHistoryController::class, 'bulkAction'])->name('bulk_action');
 });
 
-Route::prefix('review-data')->name('review_data.')->group(function() {
+Route::prefix('review-data')->name('review_data.')->middleware('auth')->group(function() {
     Route::get('/', [ReviewDataController::class, 'index'])->name('index');
     Route::get('/data', [ReviewDataController::class, 'getData'])->name('data');
     Route::get('/{id}', [ReviewDataController::class, 'show'])->name('show');
