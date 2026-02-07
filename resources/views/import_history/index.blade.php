@@ -1,5 +1,8 @@
 @extends('layouts.app')
 
+@section('title', 'Import History')
+@section('page-title', 'Import History')
+
 @section('content')
     <!-- Main Content -->
     <div id="content">
@@ -293,7 +296,7 @@
                         <select class="form-select" id="bulkActionSelect">
                             <option value="">Choose an action...</option>
                             <option value="delete">Delete Selected</option>
-                            <option value="export">Export Logs</option>
+                            <option value="export">Export Selected Logs</option>
                             <option value="archive">Archive Selected</option>
                         </select>
                     </div>
@@ -313,9 +316,9 @@
 
 @push('styles')
 <style>
-    /* Import Summary */
+    /* Import Summary - system color scheme */
     .import-summary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
         color: white;
         border-radius: 10px;
         padding: 25px;
@@ -571,8 +574,6 @@
 @endpush
 
 @push('scripts')
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <!-- DataTables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -616,10 +617,11 @@ $(document).ready(function() {
         responsive: true,
     });
     
-    // Load statistics
+    // Load statistics and charts
     loadStatistics();
     loadTrendData();
     loadStatusDistribution();
+    loadImportSources();
     
     // Filter handlers
     $('#applyFilters').click(function() {
@@ -667,11 +669,13 @@ function loadStatistics() {
             $('#thisMonthRecords').text(data.this_month_records.toLocaleString() + ' this month');
             $('#pendingReviews').text(data.pending_reviews);
             $('#importChange').text((data.percentage_change >= 0 ? '+' : '') + data.percentage_change + '%');
-            
-            // Statistics panel
             $('#statSuccessRate').text(data.success_rate + '%');
             $('#statAvgTime').text(data.avg_processing_time + 's');
             $('#statTotalRecords').text(data.total_records.toLocaleString());
+            $('#statFailed').text(data.failed_last_30_days || 0);
+        })
+        .fail(function() {
+            showToast('Failed to load statistics', 'error');
         });
 }
 
@@ -712,6 +716,24 @@ function loadTrendData() {
             
             trendChart = new ApexCharts(document.querySelector("#importTrendChart"), options);
             trendChart.render();
+        })
+        .fail(function() {
+            showToast('Failed to load trend data', 'error');
+        });
+}
+
+function loadImportSources() {
+    $.get('{{ route("import_history.sources") }}')
+        .done(function(data) {
+            let html = '';
+            if (data.sources && data.sources.length > 0) {
+                data.sources.forEach(function(s) {
+                    html += '<div class="d-flex justify-content-between align-items-center py-2 border-bottom"><span>' + s.type + '</span><span class="badge bg-primary">' + s.count + ' imports</span><span class="text-muted small">' + (s.records || 0).toLocaleString() + ' records</span></div>';
+                });
+            } else {
+                html = '<p class="text-muted small mb-0">No import data yet</p>';
+            }
+            $('#importSourcesStats').html(html);
         });
 }
 
@@ -751,6 +773,9 @@ function loadStatusDistribution() {
             
             distributionChart = new ApexCharts(document.querySelector("#statusDistributionChart"), options);
             distributionChart.render();
+        })
+        .fail(function() {
+            showToast('Failed to load distribution', 'error');
         });
 }
 
@@ -787,8 +812,10 @@ function viewImportDetails(id) {
             $('#importDetailsContent').html(details);
             new bootstrap.Modal(document.getElementById('importDetailsModal')).show();
             
-            // Load logs
             loadImportLogs(id);
+        })
+        .fail(function() {
+            showToast('Failed to load import details', 'error');
         });
 }
 
@@ -817,6 +844,9 @@ function loadImportLogs(id) {
                 logsHtml = '<p class="text-muted text-center">No logs available</p>';
             }
             $('#importLogs').html(logsHtml);
+        })
+        .fail(function() {
+            $('#importLogs').html('<p class="text-muted text-center">Failed to load logs</p>');
         });
 }
 
@@ -825,36 +855,68 @@ function downloadImportFile(id) {
 }
 
 function retryImport(id) {
-    if (confirm('Retry this import?')) {
-        showToast('Re-importing...', 'info');
-        // Implement retry logic
-    }
+    if (!confirm('Retry this import? The original file will be re-processed.')) return;
+    showToast('Re-importing...', 'info');
+    $.ajax({
+        url: '{{ url("import-history") }}/' + id + '/retry',
+        type: 'POST',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        data: { _token: '{{ csrf_token() }}' },
+        success: function(data) {
+            if (data.status === 'success') {
+                showToast(data.message, 'success');
+                importTable.draw();
+                if (typeof bootstrap !== 'undefined' && selectedImportId) {
+                    const modalEl = document.getElementById('importDetailsModal');
+                    if (modalEl && bootstrap.Modal.getInstance(modalEl)) bootstrap.Modal.getInstance(modalEl).hide();
+                }
+            } else {
+                showToast(data.message || 'Retry failed', 'error');
+            }
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Retry failed';
+            showToast(msg, 'error');
+        }
+    });
 }
 
 function deleteImport(id) {
-    if (confirm('Delete this import? This action cannot be undone.')) {
-        $.ajax({
-            url: '{{ url("import-history") }}/' + id,
-            type: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function() {
-                importTable.draw();
-                showToast('Import deleted', 'success');
-            }
-        });
-    }
+    if (!confirm('Delete this import? This action cannot be undone.')) return;
+    $.ajax({
+        url: '{{ route("import_history.destroy", ["id" => "__ID__"]) }}'.replace('__ID__', id),
+        type: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        success: function() {
+            importTable.draw();
+            loadStatistics();
+            showToast('Import deleted', 'success');
+        },
+        error: function() {
+            showToast('Failed to delete import', 'error');
+        }
+    });
 }
 
 function cancelImport(id) {
-    if (confirm('Cancel this import?')) {
-        showToast('Import cancelled', 'success');
-    }
+    if (!confirm('Cancel this import?')) return;
+    $.ajax({
+        url: '{{ url("import-history") }}/' + id + '/cancel',
+        type: 'POST',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        data: { _token: '{{ csrf_token() }}' },
+        success: function() {
+            showToast('Import cancelled', 'success');
+            importTable.draw();
+        },
+        error: function() {
+            showToast('Failed to cancel import', 'error');
+        }
+    });
 }
 
 function runNowImport(id) {
-    showToast('Running import now...', 'info');
+    showToast('Run now is available for scheduled imports only.', 'info');
 }
 
 function showBulkActions() {
@@ -877,6 +939,19 @@ function applyBulkAction() {
         return;
     }
     
+    if (action === 'export') {
+        window.location.href = '{{ route("import_history.export_logs") }}?ids=' + selected.join(',');
+        const modalEl = document.getElementById('bulkActionsModal');
+        if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(modalEl)) {
+            bootstrap.Modal.getInstance(modalEl).hide();
+        }
+        $('#bulkActionSelect').val('');
+        $('.row-checkbox:checked').prop('checked', false);
+        $('#selectAll').prop('checked', false);
+        updateSelectedCount();
+        return;
+    }
+    
     $.ajax({
         url: '{{ route("import_history.bulk_action") }}',
         type: 'POST',
@@ -885,10 +960,22 @@ function applyBulkAction() {
             ids: selected,
             _token: '{{ csrf_token() }}'
         },
-        success: function() {
+        success: function(data) {
             importTable.draw();
-            $('#bulkActionsModal').modal('hide');
-            showToast('Bulk action completed', 'success');
+            loadStatistics();
+            const modalEl = document.getElementById('bulkActionsModal');
+            if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(modalEl)) {
+                bootstrap.Modal.getInstance(modalEl).hide();
+            }
+            $('#bulkActionSelect').val('');
+            $('.row-checkbox:checked').prop('checked', false);
+            $('#selectAll').prop('checked', false);
+            updateSelectedCount();
+            showToast(data.message || 'Bulk action completed', 'success');
+        },
+        error: function(xhr) {
+            const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Bulk action failed';
+            showToast(msg, 'error');
         }
     });
 }
@@ -899,12 +986,16 @@ function updateSelectedCount() {
 }
 
 function exportHistory() {
-    showToast('Exporting import history...', 'info');
+    const params = new URLSearchParams({
+        date_range: $('#dateRangeFilter').val(),
+        status: $('#statusFilter').val()
+    });
+    window.location.href = '{{ route("import_history.export") }}?' + params.toString();
 }
 
 function downloadImportReport() {
     if (selectedImportId) {
-        showToast('Downloading import report...', 'info');
+        window.location.href = '{{ url("import-history") }}/' + selectedImportId + '/report';
     }
 }
 

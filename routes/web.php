@@ -140,8 +140,15 @@ Route::prefix('import-history')->name('import_history.')->middleware('auth')->gr
     Route::get('/statistics', [App\Http\Controllers\ImportHistoryController::class, 'getStatistics'])->name('statistics');
     Route::get('/trend', [App\Http\Controllers\ImportHistoryController::class, 'getTrendData'])->name('trend');
     Route::get('/distribution', [App\Http\Controllers\ImportHistoryController::class, 'getStatusDistribution'])->name('distribution');
+    Route::get('/export', [App\Http\Controllers\ImportHistoryController::class, 'exportHistory'])->name('export');
+    Route::get('/export-logs', [App\Http\Controllers\ImportHistoryController::class, 'exportLogsBulk'])->name('export_logs');
+    Route::get('/sources', [App\Http\Controllers\ImportHistoryController::class, 'getImportSources'])->name('sources');
     Route::get('/{id}', [App\Http\Controllers\ImportHistoryController::class, 'show'])->name('show');
     Route::get('/{id}/logs', [App\Http\Controllers\ImportHistoryController::class, 'getLogs'])->name('logs');
+    Route::get('/{id}/download', [App\Http\Controllers\ImportHistoryController::class, 'downloadFile'])->name('download');
+    Route::get('/{id}/report', [App\Http\Controllers\ImportHistoryController::class, 'downloadReport'])->name('report');
+    Route::post('/{id}/retry', [App\Http\Controllers\ImportHistoryController::class, 'retry'])->name('retry');
+    Route::post('/{id}/cancel', [App\Http\Controllers\ImportHistoryController::class, 'cancel'])->name('cancel');
     Route::delete('/{id}', [App\Http\Controllers\ImportHistoryController::class, 'destroy'])->name('destroy');
     Route::post('/bulk-action', [App\Http\Controllers\ImportHistoryController::class, 'bulkAction'])->name('bulk_action');
 });
