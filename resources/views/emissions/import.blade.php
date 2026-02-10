@@ -7,70 +7,71 @@
 <div id="content">
     @include('layouts.top-nav')
 
-    <div class="container mt-4">
-        <!-- Header Card -->
-        <div class="import-header-card mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="mb-2"><i class="fas fa-file-import me-2 text-primary"></i>Import Emissions Data</h3>
-                    <p class="text-muted mb-0">Upload and import emission records from Excel or CSV files</p>
+    <div class="container-fluid px-4 py-4 import-page">
+        <!-- Header -->
+        <div class="import-hero mb-4">
+            <div class="import-hero-inner">
+                <div class="import-hero-content">
+                    <h1 class="import-hero-title">
+                        <i class="fas fa-file-import import-hero-icon"></i>
+                        Import Emissions Data
+                    </h1>
+                    <p class="import-hero-subtitle">Upload Excel or CSV files to bulk import emission records. Map your columns, preview the data, and import in a few clicks.</p>
+                    <div class="import-hero-actions">
+                        <a href="{{ route('emissions.sample') }}" class="btn btn-outline-light btn-lg rounded-pill">
+                            <i class="fas fa-download me-2"></i>Download Sample Template
+                        </a>
+                        @if(\Illuminate\Support\Facades\Route::has('import_history.index'))
+                        <a href="{{ route('import_history.index') }}" class="btn btn-light btn-lg rounded-pill ms-2">
+                            <i class="fas fa-history me-2"></i>Import History
+                        </a>
+                        @endif
+                    </div>
                 </div>
-                <a href="{{ route('emissions.sample') }}" class="btn btn-info btn-lg">
-                    <i class="fas fa-download me-2"></i>Download Sample Template
-                </a>
             </div>
         </div>
 
-        <!-- Wizard Steps -->
-        <div class="wizard-container mb-4">
-            <div class="wizard-steps">
-                <div class="wizard-step active" id="wizard-step-1">
-                    <div class="wizard-step-icon">
-                        <i class="fas fa-upload"></i>
+        <!-- Wizard -->
+        <div class="import-wizard mb-4">
+            <div class="import-wizard-steps">
+                <div class="import-wizard-step active" id="wizard-step-1" data-step="1">
+                    <div class="import-wizard-step-circle">
+                        <span class="import-wizard-step-num">1</span>
                     </div>
-                    <div class="wizard-step-content">
-                        <div class="wizard-step-title">Upload File</div>
-                        <div class="wizard-step-desc">Select your file</div>
-                    </div>
+                    <span class="import-wizard-step-label">Upload</span>
                 </div>
-                <div class="wizard-step-line"></div>
-                <div class="wizard-step" id="wizard-step-2">
-                    <div class="wizard-step-icon">
-                        <i class="fas fa-columns"></i>
+                <div class="import-wizard-step-line"></div>
+                <div class="import-wizard-step" id="wizard-step-2" data-step="2">
+                    <div class="import-wizard-step-circle">
+                        <span class="import-wizard-step-num">2</span>
                     </div>
-                    <div class="wizard-step-content">
-                        <div class="wizard-step-title">Map Columns</div>
-                        <div class="wizard-step-desc">Match your columns</div>
-                    </div>
+                    <span class="import-wizard-step-label">Map Columns</span>
                 </div>
-                <div class="wizard-step-line"></div>
-                <div class="wizard-step" id="wizard-step-3">
-                    <div class="wizard-step-icon">
-                        <i class="fas fa-check-circle"></i>
+                <div class="import-wizard-step-line"></div>
+                <div class="import-wizard-step" id="wizard-step-3" data-step="3">
+                    <div class="import-wizard-step-circle">
+                        <span class="import-wizard-step-num">3</span>
                     </div>
-                    <div class="wizard-step-content">
-                        <div class="wizard-step-title">Review & Import</div>
-                        <div class="wizard-step-desc">Confirm and import</div>
-                    </div>
+                    <span class="import-wizard-step-label">Review & Import</span>
                 </div>
             </div>
         </div>
 
         <!-- Step 1: Upload -->
-        <div class="import-card" id="step1">
-            <div class="card-header-section">
-                <h5 class="mb-0"><i class="fas fa-cloud-upload-alt me-2 text-primary"></i>Upload Your File</h5>
-            </div>
-            <div class="card-body-section">
-                <div id="dropzone-area" class="dropzone-area">
-                    <div class="dropzone-content">
-                        <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
-                        <h5 class="dropzone-title">Drop your file here or click to browse</h5>
-                        <p class="dropzone-subtitle">Supports CSV, XLS, and XLSX files up to 10MB</p>
-                        <div class="dropzone-file-types">
-                            <span class="badge bg-light text-dark me-2"><i class="fas fa-file-csv me-1"></i>CSV</span>
-                            <span class="badge bg-light text-dark me-2"><i class="fas fa-file-excel me-1"></i>XLS</span>
-                            <span class="badge bg-light text-dark"><i class="fas fa-file-excel me-1"></i>XLSX</span>
+        <div class="import-card card-shadow" id="step1">
+            <div class="import-card-body">
+                <div class="import-upload-zone" id="dropzone-area">
+                    <input type="file" id="fileInput" accept=".csv,.xls,.xlsx" class="d-none">
+                    <div class="import-upload-content">
+                        <div class="import-upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h4 class="import-upload-title">Drop your file here or click to browse</h4>
+                        <p class="import-upload-subtitle">Supports CSV, XLS, and XLSX files (max 10MB)</p>
+                        <div class="import-upload-badges">
+                            <span class="badge">CSV</span>
+                            <span class="badge">XLS</span>
+                            <span class="badge">XLSX</span>
                         </div>
                     </div>
                 </div>
@@ -78,34 +79,47 @@
         </div>
 
         <!-- Step 2: Map Columns -->
-        <div class="import-card d-none" id="step2">
-            <div class="card-header-section">
-                <h5 class="mb-0"><i class="fas fa-columns me-2 text-primary"></i>Map Your File Columns</h5>
-                <p class="text-muted mb-0 small">Match your file columns to the system fields</p>
+        <div class="import-card card-shadow d-none" id="step2">
+            <div class="import-card-header">
+                <h5 class="mb-0"><i class="fas fa-columns me-2 text-primary"></i>Map Your Columns</h5>
+                <p class="text-muted mb-0 small">Match your file columns to the system fields. Required fields are marked with <span class="text-danger">*</span>.</p>
             </div>
-            <div class="card-body-section">
+            <div class="import-card-body">
                 <form id="mappingForm">
-                    <div class="row g-3">
-                        @foreach(['entry_date','facility_id','department_id','scope','emission_source','activity_data','emission_factor','co2e_value','confidence_level','notes'] as $field)
-                            <div class="col-md-6">
-                                <label class="form-label mb-2">
-                                    <i class="fas fa-tag me-1 text-muted"></i>
-                                    {{ ucfirst(str_replace('_',' ',$field)) }}
-                                    @if(in_array($field, ['entry_date','facility_id','department_id']))
+                    <div class="row g-4">
+                        @php
+                            $fields = [
+                                'entry_date' => ['label' => 'Entry Date', 'required' => true, 'alt' => 'date'],
+                                'facility_id' => ['label' => 'Facility', 'required' => true, 'alt' => 'facility'],
+                                'department_id' => ['label' => 'Department', 'required' => true, 'alt' => 'department'],
+                                'scope' => ['label' => 'Scope', 'required' => false],
+                                'emission_source' => ['label' => 'Emission Source', 'required' => false],
+                                'activity_data' => ['label' => 'Activity Data', 'required' => false],
+                                'emission_factor' => ['label' => 'Emission Factor', 'required' => false],
+                                'co2e_value' => ['label' => 'CO2e Value', 'required' => false],
+                                'confidence_level' => ['label' => 'Confidence Level', 'required' => false],
+                                'notes' => ['label' => 'Notes', 'required' => false],
+                            ];
+                        @endphp
+                        @foreach($fields as $field => $opts)
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label fw-semibold">
+                                    {{ $opts['label'] }}
+                                    @if($opts['required'])
                                         <span class="text-danger">*</span>
                                     @endif
                                 </label>
-                                <select class="form-select form-select-lg" name="{{ $field }}">
-                                    <option value="">-- Select Column --</option>
+                                <select class="form-select mapping-select" name="{{ $field }}" data-field="{{ $field }}">
+                                    <option value="">— Select column —</option>
                                 </select>
                             </div>
                         @endforeach
                     </div>
-                    <div class="mt-4 pt-3 border-top">
-                        <button type="button" class="btn btn-secondary btn-lg me-2" id="backToStep1">
+                    <div class="import-form-actions mt-4 pt-4">
+                        <button type="button" class="btn btn-outline-secondary btn-lg px-4" id="backToStep1">
                             <i class="fas fa-arrow-left me-2"></i>Back
                         </button>
-                        <button type="button" class="btn btn-primary btn-lg" id="toStep3">
+                        <button type="button" class="btn btn-primary btn-lg px-4" id="toStep3">
                             Next: Review <i class="fas fa-arrow-right ms-2"></i>
                         </button>
                     </div>
@@ -114,29 +128,47 @@
         </div>
 
         <!-- Step 3: Review & Import -->
-        <div class="import-card d-none" id="step3">
-            <div class="card-header-section">
+        <div class="import-card card-shadow d-none" id="step3">
+            <div class="import-card-header">
                 <h5 class="mb-0"><i class="fas fa-eye me-2 text-primary"></i>Preview & Import</h5>
-                <p class="text-muted mb-0 small">Review your data before importing</p>
+                <p class="text-muted mb-0 small">Review the first rows before importing. Unmapped columns are excluded.</p>
             </div>
-            <div class="card-body-section">
-                <div id="previewTable" class="preview-table-wrapper"></div>
-                <div class="mt-4 pt-3 border-top">
-                    <div class="form-check form-check-lg mb-4">
-                        <input class="form-check-input" type="checkbox" id="overwriteData">
-                        <label class="form-check-label" for="overwriteData">
-                            <strong>Overwrite existing data</strong>
-                            <span class="d-block small text-muted">If checked, existing records with matching criteria will be updated</span>
-                        </label>
-                    </div>
-                    <div>
-                        <button type="button" class="btn btn-secondary btn-lg me-2" id="backToStep2">
-                            <i class="fas fa-arrow-left me-2"></i>Back
-                        </button>
-                        <button type="button" class="btn btn-success btn-lg" id="importDataBtn">
-                            <i class="fas fa-upload me-2"></i>Import Data
-                        </button>
-                    </div>
+            <div class="import-card-body">
+                <div id="previewTable" class="import-preview-table"></div>
+                <div class="form-check form-switch mt-4 py-3 px-3 rounded" style="background: var(--gray-50);">
+                    <input class="form-check-input" type="checkbox" id="overwriteData">
+                    <label class="form-check-label fw-semibold" for="overwriteData">
+                        Overwrite existing data
+                    </label>
+                    <p class="small text-muted mb-0 mt-1">When enabled, matching records (same date, facility, department, emission source) will be updated instead of duplicated.</p>
+                </div>
+                <div class="import-form-actions mt-4">
+                    <button type="button" class="btn btn-outline-secondary btn-lg px-4" id="backToStep2">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg px-5" id="importDataBtn">
+                        <i class="fas fa-upload me-2"></i>Import Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="importSuccessModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center py-5">
+                <div class="import-success-icon mb-3">
+                    <i class="fas fa-check-circle" style="color: var(--primary-green);"></i>
+                </div>
+                <h4 class="mb-2">Import Completed</h4>
+                <p class="text-muted mb-4" id="importSuccessMessage">Your data has been imported successfully.</p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap" id="importSuccessStats"></div>
+                <div class="mt-4">
+                    <a href="{{ route('emission_records.index') }}" class="btn btn-primary me-2">View Emission Records</a>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" onclick="location.reload()">Import More</button>
                 </div>
             </div>
         </div>
@@ -146,478 +178,564 @@
 
 @push('styles')
 <style>
-    :root {
-        --primary-green: #2e7d32;
-        --light-green: #4caf50;
-        --dark-green: #1b5e20;
-        --primary-blue: #0277bd;
-        --gray-50: #f8f9fa;
-        --gray-100: #f1f3f4;
-        --gray-200: #e8eaed;
-        --gray-300: #dadce0;
-        --gray-600: #5f6368;
-        --gray-800: #3c4043;
-    }
+/* Import page – uses system color scheme */
+.import-page {
+    max-width: 1200px;
+    margin: 0 auto;
+}
 
-    /* Header Card */
-    .import-header-card {
-        background: white;
-        border-radius: 12px;
-        padding: 25px 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
+.import-hero {
+    background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 50%, var(--dark-green) 100%);
+    border-radius: var(--radius-lg, 16px);
+    padding: 2rem 2.5rem;
+    color: white;
+    box-shadow: 0 10px 40px rgba(46, 125, 50, 0.25);
+}
 
-    /* Wizard Steps */
-    .wizard-container {
-        background: white;
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
+.import-hero-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
 
-    .wizard-steps {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        max-width: 800px;
-        margin: 0 auto;
-    }
+.import-hero-icon {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+    opacity: 0.95;
+}
 
-    .wizard-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        flex: 1;
-        position: relative;
-    }
+.import-hero-subtitle {
+    opacity: 0.9;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
 
-    .wizard-step-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: var(--gray-200);
-        color: var(--gray-600);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        margin-bottom: 12px;
-        transition: all 0.3s;
-        border: 3px solid var(--gray-200);
-    }
+.import-hero-actions .btn-outline-light:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: white;
+    color: white;
+}
 
-    .wizard-step.active .wizard-step-icon {
-        background: var(--primary-green);
-        color: white;
-        border-color: var(--primary-green);
-        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-    }
+.import-wizard {
+    background: white;
+    border-radius: var(--radius-md, 12px);
+    padding: 1.5rem 2rem;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+}
 
-    .wizard-step.completed .wizard-step-icon {
-        background: var(--light-green);
-        color: white;
-        border-color: var(--light-green);
-    }
+.import-wizard-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+}
 
-    .wizard-step-content {
-        text-align: center;
-    }
+.import-wizard-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
 
-    .wizard-step-title {
-        font-weight: 600;
-        color: var(--gray-800);
-        margin-bottom: 4px;
-        font-size: 14px;
-    }
+.import-wizard-step-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
 
-    .wizard-step.active .wizard-step-title {
-        color: var(--primary-green);
-    }
+.import-wizard-step.active .import-wizard-step-circle {
+    background: var(--primary-green);
+    color: white;
+    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.4);
+}
 
-    .wizard-step-desc {
-        font-size: 12px;
-        color: var(--gray-600);
-    }
+.import-wizard-step.completed .import-wizard-step-circle {
+    background: var(--light-green);
+    color: white;
+}
 
-    .wizard-step-line {
-        flex: 1;
-        height: 3px;
-        background: var(--gray-200);
-        margin: 0 15px;
-        margin-top: -40px;
-        position: relative;
-        z-index: 0;
-    }
+.import-wizard-step.completed .import-wizard-step-circle .import-wizard-step-num {
+    display: none;
+}
 
-    .wizard-step.active ~ .wizard-step-line,
-    .wizard-step.completed ~ .wizard-step-line {
-        background: var(--light-green);
-    }
+.import-wizard-step.completed .import-wizard-step-circle::after {
+    content: "\f00c";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 1rem;
+}
 
-    /* Import Card */
-    .import-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-    }
+.import-wizard-step-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-600);
+}
 
-    .card-header-section {
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        padding: 20px 30px;
-        border-bottom: 1px solid var(--gray-200);
-    }
+.import-wizard-step.active .import-wizard-step-label {
+    color: var(--primary-green);
+}
 
-    .card-body-section {
-        padding: 30px;
-    }
+.import-wizard-step-line {
+    width: 60px;
+    height: 3px;
+    background: var(--gray-200);
+    margin: 0 0.5rem;
+    margin-top: -28px;
+    border-radius: 2px;
+}
 
-    /* Dropzone */
-    .dropzone-area {
-        border: 3px dashed var(--gray-300);
-        border-radius: 12px;
-        padding: 60px 20px;
-        text-align: center;
-        background: var(--gray-50);
-        transition: all 0.3s;
-        cursor: pointer;
-    }
+.import-wizard-step.completed + .import-wizard-step-line {
+    background: var(--light-green);
+}
 
-    .dropzone-area:hover,
-    .dropzone-area.dz-drag-hover {
-        border-color: var(--primary-green);
-        background: rgba(46, 125, 50, 0.05);
-    }
+.import-card {
+    background: white;
+    border-radius: var(--radius-md, 12px);
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+}
 
-    .dropzone-content {
-        pointer-events: none;
-    }
+.card-shadow {
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+}
 
-    .dropzone-icon {
-        font-size: 64px;
-        color: var(--primary-green);
-        margin-bottom: 20px;
-        display: block;
-    }
+.import-card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    background: var(--gray-50);
+}
 
-    .dropzone-title {
-        color: var(--gray-800);
-        font-weight: 600;
-        margin-bottom: 10px;
-    }
+.import-card-header h5 i.text-primary {
+    color: var(--primary-green) !important;
+}
 
-    .dropzone-subtitle {
-        color: var(--gray-600);
-        margin-bottom: 20px;
-    }
+.import-card-body {
+    padding: 2rem 1.5rem;
+}
 
-    .dropzone-file-types {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-    }
+.import-upload-zone {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius-md, 12px);
+    padding: 4rem 2rem;
+    text-align: center;
+    background: var(--gray-50);
+    cursor: pointer;
+    transition: all 0.25s;
+}
 
-    /* Form Styles */
-    .form-label {
-        font-weight: 600;
-        color: var(--gray-800);
-        font-size: 14px;
-    }
+.import-upload-zone:hover,
+.import-upload-zone.dz-drag-hover {
+    border-color: var(--primary-green);
+    background: rgba(46, 125, 50, 0.04);
+}
 
-    .form-select-lg {
-        border: 1px solid var(--gray-300);
-        border-radius: 8px;
-        padding: 10px 15px;
-        transition: all 0.3s;
-    }
+.import-upload-icon {
+    font-size: 3.5rem;
+    color: var(--primary-green);
+    margin-bottom: 1rem;
+}
 
-    .form-select-lg:focus {
-        border-color: var(--primary-green);
-        box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
-    }
+.import-upload-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+}
 
-    /* Preview Table */
-    .preview-table-wrapper {
-        background: var(--gray-50);
-        border-radius: 8px;
-        padding: 20px;
-        max-height: 500px;
-        overflow-y: auto;
-    }
+.import-upload-subtitle {
+    color: var(--gray-600);
+    margin-bottom: 1rem;
+}
 
-    .preview-table-wrapper table {
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-    }
+.import-upload-badges .badge {
+    background: var(--gray-200);
+    color: var(--gray-800);
+    padding: 0.35rem 0.75rem;
+    font-weight: 500;
+    margin: 0 0.25rem;
+}
 
-    .preview-table-wrapper table thead {
-        background: var(--primary-green);
-        color: white;
-    }
+.mapping-select {
+    border-radius: var(--radius-sm, 8px);
+    border: 1px solid var(--gray-300);
+}
 
-    .preview-table-wrapper table thead th {
-        padding: 12px 15px;
-        font-weight: 600;
-        border: none;
-    }
+.mapping-select:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.15);
+}
 
-    .preview-table-wrapper table tbody td {
-        padding: 10px 15px;
-        border-bottom: 1px solid var(--gray-200);
-    }
+.import-form-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
 
-    .preview-table-wrapper table tbody tr:hover {
-        background: var(--gray-50);
-    }
+.import-preview-table {
+    background: var(--gray-50);
+    border-radius: var(--radius-sm, 8px);
+    padding: 1rem;
+    max-height: 400px;
+    overflow: auto;
+}
 
-    /* Buttons */
-    .btn-lg {
-        padding: 12px 24px;
-        font-weight: 600;
-        border-radius: 8px;
-    }
+.import-preview-table table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
 
-    .btn-info {
-        background: var(--primary-blue);
-        border-color: var(--primary-blue);
-    }
+.import-preview-table thead th {
+    background: var(--primary-green);
+    color: white;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
 
-    .btn-success {
-        background: var(--primary-green);
-        border-color: var(--primary-green);
-    }
+.import-preview-table tbody td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    font-size: 0.875rem;
+}
 
-    .btn-success:hover {
-        background: var(--dark-green);
-        border-color: var(--dark-green);
-    }
+.import-preview-table tbody tr:hover {
+    background: var(--gray-50);
+}
 
-    /* Checkbox */
-    .form-check-input:checked {
-        background-color: var(--primary-green);
-        border-color: var(--primary-green);
-    }
+.import-success-icon {
+    font-size: 4rem;
+}
 
-    .form-check-lg .form-check-input {
-        width: 1.25rem;
-        height: 1.25rem;
-        margin-top: 0.25rem;
-    }
+.import-form-actions .btn-primary {
+    background: var(--primary-green);
+    border-color: var(--primary-green);
+}
 
-    /* Responsive */
-    @media (max-width: 768px) {
-        .wizard-steps {
-            flex-direction: column;
-            gap: 20px;
-        }
+.import-form-actions .btn-primary:hover {
+    background: var(--dark-green);
+    border-color: var(--dark-green);
+}
 
-        .wizard-step-line {
-            display: none;
-        }
+.import-form-actions .btn-success {
+    background: var(--primary-green);
+    border-color: var(--primary-green);
+}
 
-        .import-header-card .d-flex {
-            flex-direction: column;
-            gap: 15px;
-            align-items: flex-start !important;
-        }
+.import-form-actions .btn-success:hover {
+    background: var(--dark-green);
+    border-color: var(--dark-green);
+}
 
-        .card-body-section {
-            padding: 20px;
-        }
-    }
+.form-check-input:checked {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+#importSuccessModal .btn-primary {
+    background: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+#importSuccessModal .btn-primary:hover {
+    background: var(--dark-green);
+    border-color: var(--dark-green);
+}
+
+@media (max-width: 768px) {
+    .import-wizard-step-line { display: none; }
+    .import-hero { padding: 1.5rem; }
+    .import-hero-actions { flex-direction: column; }
+}
 </style>
 @endpush
 
 @push('scripts')
-<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-Dropzone.autoDiscover = false;
-let uploadedFile = null;
-let parsedData = [];
-let headers = [];
-
-const myDropzone = new Dropzone("#dropzone-area", {
-    url: "#",
-    autoProcessQueue: false,
-    maxFiles: 1,
-    acceptedFiles: ".csv,.xls,.xlsx",
-    init: function() {
-        this.on("addedfile", function(file) {
-            uploadedFile = file;
-            parseFile(file);
-        });
-        this.on("dragenter", function() {
-            document.getElementById('dropzone-area').classList.add('dz-drag-hover');
-        });
-        this.on("dragleave", function() {
-            document.getElementById('dropzone-area').classList.remove('dz-drag-hover');
-        });
-    }
-});
-
-function parseFile(file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const data = e.target.result;
-        if(file.name.endsWith('.csv')) {
-            const rows = data.split("\n").map(r => r.split(","));
-            headers = rows[0];
-            parsedData = rows.slice(1);
-        } else {
-            const workbook = XLSX.read(data, {type: 'binary'});
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            parsedData = XLSX.utils.sheet_to_json(sheet, {header:1});
-            headers = parsedData[0];
-            parsedData = parsedData.slice(1);
-        }
-        populateMappingOptions();
-        goToStep(2);
+(function() {
+    let uploadedFile = null;
+    let parsedData = [];
+    let headers = [];
+    const FIELD_LABELS = {
+        entry_date: 'Entry Date', facility_id: 'Facility', department_id: 'Department',
+        scope: 'Scope', emission_source: 'Emission Source', activity_data: 'Activity Data',
+        emission_factor: 'Emission Factor', co2e_value: 'CO2e Value',
+        confidence_level: 'Confidence Level', notes: 'Notes'
     };
-    if(file.name.endsWith('.csv')) reader.readAsText(file);
-    else reader.readAsBinaryString(file);
-}
+    const AUTO_MAP = {
+        'entry_date': ['entry_date', 'date', 'entry date'],
+        'facility_id': ['facility', 'facility_id', 'facility name'],
+        'department_id': ['department', 'department_id', 'department name'],
+        'scope': ['scope', 'scope category'],
+        'emission_source': ['emission_source', 'emission source', 'source'],
+        'activity_data': ['activity_data', 'activity data', 'activity'],
+        'emission_factor': ['emission_factor', 'emission factor', 'factor'],
+        'co2e_value': ['co2e_value', 'co2e value', 'co2e'],
+        'confidence_level': ['confidence_level', 'confidence level', 'confidence'],
+        'notes': ['notes', 'note', 'comments']
+    };
 
-function populateMappingOptions() {
-    document.querySelectorAll('#mappingForm select').forEach(select => {
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">-- Select Column --</option>' + 
-            headers.map(h => `<option value="${h}">${h}</option>`).join('');
-        if (currentValue) select.value = currentValue;
-    });
-}
-
-function goToStep(step) {
-    // Hide all steps
-    document.getElementById('step1').classList.add('d-none');
-    document.getElementById('step2').classList.add('d-none');
-    document.getElementById('step3').classList.add('d-none');
-    
-    // Remove all active/completed classes
-    document.querySelectorAll('.wizard-step').forEach(el => {
-        el.classList.remove('active', 'completed');
-    });
-    
-    // Show current step
-    if(step === 1) {
-        document.getElementById('step1').classList.remove('d-none');
-        document.getElementById('wizard-step-1').classList.add('active');
-    }
-    if(step === 2) {
-        document.getElementById('step2').classList.remove('d-none');
-        document.getElementById('wizard-step-1').classList.add('completed');
-        document.getElementById('wizard-step-2').classList.add('active');
-    }
-    if(step === 3) {
-        document.getElementById('step3').classList.remove('d-none');
-        document.getElementById('wizard-step-1').classList.add('completed');
-        document.getElementById('wizard-step-2').classList.add('completed');
-        document.getElementById('wizard-step-3').classList.add('active');
-    }
-}
-
-document.getElementById('backToStep1').onclick = () => goToStep(1);
-document.getElementById('toStep3').onclick = () => { generatePreview(); goToStep(3); };
-document.getElementById('backToStep2').onclick = () => goToStep(2);
-
-function generatePreview() {
-    const mapping = Object.fromEntries([...document.querySelectorAll('#mappingForm select')].map(s => [s.name, s.value]));
-    let html = '<table class="table table-striped mb-0"><thead><tr>';
-    Object.values(mapping).forEach(h => html += `<th>${h}</th>`);
-    html += '</tr></thead><tbody>';
-    parsedData.slice(0, 10).forEach(row => {
-        html += '<tr>';
-        Object.values(mapping).forEach(col => {
-            const idx = headers.indexOf(col);
-            html += `<td>${row[idx] || ''}</td>`;
-        });
-        html += '</tr>';
-    });
-    html += '</tbody></table>';
-    if (parsedData.length > 10) {
-        html += `<div class="mt-3 text-center text-muted"><small>Showing first 10 rows of ${parsedData.length} total rows</small></div>`;
-    }
-    document.getElementById('previewTable').innerHTML = html;
-}
-
-// Toast notification function
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.className = 'position-fixed bottom-0 end-0 p-3';
-    toast.style.zIndex = '11';
-    
-    const bgColor = type === 'success' ? 'bg-success' : 
-                   type === 'error' ? 'bg-danger' : 
-                   type === 'warning' ? 'bg-warning' : 'bg-info';
-    
-    toast.innerHTML = `
-        <div class="toast show" role="alert">
-            <div class="toast-header ${bgColor} text-white">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                                type === 'error' ? 'exclamation-circle' : 
-                                type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-                <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
-                <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.parentElement.remove()"></button>
-            </div>
-            <div class="toast-body">
-                ${message}
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.remove();
-        }
-    }, 5000);
-}
-
-document.getElementById('importDataBtn').onclick = function(){
-    const mapping = Object.fromEntries([...document.querySelectorAll('#mappingForm select')].map(s => [s.name, s.value]));
-    const formData = new FormData();
-    formData.append('file', uploadedFile);
-    formData.append('overwrite', document.getElementById('overwriteData').checked ? 1 : 0);
-    formData.append('mapping', JSON.stringify(mapping));
-
-    const btn = document.getElementById('importDataBtn');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importing...';
-
-    fetch("{{ route('emissions.import') }}", {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-        body: formData
-    })
-    .then(res => {
-        if (!res.ok) {
-            return res.json().then(err => Promise.reject(err));
-        }
-        return res.json();
-    })
-    .then(data => {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        if (data.status === 'success') {
-            showToast(data.message, 'success');
-            // Reload page after 1.5 seconds to reset the form and prevent duplicate imports
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+    function parseFile(file) {
+        uploadedFile = file;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = e.target.result;
+            let rows;
+            if (file.name.toLowerCase().endsWith('.csv')) {
+                try {
+                    const wb = XLSX.read(data, { type: 'string', raw: true });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                } catch (err) {
+                    const lines = data.split(/\r?\n/).filter(Boolean);
+                    if (lines.length === 0) {
+                        showToast('File is empty or invalid', 'error');
+                        return;
+                    }
+                    rows = lines.map(line => {
+                        const result = [];
+                        let current = '';
+                        let inQuotes = false;
+                        for (let i = 0; i < line.length; i++) {
+                            const c = line[i];
+                            if (c === '"') inQuotes = !inQuotes;
+                            else if ((c === ',' || c === ';') && !inQuotes) {
+                                result.push(current.trim());
+                                current = '';
+                            } else current += c;
+                        }
+                        result.push(current.trim());
+                        return result;
+                    });
+                }
+            } else {
+                const wb = XLSX.read(data, { type: 'binary' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+            }
+            if (!rows || rows.length < 2) {
+                showToast('File must have a header row and at least one data row', 'error');
+                return;
+            }
+            headers = rows[0].map(h => String(h || '').trim()).filter(Boolean);
+            parsedData = rows.slice(1).map(row => {
+                const arr = [];
+                for (let i = 0; i < headers.length; i++) arr[i] = row[i] != null ? row[i] : '';
+                return arr;
+            });
+            if (headers.length === 0) {
+                showToast('Could not detect column headers', 'error');
+                return;
+            }
+            populateMappingOptions();
+            autoMapColumns();
+            goToStep(2);
+        };
+        if (file.name.toLowerCase().endsWith('.csv')) {
+            reader.readAsText(file, 'UTF-8');
         } else {
-            showToast(data.message || 'Import failed', 'error');
+            reader.readAsBinaryString(file);
         }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        const errorMsg = err.message || err.error || 'Import failed. Please try again.';
-        showToast(errorMsg, 'error');
-        console.error('Import error:', err);
+    }
+
+    function autoMapColumns() {
+        document.querySelectorAll('#mappingForm select').forEach(select => {
+            const field = select.dataset.field || select.name;
+            const targets = AUTO_MAP[field];
+            if (!targets) return;
+            const normalizedHeaders = headers.map(h => h.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''));
+            for (const t of targets) {
+                const norm = t.toLowerCase().replace(/\s+/g, '_');
+                const idx = headers.findIndex((h, i) => {
+                    const nh = normalizedHeaders[i] || '';
+                    return nh === norm || nh === t.toLowerCase() || (h && h.toLowerCase() === t.toLowerCase());
+                });
+                if (idx >= 0) {
+                    select.value = headers[idx];
+                    break;
+                }
+            }
+        });
+    }
+
+    function populateMappingOptions() {
+        document.querySelectorAll('#mappingForm select').forEach(select => {
+            const cur = select.value;
+            select.innerHTML = '<option value="">— Select column —</option>' +
+                headers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+            if (cur && headers.includes(cur)) select.value = cur;
+        });
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function goToStep(step) {
+        document.querySelectorAll('[id^="step"]').forEach(el => el.classList.add('d-none'));
+        document.getElementById('step' + step).classList.remove('d-none');
+        document.querySelectorAll('.import-wizard-step').forEach(el => {
+            el.classList.remove('active', 'completed');
+        });
+        for (let i = 1; i < step; i++) {
+            const s = document.getElementById('wizard-step-' + i);
+            if (s) s.classList.add('completed');
+        }
+        const active = document.getElementById('wizard-step-' + step);
+        if (active) active.classList.add('active');
+    }
+
+    function validateMapping() {
+        const mapping = getMapping();
+        const hasDate = !!(mapping.entry_date || mapping.date);
+        const hasFacility = !!(mapping.facility_id || mapping.facility);
+        const hasDepartment = !!(mapping.department_id || mapping.department);
+        return { valid: hasDate && hasFacility && hasDepartment, hasDate, hasFacility, hasDepartment };
+    }
+
+    function getMapping() {
+        return Object.fromEntries(
+            [...document.querySelectorAll('#mappingForm select')]
+                .filter(s => s.value)
+                .map(s => [s.name, s.value])
+        );
+    }
+
+    function generatePreview() {
+        const mapping = getMapping();
+        const v = validateMapping();
+        if (!v.valid) {
+            showToast('Please map required columns: Entry Date, Facility, and Department', 'error');
+            return false;
+        }
+        const mappedCols = Object.entries(mapping).filter(([k,v]) => v);
+        if (mappedCols.length === 0) return false;
+        let html = '<table class="table table-sm mb-0"><thead><tr>';
+        mappedCols.forEach(([k, v]) => html += `<th>${escapeHtml(FIELD_LABELS[k] || k)}</th>`);
+        html += '</tr></thead><tbody>';
+        const previewRows = parsedData.slice(0, 10);
+        previewRows.forEach(row => {
+            html += '<tr>';
+            mappedCols.forEach(([k, col]) => {
+                const idx = headers.indexOf(col);
+                const val = idx >= 0 ? (row[idx] ?? '') : '';
+                html += `<td>${escapeHtml(String(val))}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        if (parsedData.length > 10) {
+            html += `<p class="mt-2 mb-0 small text-muted text-center">Showing first 10 of ${parsedData.length} rows</p>`;
+        }
+        document.getElementById('previewTable').innerHTML = html;
+        return true;
+    }
+
+    function showToast(message, type) {
+        const container = document.createElement('div');
+        container.className = 'position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        const bg = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-warning';
+        container.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-header ${bg} text-white">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle'} me-2"></i>
+                    <strong class="me-auto">${type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Warning'}</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body">${escapeHtml(message)}</div>
+            </div>`;
+        document.body.appendChild(container);
+        container.querySelector('[data-bs-dismiss="toast"]').onclick = () => container.remove();
+        setTimeout(() => container.remove(), 5000);
+    }
+
+    // Upload zone
+    const zone = document.getElementById('dropzone-area');
+    const fileInput = document.getElementById('fileInput');
+    zone.addEventListener('click', () => fileInput.click());
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dz-drag-hover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dz-drag-hover'));
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dz-drag-hover');
+        const files = e.dataTransfer?.files;
+        if (files && files.length) parseFile(files[0]);
     });
-};
+    fileInput.addEventListener('change', (e) => {
+        const f = e.target.files?.[0];
+        if (f) parseFile(f);
+        e.target.value = '';
+    });
+
+    document.getElementById('backToStep1').onclick = () => goToStep(1);
+    document.getElementById('toStep3').onclick = () => {
+        if (generatePreview()) goToStep(3);
+    };
+    document.getElementById('backToStep2').onclick = () => goToStep(2);
+
+    document.getElementById('importDataBtn').onclick = function() {
+        const v = validateMapping();
+        if (!v.valid) {
+            showToast('Please map required columns: Entry Date, Facility, and Department', 'error');
+            return;
+        }
+        const mapping = getMapping();
+        const formData = new FormData();
+        formData.append('file', uploadedFile);
+        formData.append('overwrite', document.getElementById('overwriteData').checked ? '1' : '0');
+        formData.append('mapping', JSON.stringify(mapping));
+        formData.append('_token', '{{ csrf_token() }}');
+
+        const btn = document.getElementById('importDataBtn');
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importing...';
+
+        fetch("{{ route('emissions.import') }}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+            if (data.status === 'success') {
+                document.getElementById('importSuccessMessage').textContent = data.message || 'Import completed.';
+                const stats = document.getElementById('importSuccessStats');
+                stats.innerHTML = `
+                    ${data.successful != null ? `<span class="badge bg-success">${data.successful} imported</span>` : ''}
+                    ${data.skipped > 0 ? `<span class="badge bg-warning text-dark">${data.skipped} skipped</span>` : ''}
+                    ${data.total != null ? `<span class="badge bg-secondary">${data.total} total rows</span>` : ''}
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('importSuccessModal'));
+                modal.show();
+            } else {
+                showToast(data.message || data.error || 'Import failed', 'error');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+            showToast(err.message || err.error || 'Import failed. Please try again.', 'error');
+        });
+    };
+
+})();
 </script>
 @endpush

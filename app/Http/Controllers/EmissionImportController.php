@@ -8,7 +8,6 @@ use App\Models\ImportHistory;
 use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class EmissionImportController extends Controller
@@ -33,16 +32,41 @@ class EmissionImportController extends Controller
             'overwrite'=> 'nullable|boolean',
         ]);
 
-        $mapping   = json_decode($request->mapping, true);
+        $mapping = json_decode($request->mapping, true);
+        if (!is_array($mapping)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid mapping data',
+            ], 422);
+        }
+
+        $companyId = function_exists('current_company_id') ? current_company_id() : (auth()->user()->company_id ?? null);
+        if (!$companyId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No company selected. Please select a company before importing.',
+            ], 422);
+        }
+
+        $hasDate = !empty($mapping['entry_date']) || !empty($mapping['date']);
+        $hasFacility = !empty($mapping['facility']) || !empty($mapping['facility_id']);
+        $hasDepartment = !empty($mapping['department']) || !empty($mapping['department_id']);
+        if (!$hasDate || !$hasFacility || !$hasDepartment) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Required columns must be mapped: Entry Date, Facility, and Department.',
+            ], 422);
+        }
+
         $overwrite = (bool) $request->overwrite;
         $file = $request->file('file');
-        
+
         // Create import history record
         $importHistory = ImportHistory::create([
             'import_id' => ImportHistory::generateImportId(),
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
-            'import_type' => in_array($file->getClientOriginalExtension(), ['xlsx', 'xls']) ? 'excel' : 'csv',
+            'import_type' => in_array(strtolower($file->getClientOriginalExtension()), ['xlsx', 'xls']) ? 'excel' : 'csv',
             'status' => 'processing',
             'metadata' => [
                 'mapping' => $mapping,
@@ -85,10 +109,17 @@ class EmissionImportController extends Controller
                 ]),
             ]);
 
+            $message = $successfulCount > 0
+                ? "Import completed. {$successfulCount} record(s) imported successfully" . ($skippedCount > 0 ? ", {$skippedCount} row(s) skipped." : ".")
+                : 'No records were imported. Please check your data and mapping.';
+
             return response()->json([
-                'status'  => 'success',
-                'message' => 'Emission data imported successfully',
+                'status'    => 'success',
+                'message'   => $message,
                 'import_id' => $importHistory->import_id,
+                'successful' => $successfulCount,
+                'skipped'   => $skippedCount,
+                'total'     => $processedCount,
             ]);
         } catch (\Throwable $e) {
             // Update import history with failure status
