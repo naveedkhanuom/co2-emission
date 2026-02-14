@@ -54,6 +54,12 @@ return [
         'import_history.show',
         'import_history.destroy',
         'import_history.bulk_action',
+        'import_history.download',
+        'import_history.retry',
+        'import_history.cancel',
+        'import_history.export',
+        'import_history.report',
+        'import_history.export_logs',
 
         // Add more route names or prefixes (e.g. 'reports.ghg_protocol', 'targets.')
         // 'reports.ghg_protocol',

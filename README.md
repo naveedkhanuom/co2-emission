@@ -18,6 +18,7 @@ A comprehensive Laravel 11 application for tracking, managing, and reporting gre
 
 ## Documentation
 
+- 🎯 [**Demo Start Guide**](DEMO_START.md) - **Single file to start client demos** (credentials, flow, checklist)
 - 📖 [User Manual](USER_MANUAL.md) - Complete user documentation and guide
 - 🗺️ [Implementation Roadmap](IMPLEMENTATION_ROADMAP.md) - Development plan and missing features
 - 📋 [Quick Reference Guide](QUICK_REFERENCE_GUIDE.md) - Quick task reference

@@ -39,7 +39,7 @@
             </a>
         </li>
 
-        <li>
+        <!-- <li>
             @php
                 $demoRestricted = demo_route_restricted('emission_records.scope_entry');
                 $userRestricted = ! user_can_see_sidebar_route('emission_records.scope_entry');
@@ -53,7 +53,87 @@
                 <span>Scope-Based Entry</span>
                 @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
             </a>
+        </li> -->
+
+        <li>
+            @php
+                $demoRestricted = demo_route_restricted('scope1_entry.index');
+                $userRestricted = ! user_can_see_sidebar_route('scope1_entry.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('scope1_entry.index') }}" 
+               class="{{ request()->routeIs('scope1_entry.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-fire"></i>
+                <span>Scope 1 Entry</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
         </li>
+
+        <li>
+            @php
+                $demoRestricted = demo_route_restricted('scope2_entry.index');
+                $userRestricted = ! user_can_see_sidebar_route('scope2_entry.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('scope2_entry.index') }}" 
+               class="{{ request()->routeIs('scope2_entry.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-bolt"></i>
+                <span>Scope 2 Entry</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <li>
+            @php
+                $demoRestricted = demo_route_restricted('scope3_entry.index');
+                $userRestricted = ! user_can_see_sidebar_route('scope3_entry.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('scope3_entry.index') }}" 
+               class="{{ request()->routeIs('scope3_entry.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-globe-americas"></i>
+                <span>Scope 3 Entry</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <li>
+            @php
+                $demoRestricted = demo_route_restricted('scope_classifier.index');
+                $userRestricted = ! user_can_see_sidebar_route('scope_classifier.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('scope_classifier.index') }}" 
+               class="{{ request()->routeIs('scope_classifier.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-search"></i>
+                <span>Scope Finder</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <!-- <li>
+            @php
+                $demoRestricted = demo_route_restricted('scope3.calculator');
+                $userRestricted = ! user_can_see_sidebar_route('scope3.calculator');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('scope3.calculator') }}" 
+               class="{{ request()->routeIs('scope3.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-calculator"></i>
+                <span>Scope 3 Calculator</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li> -->
 
         <li>
             @php
@@ -179,22 +259,6 @@
                @if($title) title="{{ $title }}" @endif>
                 <i class="fas fa-bullseye"></i>
                 <span>Targets & Goals</span>
-                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
-            </a>
-        </li>
-
-        <li>
-            @php
-                $demoRestricted = demo_route_restricted('scope3.index');
-                $userRestricted = ! user_can_see_sidebar_route('scope3.index');
-                $restricted = $demoRestricted || $userRestricted;
-                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
-            @endphp
-            <a href="{{ route('scope3.index') }}" 
-               class="{{ request()->routeIs('scope3.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
-               @if($title) title="{{ $title }}" @endif>
-                <i class="fas fa-layer-group"></i>
-                <span>Scope 3 Emissions</span>
                 @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
             </a>
         </li>

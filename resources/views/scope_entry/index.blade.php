@@ -161,32 +161,15 @@
                                                 <option value="heating" data-unit="kWh" data-factor="">District Heating</option>
                                                 <option value="cooling" data-unit="kWh" data-factor="">District Cooling</option>
                                         @elseif($scope == 3)
+                                            {{-- Scope 3: only DB sources so emission factor is pre-filled (user can override) --}}
                                             @foreach($scope3Sources as $source)
                                                 @php
                                                     $factor = $source->emissionFactors->first();
-                                                    $unit = $factor ? $factor->unit : '';
+                                                    $unit = $factor ? $factor->unit : 'unit';
                                                     $factorValue = $factor ? $factor->factor_value : '';
                                                 @endphp
                                                 <option value="{{ $source->name }}" data-unit="{{ $unit }}" data-factor="{{ $factorValue }}">{{ $source->name }}</option>
                                             @endforeach
-                                            {{-- All 15 Scope 3 Categories (GHG Protocol) --}}
-                                            <optgroup label="GHG Protocol Categories">
-                                                <option value="1. Purchased Goods & Services" data-unit="kg" data-factor="">1. Purchased Goods & Services</option>
-                                                <option value="2. Capital Goods" data-unit="kg" data-factor="">2. Capital Goods</option>
-                                                <option value="3. Fuel & Energy Related Activities" data-unit="kWh" data-factor="">3. Fuel & Energy Related Activities</option>
-                                                <option value="4. Upstream Transportation & Distribution" data-unit="km" data-factor="">4. Upstream Transportation & Distribution</option>
-                                                <option value="5. Waste Generated in Operations" data-unit="kg" data-factor="">5. Waste Generated in Operations</option>
-                                                <option value="6. Business Travel" data-unit="km" data-factor="">6. Business Travel</option>
-                                                <option value="7. Employee Commuting" data-unit="km" data-factor="">7. Employee Commuting</option>
-                                                <option value="8. Upstream Leased Assets" data-unit="m²" data-factor="">8. Upstream Leased Assets</option>
-                                                <option value="9. Downstream Transportation & Distribution" data-unit="km" data-factor="">9. Downstream Transportation & Distribution</option>
-                                                <option value="10. Processing of Sold Products" data-unit="kg" data-factor="">10. Processing of Sold Products</option>
-                                                <option value="11. Use of Sold Products" data-unit="unit" data-factor="">11. Use of Sold Products</option>
-                                                <option value="12. End-of-Life Treatment of Sold Products" data-unit="kg" data-factor="">12. End-of-Life Treatment of Sold Products</option>
-                                                <option value="13. Downstream Leased Assets" data-unit="m²" data-factor="">13. Downstream Leased Assets</option>
-                                                <option value="14. Franchises" data-unit="unit" data-factor="">14. Franchises</option>
-                                                <option value="15. Investments" data-unit="unit" data-factor="">15. Investments</option>
-                                            </optgroup>
                                         @endif
                                     </select>
                                     <div class="help-text">Select from existing emission sources</div>
@@ -206,32 +189,59 @@
                                 <i class="fas fa-calculator"></i> Activity Data & Calculation
                             </div>
                             
-                            <div class="row g-3">
+                            <div class="row g-3 mb-3">
+                                <div class="col-12">
+                                    <label class="form-label">How do you want to enter emissions?</label>
+                                    <div class="d-flex flex-wrap gap-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="scope{{ $scope }}EntryMethod" id="scope{{ $scope }}EntryMethodCalc" value="calc" checked onchange="toggleScopeEntryMethod({{ $scope }})">
+                                            <label class="form-check-label" for="scope{{ $scope }}EntryMethodCalc">Activity × Factor (I have activity data and factor)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="scope{{ $scope }}EntryMethod" id="scope{{ $scope }}EntryMethodDirect" value="direct" onchange="toggleScopeEntryMethod({{ $scope }})">
+                                            <label class="form-check-label" for="scope{{ $scope }}EntryMethodDirect">Total CO₂e only (I have the total emissions figure)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3" id="scope{{ $scope }}CalcFields">
                                 <div class="col-md-4">
                                     <label class="form-label required-label">Activity Data</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" name="activityData" id="scope{{ $scope }}ActivityData" step="0.01" min="0" placeholder="0.00" required oninput="calculateCO2e({{ $scope }})">
+                                        <input type="number" class="form-control" name="activityData" id="scope{{ $scope }}ActivityData" step="0.01" min="0" placeholder="0.00" oninput="calculateCO2e({{ $scope }})">
                                         <span class="input-group-text" id="scope{{ $scope }}ActivityUnit">-</span>
                                     </div>
-                                    <div class="help-text">Enter the activity amount</div>
+                                    <div class="help-text">Enter the activity amount (e.g. km, kWh, kg)</div>
                                 </div>
                                 
                                 <div class="col-md-4">
                                     <label class="form-label required-label">Emission Factor</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" name="emissionFactor" id="scope{{ $scope }}EmissionFactor" step="0.000001" min="0" placeholder="0.000000" required oninput="calculateCO2e({{ $scope }})">
+                                        <input type="number" class="form-control" name="emissionFactor" id="scope{{ $scope }}EmissionFactor" step="0.000001" min="0" placeholder="0.000000" oninput="calculateCO2e({{ $scope }})">
                                         <span class="input-group-text" id="scope{{ $scope }}FactorUnitLabel">tCO₂e/unit</span>
                                     </div>
-                                    <div class="help-text">Pre-filled based on emission source</div>
+                                    <div class="help-text">Pre-filled from the selected source; change if you have a different factor</div>
                                 </div>
                                 
                                 <div class="col-md-4">
                                     <label class="form-label required-label">CO₂e Value</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" name="co2eValue" id="scope{{ $scope }}CO2eValue" step="0.0001" min="0" placeholder="0.0000" required readonly>
+                                        <input type="number" class="form-control" name="co2eValue" id="scope{{ $scope }}CO2eValue" step="0.0001" min="0" placeholder="0.0000" readonly>
                                         <span class="input-group-text">tCO₂e</span>
                                     </div>
-                                    <div class="help-text">Automatically calculated</div>
+                                    <div class="help-text">Calculated from activity × factor</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mt-2" id="scope{{ $scope }}DirectFields" style="display: none;">
+                                <div class="col-md-6">
+                                    <label class="form-label required-label">Total CO₂e (tonnes)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="scope{{ $scope }}CO2eDirect" step="0.0001" min="0" placeholder="0.0000" oninput="syncDirectCO2e({{ $scope }})">
+                                        <span class="input-group-text">tCO₂e</span>
+                                    </div>
+                                    <div class="help-text">Enter the total emissions if you already have this figure (e.g. from a report or tool)</div>
                                 </div>
                             </div>
                             
@@ -773,11 +783,41 @@
         const co2eValue = activityData * emissionFactor;
         
         const co2eInput = document.getElementById(`scope${scope}CO2eValue`);
-        co2eInput.value = co2eValue.toFixed(4);
+        if (co2eInput) co2eInput.value = co2eValue.toFixed(4);
         
-        const activityUnit = document.getElementById(`scope${scope}ActivityUnit`).textContent;
+        const activityUnitEl = document.getElementById(`scope${scope}ActivityUnit`);
+        const activityUnit = activityUnitEl ? activityUnitEl.textContent : 'unit';
         const formula = document.getElementById(`scope${scope}CalculationFormula`);
-        formula.textContent = `${activityData.toFixed(2)} ${activityUnit} × ${emissionFactor.toFixed(6)} tCO₂e/${activityUnit} = ${co2eValue.toFixed(4)} tCO₂e`;
+        if (formula) formula.textContent = `${activityData.toFixed(2)} ${activityUnit} × ${emissionFactor.toFixed(6)} tCO₂e/${activityUnit} = ${co2eValue.toFixed(4)} tCO₂e`;
+    }
+    
+    // Toggle between "Activity × Factor" and "Total CO₂e only" entry
+    function toggleScopeEntryMethod(scope) {
+        const isDirect = document.getElementById(`scope${scope}EntryMethodDirect`).checked;
+        const calcFields = document.getElementById(`scope${scope}CalcFields`);
+        const directFields = document.getElementById(`scope${scope}DirectFields`);
+        const activityData = document.getElementById(`scope${scope}ActivityData`);
+        const emissionFactor = document.getElementById(`scope${scope}EmissionFactor`);
+        const co2eValue = document.getElementById(`scope${scope}CO2eValue`);
+        const co2eDirect = document.getElementById(`scope${scope}CO2eDirect`);
+        if (calcFields) calcFields.style.display = isDirect ? 'none' : 'flex';
+        if (directFields) directFields.style.display = isDirect ? 'flex' : 'none';
+        if (activityData) activityData.required = !isDirect;
+        if (emissionFactor) emissionFactor.required = !isDirect;
+        if (co2eDirect) co2eDirect.required = isDirect;
+        if (isDirect && co2eDirect && co2eValue) {
+            co2eValue.value = co2eDirect.value || '';
+        } else if (!isDirect) {
+            if (co2eDirect) co2eDirect.value = '';
+            calculateCO2e(scope);
+        }
+    }
+    
+    // Sync direct CO2e input into the submitted co2eValue field
+    function syncDirectCO2e(scope) {
+        const co2eDirect = document.getElementById(`scope${scope}CO2eDirect`);
+        const co2eValue = document.getElementById(`scope${scope}CO2eValue`);
+        if (co2eDirect && co2eValue) co2eValue.value = co2eDirect.value || '';
     }
     
     // Toggle calculation method for Scope 3
@@ -860,6 +900,12 @@
             document.getElementById(`scope${scope}SourceType`).value = 'existing';
             toggleSourceInput(scope);
             
+            // Reset entry method (calc vs direct CO2e)
+            const calcRadio = document.getElementById(`scope${scope}EntryMethodCalc`);
+            if (calcRadio) { calcRadio.checked = true; toggleScopeEntryMethod(scope); }
+            const co2eDirectEl = document.getElementById(`scope${scope}CO2eDirect`);
+            if (co2eDirectEl) co2eDirectEl.value = '';
+            
             // Reset calculation method toggle for Scope 3
             if (scope === 3) {
                 document.getElementById(`scope${scope}CalculationMethod`).value = 'activity-based';
@@ -934,6 +980,10 @@
                 e.preventDefault();
                 
                 const scope = parseInt(this.querySelector('[name="scopeSelect"]').value);
+                // If user chose "Total CO₂e only", copy that value into the submitted co2eValue field
+                const directRadio = document.getElementById(`scope${scope}EntryMethodDirect`);
+                if (directRadio && directRadio.checked) syncDirectCO2e(scope);
+                
                 const sourceType = document.getElementById(`scope${scope}SourceType`).value;
                 const formData = new FormData(this);
                 

@@ -6,66 +6,63 @@
 @section('content')
     <!-- Main Content -->
     <div id="content">
-        <!-- Top Navigation Bar -->
-     @include('layouts.top-nav') 
-        
-        <!-- Entry Mode Selection -->
-        <div class="row mt-3 mb-3">
-            <div class="col-md-4 mb-3">
-                <div class="entry-mode-card active" id="singleEntryCard" onclick="setEntryMode('single')">
-                    <div class="entry-mode-icon">
-                        <i class="fas fa-file-signature"></i>
+        @include('layouts.top-nav')
+
+        <!-- Page header -->
+        <div class="mb-4">
+            <h1 class="emission-records-page-title">Manual Entry</h1>
+            <p class="emission-records-page-subtitle">Record greenhouse gas emissions by scope. Choose how you want to enter data below.</p>
+        </div>
+
+        <!-- Entry mode selection -->
+        <div class="entry-mode-strip">
+            <p class="strip-label">How would you like to enter data?</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="entry-mode-card active" id="singleEntryCard" onclick="setEntryMode('single')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') setEntryMode('single')">
+                        <div class="entry-mode-icon">
+                            <i class="fas fa-file-signature"></i>
+                        </div>
+                        <h4>Single Entry</h4>
+                        <p class="mb-2">One record at a time with full calculation options</p>
+                        <span class="badge bg-success">Recommended</span>
                     </div>
-                    <h4>Single Entry</h4>
-                    <p class="text-muted mb-2">Enter one emission record at a time</p>
-                    <span class="badge bg-success">Recommended</span>
                 </div>
-            </div>
-            
-            <div class="col-md-4 mb-3">
-                <div class="entry-mode-card" id="quickEntryCard" onclick="setEntryMode('quick')">
-                    <div class="entry-mode-icon">
-                        <i class="fas fa-table"></i>
+                <div class="col-md-4">
+                    <div class="entry-mode-card" id="quickEntryCard" onclick="setEntryMode('quick')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') setEntryMode('quick')">
+                        <div class="entry-mode-icon">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <h4>Quick Entry</h4>
+                        <p class="mb-2">Add many rows and save in one go</p>
+                        <span class="badge bg-primary">Bulk</span>
                     </div>
-                    <h4>Quick Entry</h4>
-                    <p class="text-muted mb-2">Enter multiple records quickly</p>
-                    <span class="badge bg-primary">Fast bulk entry</span>
                 </div>
-            </div>
-            
-            <div class="col-md-4 mb-3">
-                <div class="entry-mode-card" id="templateEntryCard" onclick="setEntryMode('template')">
-                    <div class="entry-mode-icon">
-                        <i class="fas fa-clipboard-list"></i>
+                <div class="col-md-4">
+                    <div class="entry-mode-card" id="templateEntryCard" onclick="setEntryMode('template')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') setEntryMode('template')">
+                        <div class="entry-mode-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <h4>Template Based</h4>
+                        <p class="mb-2">Start from Electricity, Fleet, Travel, or Waste</p>
+                        <span class="badge bg-info">Quick start</span>
                     </div>
-                    <h4>Template Based</h4>
-                    <p class="text-muted mb-2">Use pre-defined templates</p>
-                    <span class="badge bg-info">Consistent</span>
                 </div>
             </div>
         </div>
         
         <!-- Single Entry Form -->
         <div class="form-container" id="singleEntryForm">
-            <div class="form-header mb-4">
-                <div class="d-flex justify-content-between align-items-center">
+            <div class="form-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
-                        <h4 class="mb-1">
-                            <i class="fas fa-leaf text-success me-2"></i>
-                            Enter Emission Data
-                        </h4>
-                        <p class="text-muted mb-0 small">Fill in the details below to record your greenhouse gas emissions</p>
+                        <h4><i class="fas fa-leaf text-success me-2"></i>Enter emission data</h4>
+                        <p class="text-muted mb-0 small">Basic info → calculation → optional details</p>
                     </div>
-                    <div class="form-steps-indicator">
-                        <span class="step active" title="Step 1: Basic Information">
-                            <i class="fas fa-check-circle"></i>
-                        </span>
-                        <span class="step" title="Step 2: Calculation">
-                            <i class="fas fa-circle"></i>
-                        </span>
-                        <span class="step" title="Step 3: Additional Details">
-                            <i class="fas fa-circle"></i>
-                        </span>
+                    <div class="form-steps-indicator" aria-hidden="true">
+                        <span class="step active" title="Step 1: Basic Information"><i class="fas fa-check-circle"></i></span>
+                        <span class="step" title="Step 2: Calculation"><i class="fas fa-circle"></i></span>
+                        <span class="step" title="Step 3: Additional Details"><i class="fas fa-circle"></i></span>
                     </div>
                 </div>
             </div>
@@ -230,12 +227,9 @@
                                     </div>
                                 </div>
                                 <div class="field-help d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
-                                    <span>
-                                        <i class="fas fa-lightbulb me-1"></i>
-                                        Select the specific source of emissions
-                                    </span>
-                                    <a href="#" class="small text-primary" id="addCustomSourceLink" onclick="openCustomSourceModal(event)">
-                                        <i class="fas fa-plus-circle me-1"></i>Add custom source (saved to list)
+                                    <span><i class="fas fa-lightbulb me-1"></i>Pick the emission source from the list</span>
+                                    <a href="#" class="small text-primary fw-semibold" id="addCustomSourceLink" onclick="openCustomSourceModal(event); return false;">
+                                        <i class="fas fa-plus-circle me-1"></i>Add custom source
                                     </a>
                                 </div>
                             </div>
@@ -366,9 +360,7 @@
                                     <select class="form-select form-select-lg" 
                                             id="confidenceLevel" 
                                             name="confidenceLevel">
-                                        <option value="high">
-                                            <i class="fas fa-check-circle"></i> High Confidence
-                                        </option>
+                                        <option value="high">High Confidence</option>
                                         <option value="medium" selected>Medium Confidence</option>
                                         <option value="low">Low Confidence</option>
                                         <option value="estimated">Estimated</option>
@@ -604,11 +596,11 @@
                                                class="form-control form-control-lg" 
                                                id="sectorCode" 
                                                name="sector_code" 
-                                               placeholder="e.g., 31-33"
+                                               placeholder="e.g. MANUF, SERV, OFFICE"
                                                oninput="calculateScope3SpendBased()">
                                         <div class="field-help">
                                             <i class="fas fa-lightbulb me-1"></i>
-                                            NAICS or similar sector code for EIO factor lookup
+                                            Sector code for EIO lookup (e.g. MANUF, SERV, OFFICE, IT, TRANS — see Settings → EIO Factors)
                                         </div>
                                     </div>
                                 </div>
@@ -692,9 +684,7 @@
                                 <select class="form-select form-select-lg" 
                                         id="dataSource" 
                                         name="dataSource">
-                                    <option value="manual" selected>
-                                        <i class="fas fa-keyboard"></i> Manual Entry
-                                    </option>
+                                    <option value="manual" selected>Manual Entry</option>
                                     <option value="meter">Meter Reading</option>
                                     <option value="invoice">Utility Invoice</option>
                                     <option value="estimate">Estimate</option>
@@ -778,43 +768,43 @@
         <!-- Template Based Entry (Hidden by default) -->
         <div class="form-container" id="templateEntryForm" style="display: none;">
             <div class="form-header mb-4">
-                <h4 class="mb-1"><i class="fas fa-clipboard-list text-info me-2"></i>Choose a Template</h4>
-                <p class="text-muted mb-0 small">Select a template to pre-fill the single entry form with common settings</p>
+                <h4 class="mb-1"><i class="fas fa-clipboard-list text-info me-2"></i>Choose a template</h4>
+                <p class="text-muted mb-0 small">We’ll open the single entry form and pre-fill scope and source for you</p>
             </div>
             <div class="row g-3">
                 <div class="col-md-6 col-lg-3">
-                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('electricity')" style="cursor: pointer;">
+                    <div class="card h-100 template-card" onclick="useTemplate('electricity')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') useTemplate('electricity')">
                         <div class="card-body text-center">
                             <i class="fas fa-bolt text-warning fa-2x mb-2"></i>
                             <h6 class="card-title">Electricity</h6>
-                            <p class="card-text small text-muted mb-0">Scope 2 – Purchased electricity</p>
+                            <p class="card-text small mb-0">Scope 2 – Purchased electricity</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('fleet')" style="cursor: pointer;">
+                    <div class="card h-100 template-card" onclick="useTemplate('fleet')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') useTemplate('fleet')">
                         <div class="card-body text-center">
                             <i class="fas fa-truck text-primary fa-2x mb-2"></i>
                             <h6 class="card-title">Fleet / Vehicles</h6>
-                            <p class="card-text small text-muted mb-0">Scope 1 – Gasoline, diesel, CNG</p>
+                            <p class="card-text small mb-0">Scope 1 – Gasoline, diesel, CNG</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('travel')" style="cursor: pointer;">
+                    <div class="card h-100 template-card" onclick="useTemplate('travel')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') useTemplate('travel')">
                         <div class="card-body text-center">
                             <i class="fas fa-plane text-info fa-2x mb-2"></i>
                             <h6 class="card-title">Business Travel</h6>
-                            <p class="card-text small text-muted mb-0">Scope 3 – Travel & commuting</p>
+                            <p class="card-text small mb-0">Scope 3 – Travel & commuting</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="card h-100 border shadow-sm cursor-pointer template-card" onclick="useTemplate('waste')" style="cursor: pointer;">
+                    <div class="card h-100 template-card" onclick="useTemplate('waste')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') useTemplate('waste')">
                         <div class="card-body text-center">
                             <i class="fas fa-recycle text-success fa-2x mb-2"></i>
                             <h6 class="card-title">Waste</h6>
-                            <p class="card-text small text-muted mb-0">Scope 3 – Waste generated</p>
+                            <p class="card-text small mb-0">Scope 3 – Waste generated</p>
                         </div>
                     </div>
                 </div>
@@ -823,28 +813,28 @@
 
         <!-- Quick Entry Table (Hidden by default) -->
         <div class="form-container" id="quickEntryForm" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="mb-0">Quick Entry Table</h4>
+            <div class="quick-entry-header d-flex flex-wrap justify-content-between align-items-start gap-3">
                 <div>
-                    <button class="btn btn-outline-primary me-2" onclick="addQuickEntryRow()">
-                        <i class="fas fa-plus me-2"></i>Add Row
+                    <h4 class="mb-1"><i class="fas fa-table text-primary me-2"></i>Quick entry table</h4>
+                    <p class="text-muted small mb-0">Add rows, fill required fields (*), then save each row or save all at once.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="addQuickEntryRow()">
+                        <i class="fas fa-plus me-1"></i>Add row
                     </button>
-                    <button class="btn btn-success" onclick="saveAllQuickEntries()">
-                        <i class="fas fa-save me-2"></i>Save All
+                    <button type="button" class="btn btn-success" onclick="saveAllQuickEntries()">
+                        <i class="fas fa-save me-1"></i>Save all
                     </button>
                 </div>
             </div>
-            
-            <div class="alert alert-info mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <span>
-                    <i class="fas fa-info-circle me-2"></i>
-                    Enter multiple emission records quickly. All required fields are marked with an asterisk (*).
-                </span>
-                <a href="#" class="small text-primary text-nowrap" onclick="openCustomSourceModal(event)">
+
+            <div class="quick-entry-tip mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span><i class="fas fa-info-circle me-2 text-primary"></i>Required fields are marked with *. You can save one row with the checkmark or save every row with “Save all”.</span>
+                <a href="#" class="small text-primary text-nowrap fw-semibold" onclick="openCustomSourceModal(event); return false;">
                     <i class="fas fa-plus-circle me-1"></i>Add custom source
                 </a>
             </div>
-            
+
             <div class="quick-entry-table">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
@@ -955,7 +945,7 @@
 @endpush
 
 @push('scripts')
-
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     // Convert PHP helper result to JS array
     const facilitiesData = @json(Facilities());
@@ -1172,6 +1162,13 @@ function rebuildEmissionSourceOptionsForScope(scopeValue) {
     const select = document.getElementById('emissionSourceSelect');
     if (!select) return;
 
+    // Destroy Select2 before mutating options so the widget and factor update keep working
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        try {
+            if ($(select).data('select2')) $(select).select2('destroy');
+        } catch (e) { /* ignore */ }
+    }
+
     // Keep the initial full list so user can clear scope and see everything again
     if (!select.dataset.fullOptionsHtml) {
         select.dataset.fullOptionsHtml = select.innerHTML;
@@ -1180,9 +1177,8 @@ function rebuildEmissionSourceOptionsForScope(scopeValue) {
     // If no scope selected, restore original options
     if (!scopeValue) {
         select.innerHTML = select.dataset.fullOptionsHtml;
-        if (typeof $ !== 'undefined' && $.fn.select2) {
-            $(select).trigger('change.select2');
-        }
+        initEmissionSourceSelect2();
+        updateUnitOptions();
         return;
     }
 
@@ -1224,10 +1220,24 @@ function rebuildEmissionSourceOptionsForScope(scopeValue) {
         select.value = current;
     }
 
-    if (typeof $ !== 'undefined' && $.fn.select2) {
-        $(select).trigger('change.select2');
-    }
+    initEmissionSourceSelect2();
     updateUnitOptions();
+}
+
+function initEmissionSourceSelect2() {
+    if (typeof $ === 'undefined' || !$.fn.select2) return;
+    const sel = document.getElementById('emissionSourceSelect');
+    if (!sel) return;
+    $('.emission-source-select').off('change.emissionSourceFactor');
+    $('.emission-source-select').select2({
+        placeholder: "Select emission source...",
+        allowClear: true,
+        width: '100%',
+        minimumResultsForSearch: 0
+    });
+    $('.emission-source-select').on('change.emissionSourceFactor', function() {
+        if (typeof updateUnitOptions === 'function') updateUnitOptions();
+    });
 }
 
 // Update calculation formula & result
@@ -1363,11 +1373,7 @@ document.getElementById('activityUnitSelect').addEventListener('change', updateC
                     width: '100%'
                 });
                 
-                $('.emission-source-select').select2({
-                    placeholder: "Select emission source...",
-                    allowClear: true,
-                    width: '100%'
-                });
+                // Emission source Select2 init is in rebuildEmissionSourceOptionsForScope (searchable + factor refresh)
                 
                 $('.scope3-category-select').select2({
                     placeholder: "Select category (optional)...",
@@ -1661,16 +1667,86 @@ function addQuickEntryRow() {
 }
 
         
-        // Save quick entry row
+        // Save quick entry row (persists to server)
         function saveQuickEntry(rowId) {
             const row = document.getElementById(rowId);
+            if (!row) return;
+
+            const dateEl = row.querySelector('.quick-entry-date');
+            const facilityEl = row.querySelector('.quick-entry-facility');
+            const siteEl = row.querySelector('.quick-entry-site');
+            const scopeEl = row.querySelector('.quick-entry-scope');
+            const sourceEl = row.querySelector('.quick-entry-source');
+            const sourceOtherEl = row.querySelector('.quick-entry-source-other');
+            const orgEl = row.querySelector('.quick-entry-org');
+            const co2eEl = row.querySelector('.quick-entry-co2e');
+            const departmentEl = row.querySelector('.quick-entry-department');
+
+            const isOtherSource = sourceEl?.value === '__other__';
+            const otherSourceName = sourceOtherEl?.value?.trim() || '';
+            if (isOtherSource && !otherSourceName) {
+                showToast('Please enter the emission source name when "Other" is selected.', 'error');
+                if (sourceOtherEl) sourceOtherEl.classList.add('is-invalid');
+                return;
+            }
+
+            const required = [
+                { el: dateEl, name: 'Date' },
+                { el: facilityEl, name: 'Facility' },
+                { el: scopeEl, name: 'Scope' },
+                { el: sourceEl, name: 'Emission Source' },
+                { el: orgEl, name: 'Organization' },
+                { el: co2eEl, name: 'CO₂e' },
+            ];
+            const missing = required.filter(r => !r.el || !r.el.value);
+            if (missing.length) {
+                missing.forEach(r => r.el && r.el.classList.add('is-invalid'));
+                showToast('Please fill all required fields in this row.', 'error');
+                return;
+            }
+            row.querySelectorAll('input, select').forEach(i => i.classList.remove('is-invalid'));
+
+            const entry = {
+                entryDate: dateEl?.value,
+                facilitySelect: facilityEl?.value,
+                siteSelect: siteEl?.value || null,
+                scopeSelect: scopeEl?.value,
+                emissionSourceSelect: isOtherSource ? '__other__' : sourceEl?.value,
+                emission_source_other: isOtherSource ? otherSourceName : null,
+                factor_organization_id: orgEl?.value || null,
+                co2eValue: co2eEl?.value,
+                confidenceLevel: 'medium',
+                entryNotes: row.querySelector('.quick-entry-notes')?.value || '',
+                dataSource: 'manual',
+                departmentSelect: departmentEl?.value || null,
+            };
+
             row.classList.add('editing');
-            
-            setTimeout(() => {
+            fetch("{{ route('emission-records.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ entries: [entry], status: 'active' })
+            })
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.errors?.messages ? Object.values(data.errors.messages).flat().join(' ') : (data.message || 'Failed to save'));
+                return data;
+            })
+            .then(() => {
                 row.classList.remove('editing');
-            }, 1000);
-            
-            showToast('Row saved successfully', 'success');
+                showToast('Row saved successfully', 'success');
+                row.remove();
+                updateRowCount();
+                renumberRows();
+            })
+            .catch(err => {
+                row.classList.remove('editing');
+                showToast(err.message || 'Failed to save row', 'error');
+            });
         }
         
         // Delete quick entry row

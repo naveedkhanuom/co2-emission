@@ -329,7 +329,7 @@ class EmissionRecordController extends Controller
             ]);
         }
 
-        // Single entry validation
+        // Single entry validation (activity/factor optional when user enters total CO2e only)
         $validator = Validator::make($request->all(), [
             'entryDate'             => 'required|date',
             'facilitySelect'        => 'required|string|max:50',
@@ -337,8 +337,8 @@ class EmissionRecordController extends Controller
             'scopeSelect'           => 'required|in:1,2,3',
             'emissionSourceSelect'  => 'required|string|max:100',
             'emission_source_other' => 'required_if:emissionSourceSelect,__other__|nullable|string|max:255',
-            'activityData'          => 'required|numeric|min:0',
-            'emissionFactor'        => 'required|numeric|min:0',
+            'activityData'          => 'nullable|numeric|min:0',
+            'emissionFactor'        => 'nullable|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
             'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
             'confidenceLevel'       => 'required|in:low,medium,high,estimated',
@@ -391,7 +391,7 @@ class EmissionRecordController extends Controller
             );
         }
 
-        // Prepare data array
+        // Prepare data array (activity_data and emission_factor may be null when user entered total CO2e only)
         $data = [
             'company_id'        => $companyId,
             'entry_date'        => $request->entryDate,
@@ -399,8 +399,8 @@ class EmissionRecordController extends Controller
             'site_id'           => $request->siteSelect ?: null,
             'scope'             => $request->scopeSelect,
             'emission_source'   => $emissionSourceName,
-            'activity_data'     => $request->activityData,
-            'emission_factor'   => $request->emissionFactor,
+            'activity_data'     => $request->filled('activityData') ? $request->activityData : null,
+            'emission_factor'   => $request->filled('emissionFactor') ? $request->emissionFactor : null,
             'factor_organization_id' => $request->factor_organization_id,
             'co2e_value'        => $request->co2eValue,
             'confidence_level'  => $request->confidenceLevel,

@@ -31,6 +31,8 @@ class ImportHistory extends Model
         'completed_at',
     ];
 
+    protected $appends = ['formatted_file_size'];
+
     protected $casts = [
         'metadata' => 'array',
         'started_at' => 'datetime',

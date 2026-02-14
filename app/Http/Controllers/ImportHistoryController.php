@@ -4,17 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\ImportHistory;
 use App\Models\User;
+use App\Imports\EmissionsImport;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ImportHistoryController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:list-import-history|create-import-history|edit-import-history|delete-import-history', ['only' => ['index', 'getData', 'getStatistics', 'getTrendData', 'getStatusDistribution', 'show', 'getLogs', 'bulkAction']]);
+        $this->middleware('permission:list-import-history|create-import-history|edit-import-history|delete-import-history', ['only' => ['index', 'getData', 'getStatistics', 'getTrendData', 'getStatusDistribution', 'show', 'getLogs', 'getImportSources', 'bulkAction', 'downloadFile', 'retry', 'cancel', 'exportHistory', 'downloadReport', 'exportLogsBulk']]);
         $this->middleware('permission:delete-import-history', ['only' => ['destroy']]);
     }
 
@@ -55,7 +58,11 @@ class ImportHistoryController extends Controller
         }
 
         if ($request->has('type') && $request->type != 'all') {
-            $query->where('import_type', $request->type);
+            if ($request->type === 'csv') {
+                $query->whereIn('import_type', ['csv', 'excel']);
+            } else {
+                $query->where('import_type', $request->type);
+            }
         }
 
         if ($request->has('user') && $request->user != 'all') {
@@ -244,6 +251,10 @@ class ImportHistoryController extends Controller
             ? round((($thisMonthTotal - $lastMonthTotal) / $lastMonthTotal) * 100, 1)
             : 0;
 
+        $failedLast30Days = ImportHistory::where('status', 'failed')
+            ->where('created_at', '>=', Carbon::now()->subDays(30))
+            ->count();
+
         return response()->json([
             'total_imports' => $totalImports,
             'success_rate' => $successRate,
@@ -252,6 +263,7 @@ class ImportHistoryController extends Controller
             'pending_reviews' => $pendingReviews,
             'avg_processing_time' => round($avgProcessingTime ?? 0, 1),
             'percentage_change' => $percentageChange,
+            'failed_last_30_days' => $failedLast30Days,
         ]);
     }
 
@@ -316,11 +328,230 @@ class ImportHistoryController extends Controller
         ]);
     }
 
+    public function downloadFile($id)
+    {
+        $import = ImportHistory::findOrFail($id);
+        if (!$import->file_path || !Storage::disk('public')->exists($import->file_path)) {
+            abort(404, 'File not found');
+        }
+        return Storage::disk('public')->download(
+            $import->file_path,
+            $import->file_name ?: 'import_' . $import->import_id . '.xlsx'
+        );
+    }
+
+    public function retry($id)
+    {
+        $import = ImportHistory::findOrFail($id);
+        if (!$import->file_path || !Storage::disk('public')->exists($import->file_path)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Original file not found. Cannot retry.',
+            ], 404);
+        }
+        $metadata = $import->metadata ?? [];
+        $mapping = $metadata['mapping'] ?? [];
+        $overwrite = (bool) ($metadata['overwrite'] ?? false);
+        
+        $companyId = function_exists('current_company_id') ? current_company_id() : (auth()->user()->company_id ?? null);
+        if (!$companyId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No company selected.',
+            ], 422);
+        }
+
+        $hasDate = !empty($mapping['entry_date']) || !empty($mapping['date']);
+        $hasFacility = !empty($mapping['facility']) || !empty($mapping['facility_id']);
+        $hasDepartment = !empty($mapping['department']) || !empty($mapping['department_id']);
+        if (!$hasDate || !$hasFacility || !$hasDepartment) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Original import mapping is invalid (missing required columns).',
+            ], 422);
+        }
+
+        try {
+            $path = Storage::disk('public')->path($import->file_path);
+            $importClass = new EmissionsImport($overwrite, $mapping);
+            Excel::import($importClass, $path);
+            
+            $processedCount = $importClass->getProcessedCount();
+            $skippedCount = $importClass->getSkippedCount();
+            $successfulCount = $processedCount - $skippedCount;
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Retry completed. {$successfulCount} record(s) imported, {$skippedCount} skipped.",
+                'successful' => $successfulCount,
+                'skipped' => $skippedCount,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Retry failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function cancel($id)
+    {
+        $import = ImportHistory::findOrFail($id);
+        if (in_array($import->status, ['processing', 'queued'])) {
+            $import->update([
+                'status' => 'failed',
+                'error_message' => 'Cancelled by user',
+                'completed_at' => Carbon::now(),
+            ]);
+        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Import cancelled.',
+        ]);
+    }
+
+    public function exportHistory(Request $request)
+    {
+        $query = ImportHistory::with('user')->orderBy('created_at', 'desc');
+        
+        if ($request->has('date_range') && $request->date_range != 'all') {
+            switch ($request->date_range) {
+                case 'today': $query->whereDate('created_at', Carbon::today()); break;
+                case 'week': $query->where('created_at', '>=', Carbon::now()->subDays(7)); break;
+                case 'month': $query->where('created_at', '>=', Carbon::now()->subDays(30)); break;
+                case 'quarter': $query->where('created_at', '>=', Carbon::now()->subMonths(3)); break;
+                case 'year': $query->where('created_at', '>=', Carbon::now()->subYear()); break;
+            }
+        }
+        if ($request->has('status') && $request->status != 'all') {
+            $query->where('status', $request->status);
+        }
+        
+        $imports = $query->get();
+        $filename = 'import_history_' . date('Y-m-d_His') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($imports) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Import ID', 'Date', 'File Name', 'Type', 'Status', 'Total', 'Successful', 'Failed', 'Duration (s)', 'User']);
+            foreach ($imports as $row) {
+                fputcsv($file, [
+                    $row->import_id,
+                    $row->created_at->format('Y-m-d H:i:s'),
+                    $row->file_name ?? 'N/A',
+                    $row->import_type,
+                    $row->status,
+                    $row->total_records,
+                    $row->successful_records ?? 0,
+                    $row->failed_records ?? 0,
+                    $row->processing_time ?? '',
+                    $row->user ? $row->user->name : 'System',
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function downloadReport($id)
+    {
+        $import = ImportHistory::with('user')->findOrFail($id);
+        $filename = 'import_report_' . $import->import_id . '_' . date('Y-m-d') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($import) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Import Report - ' . $import->import_id]);
+            fputcsv($file, []);
+            fputcsv($file, ['Import ID', $import->import_id]);
+            fputcsv($file, ['Date & Time', $import->created_at->format('Y-m-d H:i:s')]);
+            fputcsv($file, ['File Name', $import->file_name ?? 'N/A']);
+            fputcsv($file, ['Import Type', $import->import_type]);
+            fputcsv($file, ['Status', $import->status]);
+            fputcsv($file, ['Total Records', $import->total_records]);
+            fputcsv($file, ['Successful', $import->successful_records ?? 0]);
+            fputcsv($file, ['Failed', $import->failed_records ?? 0]);
+            fputcsv($file, ['Processing Time (s)', $import->processing_time ?? 'N/A']);
+            fputcsv($file, ['User', $import->user ? $import->user->name : 'System']);
+            if ($import->error_message) {
+                fputcsv($file, []);
+                fputcsv($file, ['Error Message', $import->error_message]);
+            }
+            fputcsv($file, []);
+            fputcsv($file, ['Logs']);
+            foreach ($import->parsed_logs as $log) {
+                fputcsv($file, [$log['level'] ?? '', $log['time'] ?? '', $log['message'] ?? '']);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportLogsBulk(Request $request)
+    {
+        $ids = $request->has('ids') ? array_map('intval', explode(',', $request->ids)) : [];
+        $imports = ImportHistory::with('user')->whereIn('id', $ids)->orderBy('created_at', 'desc')->get();
+        $filename = 'import_logs_bulk_' . date('Y-m-d_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+        $callback = function () use ($imports) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Import ID', 'Date', 'File', 'Type', 'Status', 'Total', 'Successful', 'Failed', 'User']);
+            foreach ($imports as $row) {
+                fputcsv($file, [
+                    $row->import_id,
+                    $row->created_at->format('Y-m-d H:i:s'),
+                    $row->file_name ?? 'N/A',
+                    $row->import_type,
+                    $row->status,
+                    $row->total_records,
+                    $row->successful_records ?? 0,
+                    $row->failed_records ?? 0,
+                    $row->user ? $row->user->name : 'System',
+                ]);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function getImportSources()
+    {
+        $sources = ImportHistory::select('import_type', DB::raw('count(*) as count'), DB::raw('sum(successful_records) as records'))
+            ->groupBy('import_type')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get();
+
+        return response()->json([
+            'sources' => $sources->map(function ($s) {
+                return [
+                    'type' => ucfirst($s->import_type),
+                    'count' => $s->count,
+                    'records' => $s->records ?? 0,
+                ];
+            }),
+        ]);
+    }
+
     public function bulkAction(Request $request)
     {
         $request->validate([
-            'action' => 'required|in:delete,export,retry,archive',
+            'action' => 'required|in:delete,export,archive',
             'ids' => 'required|array',
+            'ids.*' => 'integer|exists:import_history,id',
         ]);
         
         $ids = $request->ids;
@@ -328,15 +559,33 @@ class ImportHistoryController extends Controller
         switch ($request->action) {
             case 'delete':
                 ImportHistory::whereIn('id', $ids)->delete();
-                break;
+                return response()->json([
+                    'success' => true,
+                    'message' => count($ids) . ' import(s) deleted successfully',
+                ]);
+            case 'export':
+                $idsStr = implode(',', $ids);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Preparing download...',
+                    'download_url' => route('import_history.export_logs', ['ids' => $idsStr]),
+                ]);
             case 'archive':
-                // You can implement archiving logic here
-                break;
+                foreach ($ids as $id) {
+                    $imp = ImportHistory::find($id);
+                    if ($imp) {
+                        $meta = $imp->metadata ?? [];
+                        $meta['archived'] = true;
+                        $meta['archived_at'] = now()->toIso8601String();
+                        $imp->update(['metadata' => $meta]);
+                    }
+                }
+                return response()->json([
+                    'success' => true,
+                    'message' => count($ids) . ' import(s) archived',
+                ]);
+            default:
+                return response()->json(['success' => false, 'message' => 'Unknown action'], 422);
         }
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Bulk action completed successfully',
-        ]);
     }
 }
