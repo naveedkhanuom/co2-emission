@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scope 2 - Purchased Energy Data Entry</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #f5f6fa; --white: #fff; --text: #1a2233; --text2: #4f5d73; --text3: #8b95a5;
+  --border: #e2e7ef; --bfocus: #9aa5b4;
+  --accent: #d97706; --accentbg: #fef9ee; --accentlt: #fde68a; --accentdk: #b45d05;
+  --green: #16a34a; --greenbg: #ecfdf5; --greenlt: #bbf7d0;
+  --blue: #2563eb; --bluebg: #eff4ff; --bluelt: #bfdbfe;
+  --red: #dc2626; --radius: 14px; --radius2: 10px;
+}
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.app { max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+
+/* Top Bar */
+.topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+.topbar h2 { font-size: 20px; font-weight: 800; letter-spacing: -.4px; display: flex; align-items: center; gap: 8px; }
+.topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 14px; font-weight: 800; }
+.topbar p { color: var(--text2); font-size: 12.5px; flex: 1; min-width: 180px; }
+.btn-add { margin-left: auto; padding: 9px 18px; border-radius: 9px; background: var(--accent); color: #fff; border: none; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .15s; white-space: nowrap; }
+.btn-add:hover { background: var(--accentdk); }
+
+/* Stats Cards */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.sc { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+.sc .si { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.sc .si.a { background: var(--accentbg); }
+.sc .si.b { background: var(--bluebg); }
+.sc .si.r { background: #fef1ef; }
+.sc .si.g { background: var(--greenbg); }
+.sc .sv { font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
+.sc .sl { font-size: 10.5px; color: var(--text3); margin-top: 1px; }
+
+/* Filter Tabs */
+.ftabs { display: flex; gap: 5px; margin-bottom: 16px; flex-wrap: wrap; }
+.ftab { padding: 7px 14px; border-radius: 100px; font-size: 11.5px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--white); color: var(--text2); transition: all .15s; display: flex; align-items: center; gap: 4px; }
+.ftab:hover { border-color: var(--bfocus); }
+.ftab.on { background: var(--accentbg); border-color: var(--accentlt); color: var(--accent); }
+.ftab .cn { font-size: 9.5px; background: var(--bg); padding: 1px 5px; border-radius: 100px; font-weight: 700; }
+.ftab.on .cn { background: var(--accentlt); color: var(--accentdk); }
+
+/* Table Wrapper */
+.tw { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.th2 { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
+.th2 h3 { font-size: 13.5px; font-weight: 700; }
+.tsr { position: relative; }
+.tsr input { padding: 6px 9px 6px 28px; font-family: inherit; font-size: 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg); outline: none; width: 180px; color: var(--text); }
+.tsr svg { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: var(--text3); }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+table th { text-align: left; padding: 8px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text3); background: var(--bg); border-bottom: 1px solid var(--border); }
+table td { padding: 9px 12px; font-size: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table tr:last-child td { border-bottom: none; }
+table tr:hover td { background: #fafbfe; }
+.sn { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.cd { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cd.el { background: #2563eb; }
+.cd.he { background: #e0533d; }
+.cd.co { background: #16a34a; }
+.ft2 { display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
+.co2val { font-weight: 700; color: var(--accent); }
+.ab { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border); background: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text3); transition: all .1s; }
+.ab.dl:hover { background: #fef2f2; color: var(--red); border-color: #fecaca; }
+.es { text-align: center; padding: 40px 20px; color: var(--text3); }
+.es span { font-size: 34px; display: block; margin-bottom: 6px; }
+.es p { font-size: 13px; margin-bottom: 10px; }
+.es .eb { padding: 6px 14px; border-radius: 7px; background: var(--accent); color: #fff; border: none; font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+
+/* Modal Overlay */
+.ov { position: fixed; inset: 0; background: rgba(12,18,30,.5); backdrop-filter: blur(3px); z-index: 1000; display: none; align-items: flex-start; justify-content: center; padding: 20px 12px; overflow-y: auto; opacity: 0; transition: opacity .2s; }
+.ov.open { display: flex; opacity: 1; }
+.mdl { background: var(--white); border-radius: 16px; width: 100%; max-width: 600px; box-shadow: 0 20px 60px rgba(0,0,0,.18); margin: auto; overflow: hidden; }
+
+/* Modal Header */
+.mh { padding: 18px 20px 0; display: flex; align-items: center; gap: 11px; }
+.mh .mi { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; background: var(--accentbg); }
+.mh .mt { flex: 1; }
+.mh .mt h2 { font-size: 15px; font-weight: 700; }
+.mh .mt span { font-size: 10.5px; color: var(--text3); }
+.mh .mx { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 15px; flex-shrink: 0; }
+
+/* Steps Bar */
+.stp { display: flex; padding: 14px 20px 0; }
+.st { flex: 1; text-align: center; padding-bottom: 12px; position: relative; }
+.st .sb3 { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--border); border-radius: 2px; }
+.st.dn .sb3 { background: var(--green); }
+.st.ac2 .sb3 { background: var(--accent); }
+.st .sn2 { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--text3); margin-bottom: 2px; }
+.st.ac2 .sn2 { border-color: var(--accent); background: var(--accent); color: #fff; }
+.st.dn .sn2 { border-color: var(--green); background: var(--green); color: #fff; }
+.st .stx { font-size: 9.5px; font-weight: 600; color: var(--text3); }
+.st.ac2 .stx { color: var(--accent); }
+.st.dn .stx { color: var(--green); }
+
+/* Form Panels */
+.fp { padding: 16px 20px 20px; display: none; }
+.fp.show { display: block; }
+.fg { margin-bottom: 12px; }
+.fg label { display: block; font-size: 11.5px; font-weight: 600; margin-bottom: 3px; }
+.fg label .rq { color: var(--red); margin-left: 1px; }
+.fg .fh { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+.fi, .fsl, .fta { width: 100%; padding: 8px 11px; font-family: inherit; font-size: 12.5px; border: 1.5px solid var(--border); border-radius: var(--radius2); background: var(--white); outline: none; color: var(--text); transition: border .2s; }
+.fi:focus, .fsl:focus, .fta:focus { border-color: var(--bfocus); }
+.fi::placeholder, .fta::placeholder { color: var(--text3); }
+.fsl { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b95a5' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; cursor: pointer; }
+.fta { resize: vertical; min-height: 52px; }
+.fr { display: flex; gap: 10px; }
+.fr .fg { flex: 1; }
+
+/* Sub-category Buttons */
+.scb { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+.scbt { padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--white); color: var(--text2); transition: all .12s; }
+.scbt:hover { border-color: var(--bfocus); }
+.scbt.on { background: var(--accentbg); border-color: var(--accentlt); color: var(--accent); }
+
+/* Source Cards Grid */
+.sg { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; max-height: 280px; overflow-y: auto; padding-right: 3px; }
+.sg::-webkit-scrollbar { width: 3px; }
+.sg::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 2px; }
+.sc2 { padding: 9px 10px; border: 1.5px solid var(--border); border-radius: var(--radius2); cursor: pointer; transition: all .1s; display: flex; align-items: center; gap: 7px; }
+.sc2:hover { border-color: var(--bfocus); background: #fafbfd; }
+.sc2.pk { border-color: var(--accent); background: var(--accentbg); }
+.sc2 .sd2 { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.sc2.pk .sd2 { background: var(--accent); }
+.sc2 .sn3 { font-size: 11px; font-weight: 600; line-height: 1.2; }
+.sc2 .sd3 { font-size: 9.5px; color: var(--text3); margin-top: 1px; line-height: 1.2; }
+
+/* EF Box */
+.ef-box { margin: 10px 0 12px; padding: 12px; border-radius: var(--radius2); background: var(--bluebg); border: 1px solid var(--bluelt); }
+.ef-box .ef-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--blue); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+.ef-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.ef-item { flex: 1; min-width: 80px; background: var(--white); border: 1px solid var(--bluelt); border-radius: 7px; padding: 7px 8px; text-align: center; }
+.ef-item .ef-val { font-size: 14px; font-weight: 800; color: var(--blue); letter-spacing: -.3px; }
+.ef-item .ef-lbl { font-size: 8.5px; color: var(--text3); margin-top: 1px; text-transform: uppercase; letter-spacing: .3px; }
+.region-box { padding: 12px; border-radius: var(--radius2); background: var(--accentbg); border: 1px solid var(--accentlt); margin-bottom: 12px; }
+
+/* CO2 Box */
+.co2box { padding: 14px; border-radius: var(--radius2); text-align: center; margin-bottom: 12px; background: var(--accentbg); border: 1.5px solid var(--accentlt); }
+.co2box .co2v { font-size: 26px; font-weight: 800; letter-spacing: -1px; color: var(--accent); }
+.co2box .co2l { font-size: 10.5px; color: var(--text2); margin-top: 1px; }
+.co2box .co2f { font-size: 9.5px; color: var(--text3); margin-top: 3px; font-style: italic; }
+
+/* File Upload */
+.fup { border: 2px dashed var(--border); border-radius: var(--radius2); padding: 14px; text-align: center; cursor: pointer; transition: all .2s; background: var(--bg); }
+.fup:hover { border-color: var(--bfocus); }
+.fup input { display: none; }
+.fup .fut { font-size: 11.5px; color: var(--text2); }
+.fup .fuh { font-size: 9.5px; color: var(--text3); margin-top: 1px; }
+.ffl { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 3px; }
+.ffi { display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: 5px; background: var(--bg); border: 1px solid var(--border); font-size: 10px; color: var(--text2); }
+.ffi .ffx { cursor: pointer; color: var(--text3); font-weight: 700; }
+.ffi .ffx:hover { color: var(--red); }
+
+/* Form Errors */
+.ferr .fi, .ferr .fsl { border-color: var(--red); }
+.fem { font-size: 9.5px; color: var(--red); margin-top: 2px; display: none; }
+.ferr .fem { display: block; }
+
+/* Buttons */
+.fn { display: flex; gap: 8px; margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--border); }
+.btn { padding: 8px 16px; border-radius: var(--radius2); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s; border: none; }
+.bp { flex: 1; background: var(--accent); color: #fff; }
+.bp:hover { background: var(--accentdk); }
+.bs { background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
+.bs:hover { background: #e8eaf0; }
+.bg { background: var(--green); color: #fff; flex: 1; }
+.bg:hover { background: #148c3e; }
+
+/* Success */
+.suc { display: none; text-align: center; padding: 32px 20px; }
+.suc.on { display: block; }
+.suc .sk { width: 52px; height: 52px; border-radius: 50%; background: var(--greenbg); border: 2px solid var(--greenlt); display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 8px; }
+.suc h3 { font-size: 15px; font-weight: 700; color: var(--green); margin-bottom: 3px; }
+.suc p { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 12px; }
+.suc .sr { display: flex; gap: 8px; justify-content: center; }
+
+/* Nav Links */
+.nav-link { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 600; text-decoration: none; border: 1.5px solid var(--border); color: var(--text2); background: var(--white); transition: all .15s; margin-right: 6px; }
+.nav-link:hover { border-color: var(--bfocus); background: var(--bg); }
+.nav-link.s2 { border-color: #fde68a; color: #b45d05; background: #fef9ee; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Navigation -->
+  <div style="margin-bottom:16px">
+    <a class="nav-link" href="scope1-data-entry.html">&#9670; Scope 1</a>
+    <a class="nav-link s2" href="scope2-data-entry.html">&#9889; Scope 2</a>
+    <a class="nav-link" href="scope3-data-entry.html">&#127760; Scope 3</a>
+  </div>
+
+  <!-- Header -->
+  <div class="topbar">
+    <h2><span class="sb">2</span>Scope 2 - Purchased Energy</h2>
+    <p>Electricity, heat, steam &amp; cooling from third parties</p>
+    <button class="btn-add" id="btnAdd">+ Add Entry</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="sc"><div class="si a">&#9889;</div><div><div class="sv" id="sT">0</div><div class="sl">Total Entries</div></div></div>
+    <div class="sc"><div class="si b">&#9889;</div><div><div class="sv" id="sE">0</div><div class="sl">Electricity</div></div></div>
+    <div class="sc"><div class="si r">&#127777;</div><div><div class="sv" id="sH">0</div><div class="sl">Heat / Steam</div></div></div>
+    <div class="sc"><div class="si g">&#10052;</div><div><div class="sv" id="sC">0</div><div class="sl">Cooling</div></div></div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="ftabs" id="fTabs"></div>
+
+  <!-- Table -->
+  <div class="tw">
+    <div class="th2">
+      <h3>Entries</h3>
+      <div class="tsr">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="tSr" placeholder="Search...">
+      </div>
+    </div>
+    <div id="tB"></div>
+  </div>
+</div>
+
+<!-- Modal Overlay -->
+<div class="ov" id="ov">
+  <div class="mdl">
+    <!-- Modal Header -->
+    <div class="mh">
+      <div class="mi">&#9889;</div>
+      <div class="mt"><h2>New Scope 2 Entry</h2><span>Purchased Energy</span></div>
+      <button class="mx" id="mx">&#x2715;</button>
+    </div>
+
+    <!-- Steps -->
+    <div class="stp">
+      <div class="st ac2" id="ms1"><span class="sn2">1</span><div class="stx">Source</div><div class="sb3"></div></div>
+      <div class="st" id="ms2"><span class="sn2">2</span><div class="stx">Data</div><div class="sb3"></div></div>
+      <div class="st" id="ms3"><span class="sn2">3</span><div class="stx">Review</div><div class="sb3"></div></div>
+    </div>
+
+    <!-- Step 1: Source Selection -->
+    <div class="fp show" id="p1">
+      <div class="fg">
+        <label>Sub-Category<span class="rq">*</span></label>
+        <div class="scb" id="scb"></div>
+      </div>
+      <div class="fg" id="fg_src">
+        <label>Emission Source<span class="rq">*</span></label>
+        <div class="fh">Select energy type</div>
+        <div class="sg" id="srcG"></div>
+        <div class="fem">Please select a source</div>
+      </div>
+      <div class="fn">
+        <button class="btn bs" id="n1c">Cancel</button>
+        <button class="btn bp" id="n1n">Next &#8594;</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Data Entry -->
+    <div class="fp" id="p2">
+      <!-- Grid Region (electricity only) -->
+      <div class="region-box" id="regionBox" style="display:none">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:6px">&#127758; Grid Region / Country</div>
+        <div class="fg" style="margin:0">
+          <select class="fsl" id="fregion"></select>
+        </div>
+        <div class="fg" id="fg_cef" style="margin:8px 0 0;display:none">
+          <label style="font-size:11px;font-weight:600">Custom Emission Factor (kgCO2e/kWh)<span class="rq">*</span></label>
+          <input class="fi" type="number" id="fcef" placeholder="e.g. 0.450" step="any" min="0" style="margin-top:3px">
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">Enter the grid emission factor from your utility provider or local registry</div>
+        </div>
+      </div>
+
+      <!-- Emission Factor Display -->
+      <div class="ef-box" id="efBox" style="display:none">
+        <div class="ef-title">&#128218; Emission Factors (auto-applied)</div>
+        <div class="ef-row" id="efRow"></div>
+        <div id="efOverride" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--bluelt)">
+          <label style="display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;color:var(--blue);cursor:pointer">
+            <input type="checkbox" id="chkEfOvr" style="accent-color:var(--blue)"> Override with custom EF (kgCO2e/kWh)
+          </label>
+          <input class="fi" type="number" id="fefOvr" placeholder="e.g. 0.250" step="any" min="0" style="margin-top:4px;display:none;font-size:11px">
+        </div>
+      </div>
+
+      <!-- Quantity & Unit -->
+      <div class="fr">
+        <div class="fg" id="fg_qty">
+          <label>Quantity<span class="rq">*</span></label>
+          <input class="fi" type="number" id="fqty" placeholder="e.g. 5000" step="any" min="0">
+          <div class="fem">Enter quantity</div>
+        </div>
+        <div class="fg" id="fg_unit">
+          <label>Unit<span class="rq">*</span></label>
+          <select class="fsl" id="funit"><option value="">Select...</option></select>
+          <div class="fem">Select unit</div>
+        </div>
+      </div>
+
+      <!-- CO2 Result -->
+      <div class="co2box" id="co2box" style="display:none">
+        <div class="co2v" id="co2v">0.00</div>
+        <div class="co2l">tonnes CO2e</div>
+        <div class="co2f" id="co2f"></div>
+      </div>
+
+      <!-- Period & Date -->
+      <div class="fr">
+        <div class="fg" id="fg_per">
+          <label>Period<span class="rq">*</span></label>
+          <select class="fsl" id="fper">
+            <option value="">Select...</option>
+            <option>Monthly</option>
+            <option>Quarterly</option>
+            <option>Annually</option>
+          </select>
+          <div class="fem">Select period</div>
+        </div>
+        <div class="fg" id="fg_dt">
+          <label>Date<span class="rq">*</span></label>
+          <input class="fi" type="date" id="fdt">
+          <div class="fem">Select date</div>
+        </div>
+      </div>
+
+      <!-- Facility -->
+      <div class="fg" id="fg_fac">
+        <label>Facility / Location<span class="rq">*</span></label>
+        <input class="fi" type="text" id="ffac" placeholder="e.g. Main Office">
+        <div class="fem">Enter facility</div>
+      </div>
+
+      <!-- Notes -->
+      <div class="fg">
+        <label>Notes</label>
+        <textarea class="fta" id="fdsc" placeholder="Optional..."></textarea>
+      </div>
+
+      <div class="fn">
+        <button class="btn bs" id="n2b">&#8592; Back</button>
+        <button class="btn bp" id="n2n">Next &#8594;</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Review -->
+    <div class="fp" id="p3">
+      <div class="fg">
+        <label>Upload Evidence</label>
+        <div class="fup" id="fup">
+          <span style="font-size:18px">&#128206;</span>
+          <div class="fut">Click to upload</div>
+          <div class="fuh">PDF, PNG, JPG, XLSX</div>
+          <input type="file" id="fupi" multiple>
+        </div>
+        <div class="ffl" id="ffl"></div>
+      </div>
+      <div class="fg">
+        <label>Summary</label>
+        <div id="rvw" style="padding:10px;border-radius:9px;background:var(--bg);border:1px solid var(--border);font-size:12px;line-height:1.8;color:var(--text2)"></div>
+      </div>
+      <div class="fn">
+        <button class="btn bs" id="n3b">&#8592; Back</button>
+        <button class="btn bg" id="n3s">&#10003; Submit</button>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div class="suc" id="suc">
+      <div class="sk">&#10003;</div>
+      <h3>Saved!</h3>
+      <p id="sucM"></p>
+      <div class="sr">
+        <button class="btn bs" id="sucC">Close</button>
+        <button class="btn bp" id="sucA">+ Another</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+
+  // ─── Grid Emission Factors ──────────────────────────────────────────
+  var gridEF = [
+    { region: "UAE (Abu Dhabi / ADWEC)", co2: 0.4041, src: "IEA 2024" },
+    { region: "UAE (Dubai / DEWA)",      co2: 0.3876, src: "DEWA 2023" },
+    { region: "UAE (Sharjah / SEWA)",    co2: 0.4200, src: "IEA est." },
+    { region: "Saudi Arabia",            co2: 0.5320, src: "IEA 2024" },
+    { region: "Qatar",                   co2: 0.4890, src: "IEA 2024" },
+    { region: "Bahrain",                 co2: 0.5180, src: "IEA 2024" },
+    { region: "Kuwait",                  co2: 0.5690, src: "IEA 2024" },
+    { region: "Oman",                    co2: 0.4540, src: "IEA 2024" },
+    { region: "Egypt",                   co2: 0.4520, src: "IEA 2024" },
+    { region: "Jordan",                  co2: 0.4310, src: "IEA 2024" },
+    { region: "India",                   co2: 0.7080, src: "IEA 2024" },
+    { region: "China",                   co2: 0.5440, src: "IEA 2024" },
+    { region: "USA (National Avg)",      co2: 0.3710, src: "EPA eGRID" },
+    { region: "UK",                      co2: 0.2070, src: "DESNZ 2024" },
+    { region: "Germany",                 co2: 0.3610, src: "IEA 2024" },
+    { region: "France",                  co2: 0.0520, src: "IEA 2024" },
+    { region: "Australia",               co2: 0.6560, src: "IEA 2024" },
+    { region: "Japan",                   co2: 0.4340, src: "IEA 2024" },
+    { region: "Canada",                  co2: 0.1200, src: "IEA 2024" },
+    { region: "Brazil",                  co2: 0.0740, src: "IEA 2024" },
+    { region: "South Africa",            co2: 0.8980, src: "IEA 2024" },
+    { region: "World Average",           co2: 0.4940, src: "IEA 2024" },
+    { region: "Custom (enter manually)", co2: 0,      src: "User-defined" }
+  ];
+
+  // ─── Emission Sources (40 total) ───────────────────────────────────
+  var S = {
+
+    // ── ELECTRICITY (14 sources) ──
+    electricity: [
+      { name: "Backup / Emergency Generator Power", desc: "Purchased backup power from third-party generators",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Grid EF applied - third-party generator electricity" },
+      { name: "CHP / Cogeneration - Electricity", desc: "Combined heat & power electricity portion",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "CHP electricity allocation - grid EF" },
+      { name: "EV Charging (Third-Party)", desc: "Electricity from third-party EV charging stations",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Grid EF applied to third-party EV charging" },
+      { name: "Green Tariff Electricity", desc: "Electricity from utility green/renewable tariff",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Market-based EF from green tariff supplier" },
+      { name: "Landlord-Supplied Electricity", desc: "Electricity supplied via building landlord/manager",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Grid EF - landlord sub-metered electricity" },
+      { name: "Power Purchase Agreement (PPA)", desc: "Electricity from third-party PPA contract",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Market-based EF from PPA contract" },
+      { name: "Purchased Electricity (Location-Based)", desc: "Grid electricity - location-based method",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "IEA/eGRID grid avg EF by country (location-based)" },
+      { name: "Purchased Electricity (Market-Based)", desc: "Grid electricity - market-based method",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Supplier-specific or residual mix EF (market-based)" },
+      { name: "RECs / GOs / I-RECs", desc: "Renewable Energy Certificates / Guarantees of Origin",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], efPerKwh: 0, note: "Zero EF with valid RECs/GOs/I-RECs (market-based)" },
+      { name: "Shared Facility Electricity", desc: "Electricity allocated from shared/multi-tenant facility",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Grid EF - allocated share of facility electricity" },
+      { name: "Third-Party On-Site Solar/Wind", desc: "On-site renewable from third-party owned system",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Market-based EF from third-party on-site renewable" },
+      { name: "Trigeneration - Electricity", desc: "CCHP electricity portion (cooling, heat, power)",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Trigeneration electricity allocation - grid EF" },
+      { name: "Virtual PPA (VPPA) Electricity", desc: "Electricity via virtual/financial PPA contract",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "Market-based EF from VPPA financial settlement" },
+      { name: "Custom Electricity Source", desc: "Other purchased electricity source not listed",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }], isGrid: true, note: "User-defined electricity source" }
+    ],
+
+    // ── HEATING / STEAM (15 sources) ──
+    heating: [
+      { name: "Biomass District Heat", desc: "District heating from biomass/wood chip boilers",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.029, note: "Biomass district heat ~0.029 kgCO2e/kWh (DEFRA)" },
+      { name: "CHP / Cogeneration - Heat", desc: "Heat portion from combined heat & power plant",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.198, note: "CHP heat allocation ~0.198 kgCO2e/kWh (DEFRA)" },
+      { name: "District Heating (Gas-Fired)", desc: "District heating from natural gas network",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.198, note: "Gas-fired district heat 0.198 kgCO2e/kWh (DEFRA)" },
+      { name: "District Heating (Mixed/Unknown)", desc: "District heating - unspecified fuel source",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.198, note: "Avg district heat 0.198 kgCO2e/kWh (DEFRA)" },
+      { name: "District Heating (Oil-Fired)", desc: "District heating from fuel oil network",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.266, note: "Oil-fired district heat ~0.266 kgCO2e/kWh (IEA)" },
+      { name: "Geothermal Heat", desc: "Purchased heat from geothermal source",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.027, note: "Geothermal heat ~0.027 kgCO2e/kWh (IPCC)" },
+      { name: "Heat Pump Output (Third-Party)", desc: "Heat from third-party operated heat pump",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.120, note: "Heat pump output ~0.12 kgCO2e/kWh (electric-driven)" },
+      { name: "Industrial Waste Heat Recovery", desc: "Purchased recovered waste heat from industrial process",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.000, note: "Waste heat recovery - zero direct EF (allocation)" },
+      { name: "Landlord-Supplied Heating", desc: "Heating supplied via building landlord/manager",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.198, note: "Landlord heat - avg district EF 0.198 kgCO2e/kWh" },
+      { name: "Purchased Hot Water", desc: "Hot water from district/third-party system",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.198, note: "District hot water ~0.198 kgCO2e/kWh (DEFRA)" },
+      { name: "Purchased Steam (High Pressure)", desc: "Industrial high-pressure steam supply",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }, { u: "ton", label: "tonnes steam" }],
+        efPerKwh: 0.170, note: "HP steam from gas boiler ~0.17 kgCO2e/kWh" },
+      { name: "Purchased Steam (Low Pressure)", desc: "Industrial low-pressure steam supply",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }, { u: "ton", label: "tonnes steam" }],
+        efPerKwh: 0.150, note: "LP steam ~0.15 kgCO2e/kWh (lower temp/losses)" },
+      { name: "Solar Thermal Heat (Third-Party)", desc: "Heat from third-party solar thermal system",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.000, note: "Solar thermal - zero direct combustion EF" },
+      { name: "Trigeneration - Heat", desc: "Heat portion from CCHP/trigeneration plant",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.198, note: "Trigeneration heat allocation ~0.198 kgCO2e/kWh" },
+      { name: "Custom Heating Source", desc: "Other purchased heating source not listed",
+        units: [{ u: "kWh", label: "kWh" }, { u: "MWh", label: "MWh" }, { u: "GJ", label: "GJ" }, { u: "MMBtu", label: "MMBtu" }],
+        efPerKwh: 0.198, note: "User-defined heating source - default 0.198" }
+    ],
+
+    // ── COOLING (11 sources) ──
+    cooling: [
+      { name: "Absorption Chiller Cooling (Third-Party)", desc: "Cooling from third-party absorption chiller",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.180, note: "Absorption chiller cooling ~0.18 kgCO2e/kWh" },
+      { name: "Chilled Water (District)", desc: "Chilled water from district cooling provider",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.210, note: "District chilled water ~0.21 kgCO2e/kWh (UAE/GCC)" },
+      { name: "Data Center Cooling (Third-Party)", desc: "Cooling for IT equipment from third-party provider",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }],
+        efPerKwh: 0.210, note: "Third-party data center cooling ~0.21 kgCO2e/kWh" },
+      { name: "District Cooling (Electricity-Driven)", desc: "District cooling from electric chillers",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.210, note: "Electric chiller district cooling ~0.21 kgCO2e/kWh" },
+      { name: "District Cooling (Gas-Driven)", desc: "District cooling from gas-fired absorption system",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.240, note: "Gas-driven district cooling ~0.24 kgCO2e/kWh" },
+      { name: "District Cooling (Mixed/Unknown)", desc: "District cooling - unspecified system type",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.210, note: "Avg district cooling ~0.21 kgCO2e/kWh" },
+      { name: "Free Cooling / Seawater Cooling", desc: "Cooling using seawater or ambient free cooling",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }],
+        efPerKwh: 0.050, note: "Free/seawater cooling (pump energy) ~0.05 kgCO2e/kWh" },
+      { name: "Ice Storage Cooling", desc: "Cooling from off-peak ice storage system",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }],
+        efPerKwh: 0.210, note: "Ice storage cooling ~0.21 kgCO2e/kWh (shifted load)" },
+      { name: "Landlord-Supplied Cooling", desc: "Cooling supplied via building landlord/manager",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }],
+        efPerKwh: 0.210, note: "Landlord cooling - avg district EF ~0.21 kgCO2e/kWh" },
+      { name: "Trigeneration - Cooling", desc: "Cooling portion from CCHP/trigeneration plant",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.180, note: "Trigeneration cooling allocation ~0.18 kgCO2e/kWh" },
+      { name: "Custom Cooling Source", desc: "Other purchased cooling source not listed",
+        units: [{ u: "kWh", label: "kWh (thermal)" }, { u: "MWh", label: "MWh (thermal)" }, { u: "ton-hr", label: "Ton-hours" }, { u: "GJ", label: "GJ" }],
+        efPerKwh: 0.210, note: "User-defined cooling source - default 0.21" }
+    ]
+  };
+
+  // ─── State ──────────────────────────────────────────────────────────
+  var entries = [];
+  var curSub = "electricity";
+  var selSrc = null;
+  var upFiles = [];
+  var filterCat = "all";
+  var curStep = 1;
+  var selRegionIdx = 0;
+  var cats = { all: "All", electricity: "Electricity", heating: "Heating / Steam", cooling: "Cooling" };
+
+  // ─── Helper: EF HTML ────────────────────────────────────────────────
+  function efHTML(val, label) {
+    return '<div class=ef-item><div class=ef-val>' + val + '</div><div class=ef-lbl>' + label + '</div></div>';
+  }
+
+  // ─── Helper: kWh conversion ─────────────────────────────────────────
+  function toKwh(qty, label) {
+    if (label === "MWh" || label === "MWh (thermal)") return qty * 1000;
+    if (label === "GJ") return qty * 277.778;
+    if (label === "MMBtu") return qty * 293.071;
+    if (label === "Ton-hours") return qty * 3.517;
+    if (label === "tonnes steam") return qty * 694.4;
+    return qty; // kWh or kWh (thermal)
+  }
+
+  // ─── Init Filter Tabs ──────────────────────────────────────────────
+  var wrap = document.getElementById("fTabs");
+  Object.keys(cats).forEach(function(k) {
+    var t = document.createElement("div");
+    t.className = "ftab" + (k === "all" ? " on" : "");
+    t.setAttribute("data-f", k);
+    t.innerHTML = cats[k] + ' <span class="cn">0</span>';
+    t.addEventListener("click", function() {
+      wrap.querySelectorAll(".ftab").forEach(function(x) { x.classList.remove("on"); });
+      t.classList.add("on");
+      filterCat = k;
+      renderT();
+    });
+    wrap.appendChild(t);
+  });
+
+  // ─── Modal Open / Close ────────────────────────────────────────────
+  function openM() {
+    selSrc = null;
+    upFiles = [];
+    resetForm();
+    curSub = "electricity";
+    renderSubBtns();
+    renderSrcCards();
+    goStep(1);
+    document.getElementById("suc").classList.remove("on");
+    document.getElementById("ov").classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeM() {
+    document.getElementById("ov").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  // ─── Sub-Category Buttons ──────────────────────────────────────────
+  function renderSubBtns() {
+    var c = document.getElementById("scb");
+    c.innerHTML = "";
+    ["electricity", "heating", "cooling"].forEach(function(k) {
+      var b = document.createElement("div");
+      b.className = "scbt" + (curSub === k ? " on" : "");
+      b.textContent = cats[k];
+      b.addEventListener("click", function() {
+        curSub = k;
+        c.querySelectorAll(".scbt").forEach(function(x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        renderSrcCards();
+      });
+      c.appendChild(b);
+    });
+  }
+
+  // ─── Source Cards ──────────────────────────────────────────────────
+  function renderSrcCards() {
+    selSrc = null;
+    var g = document.getElementById("srcG");
+    g.innerHTML = "";
+    (S[curSub] || []).forEach(function(s) {
+      var d = document.createElement("div");
+      d.className = "sc2";
+      d.innerHTML = '<div class="sd2"></div><div><div class="sn3">' + s.name + '</div><div class="sd3">' + s.desc + '</div></div>';
+      d.addEventListener("click", function() {
+        g.querySelectorAll(".sc2").forEach(function(x) { x.classList.remove("pk"); });
+        d.classList.add("pk");
+        selSrc = s;
+        document.getElementById("fg_src").classList.remove("ferr");
+      });
+      g.appendChild(d);
+    });
+  }
+
+  // ─── Populate Units ────────────────────────────────────────────────
+  function populateUnits() {
+    var sel = document.getElementById("funit");
+    sel.innerHTML = '<option value="">Select...</option>';
+    selSrc.units.forEach(function(u, i) {
+      var o = document.createElement("option");
+      o.value = i;
+      o.textContent = u.label;
+      sel.appendChild(o);
+    });
+  }
+
+  // ─── Show Emission Factors ─────────────────────────────────────────
+  function showEF() {
+    var b = document.getElementById("efBox");
+    var rb = document.getElementById("regionBox");
+    var ov = document.getElementById("efOverride");
+    b.style.display = "none";
+    rb.style.display = "none";
+    ov.style.display = "none";
+    document.getElementById("chkEfOvr").checked = false;
+    document.getElementById("fefOvr").style.display = "none";
+    document.getElementById("fefOvr").value = "";
+    if (!selSrc) return;
+
+    if (selSrc.isGrid) {
+      rb.style.display = "block";
+      var sel = document.getElementById("fregion");
+      sel.innerHTML = "";
+      gridEF.forEach(function(g, i) {
+        var o = document.createElement("option");
+        o.value = i;
+        o.textContent = g.region + " (" + g.co2 + " kgCO2/kWh)";
+        sel.appendChild(o);
+      });
+      selRegionIdx = 0;
+      b.style.display = "block";
+      updateGridEFDisplay();
+    } else if (selSrc.efPerKwh !== undefined) {
+      b.style.display = "block";
+      ov.style.display = "block";
+      document.getElementById("efRow").innerHTML =
+        efHTML(selSrc.efPerKwh, "kgCO2e / kWh") + efHTML("IPCC/IEA/DEFRA", "Source");
+    }
+  }
+
+  // ─── Update Grid EF Display ────────────────────────────────────────
+  function updateGridEFDisplay() {
+    var idx = parseInt(document.getElementById("fregion").value) || 0;
+    selRegionIdx = idx;
+    var g = gridEF[idx];
+    var cefBox = document.getElementById("fg_cef");
+
+    if (g.region.indexOf("Custom") !== -1) {
+      cefBox.style.display = "block";
+      var cv = parseFloat(document.getElementById("fcef").value) || 0;
+      document.getElementById("efRow").innerHTML =
+        efHTML(cv || "--", "kgCO2/kWh") + efHTML("User", "Source");
+    } else {
+      cefBox.style.display = "none";
+      document.getElementById("efRow").innerHTML =
+        efHTML(g.co2, "kgCO2/kWh") + efHTML(g.src, "Source");
+    }
+  }
+
+  // ─── Calculate CO2e ────────────────────────────────────────────────
+  function calcCO2e() {
+    var box = document.getElementById("co2box");
+    if (!selSrc) { box.style.display = "none"; return 0; }
+
+    var qty = parseFloat(document.getElementById("fqty").value);
+    var uIdx = document.getElementById("funit").value;
+    if (!qty || qty <= 0 || uIdx === "") { box.style.display = "none"; return 0; }
+
+    uIdx = parseInt(uIdx);
+    var uD = selSrc.units[uIdx];
+    var t = 0;
+
+    if (selSrc.isGrid) {
+      var gef = gridEF[selRegionIdx].co2;
+      if (gridEF[selRegionIdx].region.indexOf("Custom") !== -1) {
+        gef = parseFloat(document.getElementById("fcef").value) || 0;
+      }
+      var kwhQty = toKwh(qty, uD.label);
+      t = (kwhQty * gef) / 1000;
+      document.getElementById("co2f").textContent =
+        qty + " " + uD.label + " (" + kwhQty.toFixed(1) + " kWh) x " + gef + " kgCO2/kWh = " + t.toFixed(4) + " tCO2e";
+
+    } else if (selSrc.efPerKwh !== undefined) {
+      var kwhQty = toKwh(qty, uD.label);
+      var ef = selSrc.efPerKwh;
+      var isOvr = document.getElementById("chkEfOvr").checked;
+      if (isOvr) { ef = parseFloat(document.getElementById("fefOvr").value) || 0; }
+      t = (kwhQty * ef) / 1000;
+      document.getElementById("co2f").textContent =
+        qty + " " + uD.label + " (" + kwhQty.toFixed(1) + " kWh) x " + ef + " kgCO2e/kWh" + (isOvr ? " [custom]" : "") + " = " + t.toFixed(4) + " tCO2e";
+    }
+
+    document.getElementById("co2v").textContent = t.toFixed(4);
+    box.style.display = "block";
+    return t;
+  }
+
+  // ─── Step Navigation ───────────────────────────────────────────────
+  function goStep(n) {
+    curStep = n;
+    for (var i = 1; i <= 3; i++) {
+      document.getElementById("p" + i).classList.toggle("show", i === n);
+      var el = document.getElementById("ms" + i);
+      if (el) { el.className = "st" + (i < n ? " dn" : "") + (i === n ? " ac2" : ""); }
+    }
+  }
+
+  // ─── Reset Form ────────────────────────────────────────────────────
+  function resetForm() {
+    ["fqty", "fdt", "ffac", "fdsc"].forEach(function(id) { document.getElementById(id).value = ""; });
+    document.getElementById("funit").innerHTML = '<option value="">Select...</option>';
+    document.getElementById("fper").value = "";
+    document.getElementById("ffl").innerHTML = "";
+    document.getElementById("co2box").style.display = "none";
+    document.getElementById("efBox").style.display = "none";
+    document.getElementById("regionBox").style.display = "none";
+    document.getElementById("fg_cef").style.display = "none";
+    document.getElementById("fcef").value = "";
+    document.getElementById("chkEfOvr").checked = false;
+    document.getElementById("fefOvr").value = "";
+    document.getElementById("fefOvr").style.display = "none";
+    upFiles = [];
+    document.querySelectorAll(".ferr").forEach(function(e) { e.classList.remove("ferr"); });
+  }
+
+  // ─── File Upload ───────────────────────────────────────────────────
+  function renderFiles() {
+    var c = document.getElementById("ffl");
+    c.innerHTML = "";
+    upFiles.forEach(function(f, i) {
+      var d = document.createElement("div");
+      d.className = "ffi";
+      d.innerHTML = f.name + ' <span class="ffx">&times;</span>';
+      d.querySelector(".ffx").addEventListener("click", function() { upFiles.splice(i, 1); renderFiles(); });
+      c.appendChild(d);
+    });
+  }
+
+  // ─── Render Table ──────────────────────────────────────────────────
+  function renderT() {
+    var tb = document.getElementById("tB");
+    var sq = (document.getElementById("tSr").value || "").toLowerCase();
+    var f = entries.filter(function(e) { return filterCat === "all" || e.subcat === filterCat; });
+    if (sq) f = f.filter(function(e) { return e.source.toLowerCase().indexOf(sq) !== -1 || e.facility.toLowerCase().indexOf(sq) !== -1; });
+
+    if (!f.length) {
+      tb.innerHTML = '<div class="es"><span>&#9889;</span><p>' +
+        (entries.length ? "No match." : "No entries yet.") + '</p>' +
+        (entries.length ? '' : '<button class="eb" style="background:var(--accent)" id="btnAddEmpty">+ Add</button>') + '</div>';
+      var addBtn = document.getElementById("btnAddEmpty");
+      if (addBtn) addBtn.addEventListener("click", openM);
+      return;
+    }
+
+    var h = '<table><thead><tr><th>Source</th><th>Qty</th><th>tCO2e</th><th>Facility</th><th>Region</th><th>Date</th><th></th></tr></thead><tbody>';
+    f.forEach(function(e) {
+      var ri = entries.indexOf(e);
+      var dc = e.subcat === "electricity" ? "el" : e.subcat === "heating" ? "he" : "co";
+      h += '<tr><td><div class="sn"><span class="cd ' + dc + '"></span>' + e.source + '</div></td>' +
+        '<td>' + e.qty + ' ' + e.unit + '</td>' +
+        '<td><span class="co2val">' + e.co2e.toFixed(4) + '</span></td>' +
+        '<td><span class="ft2">' + e.facility + '</span></td>' +
+        '<td style="font-size:10px;color:var(--text3)">' + e.region + '</td>' +
+        '<td>' + e.date + '</td>' +
+        '<td><button class="ab dl" data-i="' + ri + '">&#128465;</button></td></tr>';
+    });
+    h += '</tbody></table>';
+    tb.innerHTML = h;
+
+    tb.querySelectorAll(".dl").forEach(function(b) {
+      b.addEventListener("click", function() {
+        if (!confirm("Delete?")) return;
+        entries.splice(parseInt(b.getAttribute("data-i")), 1);
+        renderT();
+        updateStats();
+      });
+    });
+  }
+
+  // ─── Update Stats ──────────────────────────────────────────────────
+  function updateStats() {
+    var t = entries.length, e2 = 0, h = 0, c = 0;
+    entries.forEach(function(e) {
+      if (e.subcat === "electricity") e2++;
+      else if (e.subcat === "heating") h++;
+      else if (e.subcat === "cooling") c++;
+    });
+    document.getElementById("sT").textContent = t;
+    document.getElementById("sE").textContent = e2;
+    document.getElementById("sH").textContent = h;
+    document.getElementById("sC").textContent = c;
+
+    var tabs = document.getElementById("fTabs").querySelectorAll(".ftab");
+    tabs.forEach(function(tab) {
+      var k = tab.getAttribute("data-f");
+      var cnt = k === "all" ? t : k === "electricity" ? e2 : k === "heating" ? h : c;
+      tab.querySelector(".cn").textContent = cnt;
+    });
+  }
+
+  // ─── Event Listeners ───────────────────────────────────────────────
+  document.getElementById("btnAdd").addEventListener("click", openM);
+  document.getElementById("mx").addEventListener("click", closeM);
+  document.getElementById("n1c").addEventListener("click", closeM);
+  document.getElementById("ov").addEventListener("click", function(e) { if (e.target === this) closeM(); });
+
+  // Step 1 → 2
+  document.getElementById("n1n").addEventListener("click", function() {
+    if (!selSrc) { document.getElementById("fg_src").classList.add("ferr"); return; }
+    populateUnits();
+    showEF();
+    goStep(2);
+  });
+
+  // Step 2 Back
+  document.getElementById("n2b").addEventListener("click", function() { goStep(1); });
+
+  // Step 2 → 3
+  document.getElementById("n2n").addEventListener("click", function() {
+    document.querySelectorAll(".ferr").forEach(function(e) { e.classList.remove("ferr"); });
+    var ok = true;
+    if (!document.getElementById("fqty").value || parseFloat(document.getElementById("fqty").value) <= 0) { document.getElementById("fg_qty").classList.add("ferr"); ok = false; }
+    if (document.getElementById("funit").value === "") { document.getElementById("fg_unit").classList.add("ferr"); ok = false; }
+    if (!document.getElementById("fper").value) { document.getElementById("fg_per").classList.add("ferr"); ok = false; }
+    if (!document.getElementById("fdt").value) { document.getElementById("fg_dt").classList.add("ferr"); ok = false; }
+    if (!document.getElementById("ffac").value.trim()) { document.getElementById("fg_fac").classList.add("ferr"); ok = false; }
+    if (!ok) return;
+
+    var t = calcCO2e();
+    var uIdx = parseInt(document.getElementById("funit").value);
+    var regionTxt = selSrc.isGrid ? (" | Region: " + gridEF[selRegionIdx].region) : "";
+    document.getElementById("rvw").innerHTML =
+      "<strong>Source:</strong> " + selSrc.name +
+      "<br><strong>Quantity:</strong> " + document.getElementById("fqty").value + " " + selSrc.units[uIdx].label + regionTxt +
+      "<br><strong>Emissions:</strong> <span style='color:var(--accent);font-weight:700'>" + t.toFixed(4) + " tCO2e</span>" +
+      "<br><strong>EF:</strong> " + selSrc.note +
+      "<br><strong>Period:</strong> " + document.getElementById("fper").value + " | " + document.getElementById("fdt").value +
+      "<br><strong>Facility:</strong> " + document.getElementById("ffac").value;
+    goStep(3);
+  });
+
+  // Step 3 Back
+  document.getElementById("n3b").addEventListener("click", function() { goStep(2); });
+
+  // Submit
+  document.getElementById("n3s").addEventListener("click", function() {
+    var t = calcCO2e();
+    var uIdx = parseInt(document.getElementById("funit").value);
+    var regionVal = "";
+    if (selSrc.isGrid) {
+      regionVal = gridEF[selRegionIdx].region.indexOf("Custom") !== -1
+        ? "Custom (" + document.getElementById("fcef").value + " kgCO2/kWh)"
+        : gridEF[selRegionIdx].region;
+    }
+    entries.push({
+      source: selSrc.name,
+      subcat: curSub,
+      qty: parseFloat(document.getElementById("fqty").value),
+      unit: selSrc.units[uIdx].label,
+      co2e: t,
+      period: document.getElementById("fper").value,
+      date: document.getElementById("fdt").value,
+      facility: document.getElementById("ffac").value.trim(),
+      note: selSrc.note,
+      region: regionVal
+    });
+    renderT();
+    updateStats();
+    document.getElementById("sucM").textContent = selSrc.name + " | " + t.toFixed(4) + " tCO2e";
+    document.querySelectorAll(".fp").forEach(function(p) { p.classList.remove("show"); });
+    document.getElementById("suc").classList.add("on");
+  });
+
+  // Success buttons
+  document.getElementById("sucC").addEventListener("click", closeM);
+  document.getElementById("sucA").addEventListener("click", function() {
+    document.getElementById("suc").classList.remove("on");
+    resetForm();
+    curSub = "electricity";
+    renderSubBtns();
+    renderSrcCards();
+    goStep(1);
+  });
+
+  // Live calc listeners
+  document.getElementById("fqty").addEventListener("input", calcCO2e);
+  document.getElementById("funit").addEventListener("change", function() { showEF(); calcCO2e(); });
+  document.getElementById("fregion").addEventListener("change", function() { updateGridEFDisplay(); calcCO2e(); });
+  document.getElementById("fcef").addEventListener("input", function() { updateGridEFDisplay(); calcCO2e(); });
+  document.getElementById("chkEfOvr").addEventListener("change", function() {
+    var inp = document.getElementById("fefOvr");
+    inp.style.display = this.checked ? "block" : "none";
+    if (!this.checked) inp.value = "";
+    calcCO2e();
+  });
+  document.getElementById("fefOvr").addEventListener("input", function() { calcCO2e(); });
+
+  // File upload
+  var fup = document.getElementById("fup");
+  var fupi = document.getElementById("fupi");
+  fup.addEventListener("click", function() { fupi.click(); });
+  fupi.addEventListener("change", function() {
+    for (var i = 0; i < this.files.length; i++) upFiles.push(this.files[i]);
+    renderFiles();
+    this.value = "";
+  });
+
+  // Search
+  document.getElementById("tSr").addEventListener("input", renderT);
+
+  // ─── Init ──────────────────────────────────────────────────────────
+  renderT();
+  updateStats();
+
+})();
+</script>
+</body>
+</html>

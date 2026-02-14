@@ -22,6 +22,10 @@ use App\Http\Controllers\ImportHistoryController;
 use App\Http\Controllers\TargetController;
 use App\Http\Controllers\CompanySwitcherController;
 use App\Http\Controllers\Scope3Controller;
+use App\Http\Controllers\Scope1EntryController;
+use App\Http\Controllers\Scope2EntryController;
+use App\Http\Controllers\Scope3EntryController;
+use App\Http\Controllers\ScopeClassifierController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierSurveyController;
 use App\Http\Controllers\EioFactorController;
@@ -126,6 +130,26 @@ Route::prefix('emission-records')->middleware('auth')->group(function() {
     Route::delete('/{emissionRecord}', [EmissionRecordController::class,'destroy']);
 });
 
+// Scope 1 Entry (separate page — direct emissions, 3-step flow)
+Route::prefix('scope1-entry')->name('scope1_entry.')->middleware('auth')->group(function () {
+    Route::get('/', [Scope1EntryController::class, 'index'])->name('index');
+    Route::get('/data', [Scope1EntryController::class, 'getData'])->name('data');
+    Route::get('/stats', [Scope1EntryController::class, 'getStats'])->name('stats');
+});
+
+// Scope 2 Entry (purchased energy — electricity, heating, cooling, 3-step flow)
+Route::prefix('scope2-entry')->name('scope2_entry.')->middleware('auth')->group(function () {
+    Route::get('/', [Scope2EntryController::class, 'index'])->name('index');
+    Route::get('/data', [Scope2EntryController::class, 'getData'])->name('data');
+    Route::get('/stats', [Scope2EntryController::class, 'getStats'])->name('stats');
+});
+
+// Scope 3 Entry (indirect value chain — 15 categories, 3-step flow)
+Route::prefix('scope3-entry')->name('scope3_entry.')->middleware('auth')->group(function () {
+    Route::get('/', [Scope3EntryController::class, 'index'])->name('index');
+    Route::get('/data', [Scope3EntryController::class, 'getData'])->name('data');
+    Route::get('/stats', [Scope3EntryController::class, 'getStats'])->name('stats');
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::get('emissions/import', [EmissionImportController::class, 'showImportForm'])->name('emissions.import.form');
@@ -172,9 +196,16 @@ Route::prefix('targets')->name('targets.')->middleware('auth')->group(function()
 // Scope 3 Routes
 Route::prefix('scope3')->name('scope3.')->middleware('auth')->group(function () {
     Route::get('/', [Scope3Controller::class, 'index'])->name('index');
+    Route::get('/calculator', [Scope3Controller::class, 'calculator'])->name('calculator');
+    Route::get('/calculator-easy', [Scope3Controller::class, 'calculatorImproved'])->name('calculator.easy');
     Route::get('/summary', [Scope3Controller::class, 'getScope3Summary'])->name('summary');
     Route::get('/categories', [Scope3Controller::class, 'getCategories'])->name('categories');
     Route::get('/category/{categoryId}', [Scope3Controller::class, 'getCategoryDetails'])->name('category.details');
+});
+
+// Scope Finder — helps users who don't know which scope an activity belongs to
+Route::middleware(['auth'])->group(function () {
+    Route::get('/scope-finder', [ScopeClassifierController::class, 'index'])->name('scope_classifier.index');
 });
 
 // Supplier Routes
