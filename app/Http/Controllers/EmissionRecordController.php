@@ -19,7 +19,7 @@ class EmissionRecordController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:list-emission-records|create-emission-record|edit-emission-record|delete-emission-record', ['only' => ['index', 'scopeEntry', 'getData', 'show']]);
+        $this->middleware('permission:list-emission-records|create-emission-record|edit-emission-record|delete-emission-record', ['only' => ['index', 'scopeEntry', 'getData', 'show', 'downloadDocument']]);
         $this->middleware('permission:create-emission-record', ['only' => ['store', 'storeOrUpdate']]);
         $this->middleware('permission:edit-emission-record', ['only' => ['update']]);
         $this->middleware('permission:delete-emission-record', ['only' => ['destroy']]);
@@ -52,6 +52,33 @@ class EmissionRecordController extends Controller
         }
 
         return $stored;
+    }
+
+    /**
+     * Download a supporting document for an emission record (auth + company check).
+     */
+    public function downloadDocument(EmissionRecord $emissionRecord, int $index)
+    {
+        $companyId = $this->getCurrentCompanyId();
+        if ($emissionRecord->company_id != $companyId) {
+            abort(403, 'You do not have access to this record.');
+        }
+
+        $docs = $emissionRecord->supporting_documents;
+        if (!is_array($docs) || !isset($docs[$index])) {
+            abort(404, 'Document not found.');
+        }
+
+        $path = $docs[$index];
+        if (!Storage::disk('public')->exists($path)) {
+            abort(404, 'File not found.');
+        }
+
+        $fullPath = Storage::disk('public')->path($path);
+        $name = basename($path);
+        return response()->file($fullPath, [
+            'Content-Disposition' => 'inline; filename="' . addslashes($name) . '"',
+        ]);
     }
 
     /**
@@ -468,9 +495,22 @@ class EmissionRecordController extends Controller
 
     public function show(EmissionRecord $emissionRecord)
     {
-        return response()->json(
-            $emissionRecord->load(['company', 'site', 'user'])
-        );
+        $companyId = $this->getCurrentCompanyId();
+        if ($emissionRecord->company_id != $companyId) {
+            abort(403, 'You do not have access to this record.');
+        }
+
+        $emissionRecord->load(['company', 'site', 'user']);
+
+        if ($emissionRecord->entry_date) {
+            $emissionRecord->entry_date_formatted = $emissionRecord->entry_date->format('d M Y');
+        }
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json($emissionRecord);
+        }
+
+        return view('emission_records.show', ['emissionRecord' => $emissionRecord]);
     }
 
     public function storeOrUpdate(Request $request)
@@ -737,6 +777,11 @@ class EmissionRecordController extends Controller
 
     public function destroy(EmissionRecord $emissionRecord)
     {
+        $companyId = $this->getCurrentCompanyId();
+        if ($emissionRecord->company_id != $companyId) {
+            return response()->json(['message' => 'You do not have access to this record.'], 403);
+        }
+
         $emissionRecord->delete();
 
         return response()->json([

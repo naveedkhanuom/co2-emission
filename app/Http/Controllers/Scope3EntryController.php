@@ -110,16 +110,30 @@ class Scope3EntryController extends Controller
             ->addColumn('subcat', function ($row) {
                 return $row->scope3Category->category_type ?? 'other';
             })
+            ->addColumn('attachments', function ($row) {
+                $docs = $row->supporting_documents ?? [];
+                if (!is_array($docs)) {
+                    $docs = [];
+                }
+                if (count($docs) === 0) {
+                    return '<span class="text-muted">—</span>';
+                }
+                $list = [];
+                foreach (array_values($docs) as $i => $path) {
+                    $list[] = ['idx' => $i, 'name' => basename($path)];
+                }
+                $urlTemplate = route('emission_records.document', ['emissionRecord' => $row->id, 'index' => ':index']);
+                return '<button type="button" class="btn btn-sm btn-outline-primary view-attachments-btn" data-docs="' . e(json_encode($list)) . '" data-url-template="' . e($urlTemplate) . '" title="View attachments"><i class="fas fa-paperclip me-1"></i>View (' . count($list) . ')</button>';
+            })
             ->addColumn('actions', function ($row) {
                 return '
-                    <button class="btn btn-sm btn-info viewBtn" data-id="' . $row->id . '">View</button>
-                    <button class="btn btn-sm btn-primary editBtn" data-id="' . $row->id . '">Edit</button>
-                    <button class="btn btn-sm btn-danger deleteBtn" data-id="' . $row->id . '">Delete</button>
+                    <button type="button" class="btn btn-sm btn-info viewBtn" data-id="' . $row->id . '">View</button>
+                    <button type="button" class="btn btn-sm btn-danger deleteBtn" data-id="' . $row->id . '" title="Delete this record">Delete</button>
                 ';
             })
             ->editColumn('co2e_value', fn ($row) => number_format($row->co2e_value, 4))
             ->editColumn('entry_date', fn ($row) => $row->entry_date?->format('Y-m-d'))
-            ->rawColumns(['actions'])
+            ->rawColumns(['attachments', 'actions'])
             ->make(true);
     }
 }

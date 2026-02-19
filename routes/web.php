@@ -125,6 +125,7 @@ Route::prefix('emission-records')->middleware('auth')->group(function() {
     Route::get('/data', [EmissionRecordController::class,'getData'])->name('emission_records.data');
     Route::post('/store', [EmissionRecordController::class,'store'])->name('emission-records.store');
     Route::post('/store-or-update', [EmissionRecordController::class,'storeOrUpdate'])->name('emission_records.storeOrUpdate');
+    Route::get('/{emissionRecord}/document/{index}', [EmissionRecordController::class, 'downloadDocument'])->name('emission_records.document');
     Route::put('/{emissionRecord}', [EmissionRecordController::class,'update'])->name('emission_records.update');
     Route::get('/{emissionRecord}', [EmissionRecordController::class,'show']);
     Route::delete('/{emissionRecord}', [EmissionRecordController::class,'destroy']);

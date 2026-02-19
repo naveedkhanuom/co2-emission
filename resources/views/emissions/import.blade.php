@@ -7,71 +7,56 @@
 <div id="content">
     @include('layouts.top-nav')
 
-    <div class="container-fluid px-4 py-4 import-page">
-        <!-- Header -->
-        <div class="import-hero mb-4">
-            <div class="import-hero-inner">
-                <div class="import-hero-content">
-                    <h1 class="import-hero-title">
-                        <i class="fas fa-file-import import-hero-icon"></i>
-                        Import Emissions Data
-                    </h1>
-                    <p class="import-hero-subtitle">Upload Excel or CSV files to bulk import emission records. Map your columns, preview the data, and import in a few clicks.</p>
-                    <div class="import-hero-actions">
-                        <a href="{{ route('emissions.sample') }}" class="btn btn-outline-light btn-lg rounded-pill">
-                            <i class="fas fa-download me-2"></i>Download Sample Template
-                        </a>
-                        @if(\Illuminate\Support\Facades\Route::has('import_history.index'))
-                        <a href="{{ route('import_history.index') }}" class="btn btn-light btn-lg rounded-pill ms-2">
-                            <i class="fas fa-history me-2"></i>Import History
-                        </a>
-                        @endif
-                    </div>
-                </div>
+    <div class="emissions-import-app container-fluid mt-4">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h2><span class="sb"><i class="fas fa-file-import"></i></span> Import Emissions Data</h2>
+            <p>Upload Excel or CSV files to bulk import emission records. Map columns, preview, and import in a few clicks.</p>
+            <div class="topbar-actions">
+                <a href="{{ route('emissions.sample') }}" class="btn-outline">
+                    <i class="fas fa-download"></i> Download Sample
+                </a>
+                @if(\Illuminate\Support\Facades\Route::has('import_history.index'))
+                <a href="{{ route('import_history.index') }}" class="btn-secondary">
+                    <i class="fas fa-history"></i> Import History
+                </a>
+                @endif
             </div>
         </div>
 
         <!-- Wizard -->
-        <div class="import-wizard mb-4">
-            <div class="import-wizard-steps">
-                <div class="import-wizard-step active" id="wizard-step-1" data-step="1">
-                    <div class="import-wizard-step-circle">
-                        <span class="import-wizard-step-num">1</span>
-                    </div>
-                    <span class="import-wizard-step-label">Upload</span>
+        <div class="wizard-card">
+            <div class="wizard-steps">
+                <div class="wizard-step active" id="wizard-step-1" data-step="1">
+                    <div class="wizard-step-circle"><span class="wizard-step-num">1</span></div>
+                    <span class="wizard-step-label">Upload</span>
                 </div>
-                <div class="import-wizard-step-line"></div>
-                <div class="import-wizard-step" id="wizard-step-2" data-step="2">
-                    <div class="import-wizard-step-circle">
-                        <span class="import-wizard-step-num">2</span>
-                    </div>
-                    <span class="import-wizard-step-label">Map Columns</span>
+                <div class="wizard-step-line"></div>
+                <div class="wizard-step" id="wizard-step-2" data-step="2">
+                    <div class="wizard-step-circle"><span class="wizard-step-num">2</span></div>
+                    <span class="wizard-step-label">Map Columns</span>
                 </div>
-                <div class="import-wizard-step-line"></div>
-                <div class="import-wizard-step" id="wizard-step-3" data-step="3">
-                    <div class="import-wizard-step-circle">
-                        <span class="import-wizard-step-num">3</span>
-                    </div>
-                    <span class="import-wizard-step-label">Review & Import</span>
+                <div class="wizard-step-line"></div>
+                <div class="wizard-step" id="wizard-step-3" data-step="3">
+                    <div class="wizard-step-circle"><span class="wizard-step-num">3</span></div>
+                    <span class="wizard-step-label">Review & Import</span>
                 </div>
             </div>
         </div>
 
         <!-- Step 1: Upload -->
-        <div class="import-card card-shadow" id="step1">
-            <div class="import-card-body">
-                <div class="import-upload-zone" id="dropzone-area">
+        <div class="tw step-card" id="step1">
+            <div class="step-body">
+                <div class="fup-zone" id="dropzone-area">
                     <input type="file" id="fileInput" accept=".csv,.xls,.xlsx" class="d-none">
-                    <div class="import-upload-content">
-                        <div class="import-upload-icon">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                        </div>
-                        <h4 class="import-upload-title">Drop your file here or click to browse</h4>
-                        <p class="import-upload-subtitle">Supports CSV, XLS, and XLSX files (max 10MB)</p>
-                        <div class="import-upload-badges">
-                            <span class="badge">CSV</span>
-                            <span class="badge">XLS</span>
-                            <span class="badge">XLSX</span>
+                    <div class="fup-content">
+                        <div class="fup-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                        <div class="fup-title">Drop your file here or click to browse</div>
+                        <div class="fup-sub">Supports CSV, XLS, and XLSX (max 10MB)</div>
+                        <div class="fup-badges">
+                            <span class="fup-badge">CSV</span>
+                            <span class="fup-badge">XLS</span>
+                            <span class="fup-badge">XLSX</span>
                         </div>
                     </div>
                 </div>
@@ -79,14 +64,14 @@
         </div>
 
         <!-- Step 2: Map Columns -->
-        <div class="import-card card-shadow d-none" id="step2">
-            <div class="import-card-header">
-                <h5 class="mb-0"><i class="fas fa-columns me-2 text-primary"></i>Map Your Columns</h5>
-                <p class="text-muted mb-0 small">Match your file columns to the system fields. Required fields are marked with <span class="text-danger">*</span>.</p>
+        <div class="tw step-card d-none" id="step2">
+            <div class="step-head">
+                <h5 class="mb-1"><i class="fas fa-columns me-2"></i>Map Your Columns</h5>
+                <p class="step-sub">Match file columns to system fields. Required fields are marked with <span class="rq">*</span>.</p>
             </div>
-            <div class="import-card-body">
+            <div class="step-body">
                 <form id="mappingForm">
-                    <div class="row g-4">
+                    <div class="row g-3">
                         @php
                             $fields = [
                                 'entry_date' => ['label' => 'Entry Date', 'required' => true, 'alt' => 'date'],
@@ -103,23 +88,20 @@
                         @endphp
                         @foreach($fields as $field => $opts)
                             <div class="col-md-6 col-lg-4">
-                                <label class="form-label fw-semibold">
-                                    {{ $opts['label'] }}
-                                    @if($opts['required'])
-                                        <span class="text-danger">*</span>
-                                    @endif
-                                </label>
-                                <select class="form-select mapping-select" name="{{ $field }}" data-field="{{ $field }}">
-                                    <option value="">— Select column —</option>
-                                </select>
+                                <div class="fg">
+                                    <label>{{ $opts['label'] }}@if($opts['required'])<span class="rq">*</span>@endif</label>
+                                    <select class="fsl mapping-select" name="{{ $field }}" data-field="{{ $field }}">
+                                        <option value="">— Select column —</option>
+                                    </select>
+                                </div>
                             </div>
                         @endforeach
                     </div>
-                    <div class="import-form-actions mt-4 pt-4">
-                        <button type="button" class="btn btn-outline-secondary btn-lg px-4" id="backToStep1">
+                    <div class="step-actions mt-4 pt-4">
+                        <button type="button" class="btn btn-bs" id="backToStep1">
                             <i class="fas fa-arrow-left me-2"></i>Back
                         </button>
-                        <button type="button" class="btn btn-primary btn-lg px-4" id="toStep3">
+                        <button type="button" class="btn btn-bp" id="toStep3">
                             Next: Review <i class="fas fa-arrow-right ms-2"></i>
                         </button>
                     </div>
@@ -128,25 +110,25 @@
         </div>
 
         <!-- Step 3: Review & Import -->
-        <div class="import-card card-shadow d-none" id="step3">
-            <div class="import-card-header">
-                <h5 class="mb-0"><i class="fas fa-eye me-2 text-primary"></i>Preview & Import</h5>
-                <p class="text-muted mb-0 small">Review the first rows before importing. Unmapped columns are excluded.</p>
+        <div class="tw step-card d-none" id="step3">
+            <div class="step-head">
+                <h5 class="mb-1"><i class="fas fa-eye me-2"></i>Preview & Import</h5>
+                <p class="step-sub">Review the first rows before importing. Unmapped columns are excluded.</p>
             </div>
-            <div class="import-card-body">
-                <div id="previewTable" class="import-preview-table"></div>
-                <div class="form-check form-switch mt-4 py-3 px-3 rounded" style="background: var(--gray-50);">
-                    <input class="form-check-input" type="checkbox" id="overwriteData">
-                    <label class="form-check-label fw-semibold" for="overwriteData">
-                        Overwrite existing data
-                    </label>
-                    <p class="small text-muted mb-0 mt-1">When enabled, matching records (same date, facility, department, emission source) will be updated instead of duplicated.</p>
+            <div class="step-body">
+                <div id="previewTable" class="preview-table-wrap"></div>
+                <div class="overwrite-wrap mt-4">
+                    <div class="form-check form-switch py-3 px-3 rounded">
+                        <input class="form-check-input" type="checkbox" id="overwriteData">
+                        <label class="form-check-label fw-semibold" for="overwriteData">Overwrite existing data</label>
+                        <p class="small text-muted mb-0 mt-1">Matching records (date, facility, department, source) will be updated instead of duplicated.</p>
+                    </div>
                 </div>
-                <div class="import-form-actions mt-4">
-                    <button type="button" class="btn btn-outline-secondary btn-lg px-4" id="backToStep2">
+                <div class="step-actions mt-4">
+                    <button type="button" class="btn btn-bs" id="backToStep2">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </button>
-                    <button type="button" class="btn btn-success btn-lg px-5" id="importDataBtn">
+                    <button type="button" class="btn btn-bp" id="importDataBtn">
                         <i class="fas fa-upload me-2"></i>Import Data
                     </button>
                 </div>
@@ -178,282 +160,76 @@
 
 @push('styles')
 <style>
-/* Import page – uses system color scheme */
-.import-page {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.import-hero {
-    background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 50%, var(--dark-green) 100%);
-    border-radius: var(--radius-lg, 16px);
-    padding: 2rem 2.5rem;
-    color: white;
-    box-shadow: 0 10px 40px rgba(46, 125, 50, 0.25);
-}
-
-.import-hero-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.import-hero-icon {
-    font-size: 1.5rem;
-    margin-right: 0.5rem;
-    opacity: 0.95;
-}
-
-.import-hero-subtitle {
-    opacity: 0.9;
-    font-size: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.import-hero-actions .btn-outline-light:hover {
-    background: rgba(255,255,255,0.2);
-    border-color: white;
-    color: white;
-}
-
-.import-wizard {
-    background: white;
-    border-radius: var(--radius-md, 12px);
-    padding: 1.5rem 2rem;
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
-}
-
-.import-wizard-steps {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    flex-wrap: wrap;
-}
-
-.import-wizard-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.import-wizard-step-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--gray-200);
-    color: var(--gray-600);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 1rem;
-    transition: all 0.3s;
-}
-
-.import-wizard-step.active .import-wizard-step-circle {
-    background: var(--primary-green);
-    color: white;
-    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.4);
-}
-
-.import-wizard-step.completed .import-wizard-step-circle {
-    background: var(--light-green);
-    color: white;
-}
-
-.import-wizard-step.completed .import-wizard-step-circle .import-wizard-step-num {
-    display: none;
-}
-
-.import-wizard-step.completed .import-wizard-step-circle::after {
-    content: "\f00c";
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    font-size: 1rem;
-}
-
-.import-wizard-step-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--gray-600);
-}
-
-.import-wizard-step.active .import-wizard-step-label {
-    color: var(--primary-green);
-}
-
-.import-wizard-step-line {
-    width: 60px;
-    height: 3px;
-    background: var(--gray-200);
-    margin: 0 0.5rem;
-    margin-top: -28px;
-    border-radius: 2px;
-}
-
-.import-wizard-step.completed + .import-wizard-step-line {
-    background: var(--light-green);
-}
-
-.import-card {
-    background: white;
-    border-radius: var(--radius-md, 12px);
-    overflow: hidden;
-    border: 1px solid var(--gray-200);
-}
-
-.card-shadow {
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
-}
-
-.import-card-header {
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--gray-200);
-    background: var(--gray-50);
-}
-
-.import-card-header h5 i.text-primary {
-    color: var(--primary-green) !important;
-}
-
-.import-card-body {
-    padding: 2rem 1.5rem;
-}
-
-.import-upload-zone {
-    border: 2px dashed var(--gray-300);
-    border-radius: var(--radius-md, 12px);
-    padding: 4rem 2rem;
-    text-align: center;
-    background: var(--gray-50);
-    cursor: pointer;
-    transition: all 0.25s;
-}
-
-.import-upload-zone:hover,
-.import-upload-zone.dz-drag-hover {
-    border-color: var(--primary-green);
-    background: rgba(46, 125, 50, 0.04);
-}
-
-.import-upload-icon {
-    font-size: 3.5rem;
-    color: var(--primary-green);
-    margin-bottom: 1rem;
-}
-
-.import-upload-title {
-    font-weight: 600;
-    color: var(--gray-800);
-    margin-bottom: 0.5rem;
-}
-
-.import-upload-subtitle {
-    color: var(--gray-600);
-    margin-bottom: 1rem;
-}
-
-.import-upload-badges .badge {
-    background: var(--gray-200);
-    color: var(--gray-800);
-    padding: 0.35rem 0.75rem;
-    font-weight: 500;
-    margin: 0 0.25rem;
-}
-
-.mapping-select {
-    border-radius: var(--radius-sm, 8px);
-    border: 1px solid var(--gray-300);
-}
-
-.mapping-select:focus {
-    border-color: var(--primary-green);
-    box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.15);
-}
-
-.import-form-actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.import-preview-table {
-    background: var(--gray-50);
-    border-radius: var(--radius-sm, 8px);
-    padding: 1rem;
-    max-height: 400px;
-    overflow: auto;
-}
-
-.import-preview-table table {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.import-preview-table thead th {
-    background: var(--primary-green);
-    color: white;
-    padding: 0.75rem 1rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-}
-
-.import-preview-table tbody td {
-    padding: 0.6rem 1rem;
-    border-bottom: 1px solid var(--gray-200);
-    font-size: 0.875rem;
-}
-
-.import-preview-table tbody tr:hover {
-    background: var(--gray-50);
-}
-
-.import-success-icon {
-    font-size: 4rem;
-}
-
-.import-form-actions .btn-primary {
-    background: var(--primary-green);
-    border-color: var(--primary-green);
-}
-
-.import-form-actions .btn-primary:hover {
-    background: var(--dark-green);
-    border-color: var(--dark-green);
-}
-
-.import-form-actions .btn-success {
-    background: var(--primary-green);
-    border-color: var(--primary-green);
-}
-
-.import-form-actions .btn-success:hover {
-    background: var(--dark-green);
-    border-color: var(--dark-green);
-}
-
-.form-check-input:checked {
-    background-color: var(--primary-green);
-    border-color: var(--primary-green);
-}
-
-#importSuccessModal .btn-primary {
-    background: var(--primary-green);
-    border-color: var(--primary-green);
-}
-
-#importSuccessModal .btn-primary:hover {
-    background: var(--dark-green);
-    border-color: var(--dark-green);
-}
-
+.emissions-import-app * { box-sizing: border-box; }
+.emissions-import-app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1200px; margin: 0 auto; }
+/* Topbar - same as other modules */
+.emissions-import-app .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; padding: 20px 24px; background: linear-gradient(135deg, #fff 0%, var(--gray-50) 100%); border: 1px solid var(--gray-200); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.emissions-import-app .topbar h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--gray-800); }
+.emissions-import-app .topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; font-size: 1rem; font-weight: 700; box-shadow: 0 2px 8px rgba(46,125,50,.25); }
+.emissions-import-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
+.emissions-import-app .topbar-actions { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.emissions-import-app .btn-outline { padding: 10px 20px; border-radius: 10px; border: 1.5px solid var(--primary-green); background: #fff; color: var(--primary-green); font-size: 0.875rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.emissions-import-app .btn-outline:hover { background: rgba(46,125,50,0.08); color: var(--primary-green); }
+.emissions-import-app .btn-secondary { padding: 10px 20px; border-radius: 10px; border: 1.5px solid var(--gray-200); background: #fff; color: var(--gray-700); font-size: 0.875rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.emissions-import-app .btn-secondary:hover { background: var(--gray-50); color: var(--gray-800); }
+/* Wizard */
+.emissions-import-app .wizard-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 1.5rem 2rem; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 24px; }
+.emissions-import-app .wizard-steps { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
+.emissions-import-app .wizard-step { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+.emissions-import-app .wizard-step-circle { width: 44px; height: 44px; border-radius: 50%; background: var(--gray-200); color: var(--gray-600); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9375rem; transition: all 0.25s; }
+.emissions-import-app .wizard-step.active .wizard-step-circle { background: var(--primary-green); color: #fff; box-shadow: 0 4px 12px rgba(46,125,50,.35); }
+.emissions-import-app .wizard-step.completed .wizard-step-circle { background: var(--light-green); color: #fff; }
+.emissions-import-app .wizard-step.completed .wizard-step-circle .wizard-step-num { display: none; }
+.emissions-import-app .wizard-step.completed .wizard-step-circle::after { content: "\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 0.875rem; }
+.emissions-import-app .wizard-step-label { font-size: 0.8125rem; font-weight: 600; color: var(--gray-600); }
+.emissions-import-app .wizard-step.active .wizard-step-label { color: var(--primary-green); }
+.emissions-import-app .wizard-step-line { width: 56px; height: 3px; background: var(--gray-200); margin: 0 0.5rem; margin-top: -26px; border-radius: 2px; }
+.emissions-import-app .wizard-step.completed + .wizard-step-line { background: var(--light-green); }
+/* Step cards */
+.emissions-import-app .tw.step-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 24px; }
+.emissions-import-app .step-head { padding: 18px 24px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); }
+.emissions-import-app .step-head h5 { font-size: 1rem; font-weight: 700; color: var(--gray-800); margin: 0; }
+.emissions-import-app .step-head h5 i { color: var(--primary-green); }
+.emissions-import-app .step-sub { font-size: 0.8125rem; color: var(--gray-600); margin: 0; }
+.emissions-import-app .step-body { padding: 24px; }
+.emissions-import-app .step-body .rq { color: var(--danger-red); }
+/* Upload zone */
+.emissions-import-app .fup-zone { border: 2px dashed var(--gray-200); border-radius: 14px; padding: 3rem 2rem; text-align: center; background: var(--gray-50); cursor: pointer; transition: all 0.25s; }
+.emissions-import-app .fup-zone:hover,
+.emissions-import-app .fup-zone.dz-drag-hover { border-color: var(--primary-green); background: rgba(46,125,50,0.06); }
+.emissions-import-app .fup-icon { font-size: 3rem; color: var(--primary-green); margin-bottom: 1rem; }
+.emissions-import-app .fup-title { font-weight: 600; font-size: 1.0625rem; color: var(--gray-800); margin-bottom: 0.5rem; }
+.emissions-import-app .fup-sub { font-size: 0.875rem; color: var(--gray-600); margin-bottom: 1rem; }
+.emissions-import-app .fup-badges { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.emissions-import-app .fup-badge { background: var(--gray-200); color: var(--gray-800); padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+/* Form - fg, fsl */
+.emissions-import-app .fg { margin-bottom: 0; }
+.emissions-import-app .fg label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--gray-800); }
+.emissions-import-app .fg .fsl { width: 100%; padding: 10px 14px; font-size: 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; background: #fff; outline: none; }
+.emissions-import-app .fg .fsl:focus { border-color: var(--primary-green); }
+.emissions-import-app .mapping-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+/* Step actions */
+.emissions-import-app .step-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.emissions-import-app .btn-bs { padding: 10px 20px; border-radius: 10px; font-size: 0.9375rem; font-weight: 600; background: var(--gray-100); color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+.emissions-import-app .btn-bs:hover { background: var(--gray-200); color: var(--gray-800); }
+.emissions-import-app .btn-bp { padding: 10px 20px; border-radius: 10px; font-size: 0.9375rem; font-weight: 600; background: var(--primary-green); color: #fff; border: none; }
+.emissions-import-app .btn-bp:hover { background: var(--dark-green); color: #fff; }
+/* Preview table - system table style */
+.emissions-import-app .preview-table-wrap { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1rem; max-height: 400px; overflow: auto; }
+.emissions-import-app .preview-table-wrap table { width: 100%; background: #fff; border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden; }
+.emissions-import-app .preview-table-wrap thead th { background: var(--gray-100); color: var(--gray-600); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 12px 14px; border-bottom: 1px solid var(--gray-200); }
+.emissions-import-app .preview-table-wrap tbody td { padding: 12px 14px; font-size: 0.875rem; color: var(--gray-800); border-bottom: 1px solid var(--gray-100); }
+.emissions-import-app .preview-table-wrap tbody tr:hover td { background: var(--gray-50); }
+.emissions-import-app .preview-table-wrap tbody tr:last-child td { border-bottom: none; }
+.emissions-import-app .overwrite-wrap .rounded { background: var(--gray-50); border: 1px solid var(--gray-200); }
+.emissions-import-app .form-check-input:checked { background-color: var(--primary-green); border-color: var(--primary-green); }
+/* Success modal */
+.emissions-import-app .import-success-icon { font-size: 3.5rem; color: var(--primary-green); }
+#importSuccessModal .btn-primary { background: var(--primary-green); border-color: var(--primary-green); }
+#importSuccessModal .btn-primary:hover { background: var(--dark-green); border-color: var(--dark-green); }
 @media (max-width: 768px) {
-    .import-wizard-step-line { display: none; }
-    .import-hero { padding: 1.5rem; }
-    .import-hero-actions { flex-direction: column; }
+    .emissions-import-app .wizard-step-line { display: none; }
+    .emissions-import-app .topbar-actions { margin-left: 0; width: 100%; }
 }
 </style>
 @endpush
@@ -585,7 +361,7 @@
     function goToStep(step) {
         document.querySelectorAll('[id^="step"]').forEach(el => el.classList.add('d-none'));
         document.getElementById('step' + step).classList.remove('d-none');
-        document.querySelectorAll('.import-wizard-step').forEach(el => {
+        document.querySelectorAll('.wizard-step').forEach(el => {
             el.classList.remove('active', 'completed');
         });
         for (let i = 1; i < step; i++) {
@@ -621,7 +397,7 @@
         }
         const mappedCols = Object.entries(mapping).filter(([k,v]) => v);
         if (mappedCols.length === 0) return false;
-        let html = '<table class="table table-sm mb-0"><thead><tr>';
+        let html = '<table class="table table-sm mb-0 w-100"><thead><tr>';
         mappedCols.forEach(([k, v]) => html += `<th>${escapeHtml(FIELD_LABELS[k] || k)}</th>`);
         html += '</tr></thead><tbody>';
         const previewRows = parsedData.slice(0, 10);

@@ -5,13 +5,112 @@
 
 @push('styles')
 <style>
+.scope-finder-page{
+  position: relative;
+  background:
+    radial-gradient(1200px 500px at 20% -10%, rgba(46,125,50,.12), transparent 60%),
+    radial-gradient(900px 450px at 95% 10%, rgba(2,119,189,.10), transparent 55%),
+    radial-gradient(900px 450px at 70% 110%, rgba(245,124,0,.10), transparent 55%),
+    linear-gradient(180deg, #fbfcfd 0%, #ffffff 60%);
+}
+.scope-finder-page::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.6;
+  background-image: radial-gradient(rgba(17,24,39,.06) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(900px 600px at 50% 0%, #000 0%, transparent 70%);
+}
 .scope-finder-page * { margin: 0; padding: 0; box-sizing: border-box; }
-.scope-finder-page .sc-container { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
-.scope-finder-page .sc-header { text-align: center; margin-bottom: 36px; }
-.scope-finder-page .sc-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; color: var(--gray-800); }
-.scope-finder-page .sc-header p { color: var(--gray-600); font-size: 15px; line-height: 1.5; }
+.scope-finder-page .sc-container { max-width: 980px; margin: 0 auto; padding: 28px 20px 80px; position: relative; z-index: 1; }
+.scope-finder-page .sc-hero{
+  background: linear-gradient(135deg, rgba(255,255,255,.92) 0%, rgba(248,250,252,.92) 100%);
+  border: 1px solid var(--gray-200);
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.06);
+  padding: 22px 22px 18px;
+  margin-bottom: 18px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  position: relative;
+}
+.scope-finder-page .sc-hero::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background:
+    radial-gradient(700px 280px at 10% 0%, rgba(46,125,50,.16), transparent 55%),
+    radial-gradient(650px 260px at 95% 10%, rgba(2,119,189,.14), transparent 55%);
+  opacity:.35;
+  pointer-events:none;
+}
+.scope-finder-page .sc-hero-inner{ position: relative; z-index: 1; }
+.scope-finder-page .sc-header { text-align: center; margin-bottom: 14px; }
+.scope-finder-page .sc-title-row{
+  display:flex; align-items:center; justify-content:center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.scope-finder-page .sc-title-icon{
+  width: 44px; height: 44px; border-radius: 14px;
+  display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(145deg, rgba(46,125,50,.16) 0%, rgba(2,119,189,.12) 100%);
+  border: 1px solid rgba(17,24,39,.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+  color: var(--gray-800);
+}
+.scope-finder-page .sc-header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; color: var(--gray-800); letter-spacing: -0.02em; }
+.scope-finder-page .sc-header p { color: var(--gray-600); font-size: 14px; line-height: 1.55; max-width: 740px; margin: 0 auto; }
+.scope-finder-page .sc-subrow{
+  display:flex; align-items:center; justify-content:center; gap: 10px; flex-wrap: wrap;
+  margin-top: 14px;
+}
+.scope-finder-page .sc-step{
+  display:inline-flex; align-items:center; gap: 8px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.9);
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  font-size: 12px;
+  color: var(--gray-700);
+}
+.scope-finder-page .sc-step b{ font-weight: 800; color: var(--gray-800); }
+.scope-finder-page .results-meta{
+  display:flex; align-items:center; justify-content:space-between; gap: 10px; flex-wrap: wrap;
+  margin: 12px 2px 12px;
+  color: var(--gray-600);
+  font-size: 12px;
+}
+.scope-finder-page .results-meta .meta-strong{ font-weight: 800; color: var(--gray-800); }
+.scope-finder-page .kw-chips{
+  display:flex; align-items:center; justify-content:center;
+  flex-wrap: wrap; gap: 8px;
+  margin-top: 10px;
+}
+.scope-finder-page .kw-chip{
+  appearance: none;
+  border: 1px solid var(--gray-200);
+  background: rgba(255,255,255,.92);
+  color: var(--gray-700);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.scope-finder-page .kw-chip:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
+  border-color: var(--gray-300);
+}
+.scope-finder-page .kw-chip:focus{ outline: 2px solid var(--primary-green); outline-offset: 2px; }
 .scope-finder-page .scope-tabs { display: flex; gap: 10px; margin-bottom: 28px; background: #fff; padding: 6px; border-radius: 12px; border: 1px solid var(--gray-200); box-shadow: 0 1px 3px rgba(0,0,0,.04); }
-.scope-finder-page .scope-tab { flex: 1; padding: 12px 8px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 600; transition: all .25s; border: 2px solid transparent; }
+.scope-finder-page .scope-tab { flex: 1; padding: 12px 10px; border-radius: 12px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 700; transition: all .25s; border: 2px solid transparent; position: relative; }
 .scope-finder-page .scope-tab .tab-num { font-size: 22px; font-weight: 700; display: block; margin-bottom: 2px; }
 .scope-finder-page .scope-tab:hover { opacity: .9; background: var(--gray-100); }
 .scope-finder-page .scope-tab[data-scope="1"] { color: var(--primary-green); }
@@ -21,11 +120,25 @@
 .scope-finder-page .scope-tab.active[data-scope="2"] { background: rgba(2, 119, 189, 0.08); border-color: rgba(2, 119, 189, 0.2); }
 .scope-finder-page .scope-tab.active[data-scope="3"] { background: rgba(27, 94, 32, 0.08); border-color: rgba(27, 94, 32, 0.2); }
 .scope-finder-page .scope-tab .tab-label { font-size: 11px; color: var(--gray-600); font-weight: 500; display: block; margin-top: 1px; }
-.scope-finder-page .search-box { position: relative; margin-bottom: 24px; }
-.scope-finder-page .search-box input { width: 100%; padding: 14px 16px 14px 44px; font-family: inherit; font-size: 15px; border: 1px solid var(--gray-200); border-radius: 12px; background: #fff; outline: none; color: var(--gray-800); transition: border .2s; }
+.scope-finder-page .search-box { position: relative; margin-bottom: 10px; }
+.scope-finder-page .search-box input { width: 100%; padding: 14px 44px 14px 44px; font-family: inherit; font-size: 15px; border: 1px solid var(--gray-200); border-radius: 14px; background: rgba(255,255,255,.92); outline: none; color: var(--gray-800); transition: border .2s, box-shadow .2s; box-shadow: 0 8px 22px rgba(0,0,0,.06); }
 .scope-finder-page .search-box input:focus { border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(46,125,50,.1); }
 .scope-finder-page .search-box input::placeholder { color: var(--gray-600); }
 .scope-finder-page .search-box .si { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--gray-600); pointer-events: none; }
+.scope-finder-page .search-box .clear-search{
+  position:absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  color: var(--gray-600);
+  cursor: pointer;
+  display:none;
+  align-items:center; justify-content:center;
+  transition: all .15s;
+}
+.scope-finder-page .search-box .clear-search:hover{ background: var(--gray-100); color: var(--gray-800); }
+.scope-finder-page .search-box .clear-search:focus{ outline: 2px solid var(--primary-green); outline-offset: 2px; }
+.scope-finder-page .search-box.has-text .clear-search{ display:flex; }
 .scope-finder-page .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
 .scope-finder-page .cat-tile { background: #fff; border: 2px solid var(--gray-200); border-radius: 12px; padding: 20px 16px 16px; text-align: center; cursor: pointer; transition: all .2s ease; position: relative; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
 .scope-finder-page .cat-tile:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); border-color: var(--gray-300); }
@@ -114,6 +227,21 @@
 .scope-finder-page .no-match { text-align: center; padding: 40px 20px; color: var(--gray-600); font-size: 14px; display: none; }
 .scope-finder-page .no-match.show { display: block; }
 .scope-finder-page .no-match span { font-size: 32px; display: block; margin-bottom: 8px; color: var(--gray-300); }
+.scope-finder-page .no-match .nm-actions{ margin-top: 14px; display:flex; align-items:center; justify-content:center; gap: 10px; flex-wrap: wrap; }
+.scope-finder-page .no-match .nm-btn{
+  appearance:none;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  color: var(--gray-800);
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor:pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  transition: transform .15s, box-shadow .15s;
+}
+.scope-finder-page .no-match .nm-btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+.scope-finder-page .no-match .nm-btn:focus{ outline: 2px solid var(--primary-green); outline-offset: 2px; }
 .scope-finder-page .cat-tile { opacity: 0; animation: scPop .35s ease forwards; cursor: pointer; }
 .scope-finder-page .cat-tile:focus { outline: 2px solid var(--primary-green); outline-offset: 2px; }
 @keyframes scPop { from { opacity: 0; transform: scale(.95) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
@@ -122,7 +250,9 @@
   .scope-finder-page .cat-tile { padding: 16px 12px 14px; }
   .scope-finder-page .cat-tile .tile-icon { font-size: 30px; margin-bottom: 8px; }
   .scope-finder-page .scope-tabs { flex-direction: column; gap: 6px; }
-  .scope-finder-page .sc-container { padding: 20px 14px 60px; }
+  .scope-finder-page .sc-container { padding: 18px 14px 60px; }
+  .scope-finder-page .sc-hero{ padding: 18px 16px 14px; }
+  .scope-finder-page .sc-title-icon{ width: 40px; height: 40px; border-radius: 14px; }
   .scope-modal-overlay { padding: 16px; }
   .scope-modal-dialog { max-height: calc(100vh - 32px); border-radius: 20px; }
   .scope-finder-page .result-header { padding: 24px 22px 18px; }
@@ -143,10 +273,32 @@
 
     <div class="scope-finder-page">
         <div class="sc-container">
-            <div class="sc-header">
-                <h1><i class="fas fa-search" style="color: var(--primary-green); margin-right: 8px;"></i>What activity are you reporting?</h1>
-                <p>Not sure which scope (1, 2, or 3) your activity belongs to? Pick a category below and we’ll tell you — easy for everyone.</p>
+            <div class="sc-hero">
+                <div class="sc-hero-inner">
+                    <div class="sc-header">
+                        <div class="sc-title-row">
+                            <div class="sc-title-icon" aria-hidden="true"><i class="fas fa-search"></i></div>
+                            <h1>What activity are you reporting?</h1>
+                        </div>
+                        <p>Not sure which scope (1, 2, or 3) your activity belongs to? Search or pick a category below and we’ll tell you instantly.</p>
+
+                        <div class="sc-subrow" aria-label="How it works">
+                            <div class="sc-step"><b>1</b> Search or filter by scope</div>
+                            <div class="sc-step"><b>2</b> Choose a category</div>
+                            <div class="sc-step"><b>3</b> Jump to the right entry page</div>
+                        </div>
+<!-- 
+                        <div class="kw-chips" aria-label="Quick search suggestions">
+                            <button type="button" class="kw-chip" data-kw="diesel">Diesel</button>
+                            <button type="button" class="kw-chip" data-kw="electricity">Electricity</button>
+                            <button type="button" class="kw-chip" data-kw="travel">Travel</button>
+                            <button type="button" class="kw-chip" data-kw="waste">Waste</button>
+                            <button type="button" class="kw-chip" data-kw="refrigerant">Refrigerant</button>
+                        </div> -->
+                    </div>
+                </div>
             </div>
+
             <div class="scope-tabs" id="scopeTabs">
                 <div class="scope-tab" data-scope="1" id="tab1">
                     <span class="tab-num">1</span>Direct Emissions
@@ -164,9 +316,20 @@
             <div class="search-box">
                 <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 <input type="text" id="search" placeholder="Type to search... diesel, electricity, travel, waste">
+                <button type="button" class="clear-search" id="clearSearch" aria-label="Clear search">×</button>
+            </div>
+            <div class="results-meta" id="resultsMeta" aria-live="polite">
+                <div><span class="meta-strong" id="metaShowing">Showing</span> <span id="metaVisible">0</span> of <span id="metaTotal">0</span> categories</div>
+                <div id="metaScopeCounts"></div>
             </div>
             <div class="cat-grid" id="grid"></div>
-            <div class="no-match" id="noMatch"><span>?</span>No categories match your search</div>
+            <div class="no-match" id="noMatch">
+                <span>?</span>
+                No categories match your search
+                <div class="nm-actions">
+                    <button type="button" class="nm-btn" id="clearNoMatch">Clear search</button>
+                </div>
+            </div>
         </div>
 
         <!-- Confirm scope popup -->
@@ -247,6 +410,85 @@
   var grid = document.getElementById("grid");
   var selectedTile = null;
   var activeScope = null;
+  var metaTotalEl = document.getElementById("metaTotal");
+  var metaVisibleEl = document.getElementById("metaVisible");
+  var metaScopeCountsEl = document.getElementById("metaScopeCounts");
+  var searchEl = document.getElementById("search");
+  var searchBoxEl = searchEl ? searchEl.parentElement : null;
+  var clearSearchBtn = document.getElementById("clearSearch");
+  var clearNoMatchBtn = document.getElementById("clearNoMatch");
+
+  function computeScopeCounts() {
+    var s1 = 0, s2 = 0, s3 = 0;
+    for (var i = 0; i < cats.length; i++) {
+      if (cats[i].scope === 1) s1++;
+      else if (cats[i].scope === 2) s2++;
+      else if (cats[i].scope === 3) s3++;
+    }
+    return { s1: s1, s2: s2, s3: s3, total: cats.length };
+  }
+
+  function countVisibleTiles() {
+    var tiles = document.querySelectorAll(".cat-tile");
+    var visible = 0;
+    for (var i = 0; i < tiles.length; i++) {
+      if (!tiles[i].classList.contains("hidden-tile")) visible++;
+    }
+    return visible;
+  }
+
+  function updateMeta() {
+    if (metaTotalEl) metaTotalEl.textContent = String(cats.length);
+    if (metaVisibleEl) metaVisibleEl.textContent = String(countVisibleTiles());
+  }
+
+  function updateScopeCountsMeta() {
+    if (!metaScopeCountsEl) return;
+    var c = computeScopeCounts();
+    metaScopeCountsEl.textContent = "Scope 1: " + c.s1 + " · Scope 2: " + c.s2 + " · Scope 3: " + c.s3;
+  }
+
+  function setSearchValue(v) {
+    if (!searchEl) return;
+    searchEl.value = v;
+    if (searchBoxEl) {
+      if (v && v.trim().length) searchBoxEl.classList.add("has-text");
+      else searchBoxEl.classList.remove("has-text");
+    }
+    searchEl.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function getQuery() {
+    if (!searchEl) return "";
+    return (searchEl.value || "").trim().toLowerCase();
+  }
+
+  function applyFilters() {
+    var q = getQuery();
+    if (searchBoxEl) {
+      if (q.length) searchBoxEl.classList.add("has-text");
+      else searchBoxEl.classList.remove("has-text");
+    }
+    var visible = 0;
+    var tiles = document.querySelectorAll(".cat-tile");
+    for (var i = 0; i < tiles.length; i++) {
+      var t = tiles[i];
+      var cid = t.getAttribute("data-id");
+      var cat = null;
+      for (var j = 0; j < cats.length; j++) { if (cats[j].id === cid) { cat = cats[j]; break; } }
+      var matchText = q === "" || cat.name.toLowerCase().indexOf(q) !== -1 || cat.hint.toLowerCase().indexOf(q) !== -1 || cat.sources.join(" ").toLowerCase().indexOf(q) !== -1;
+      var matchScope = !activeScope || cat.scope === activeScope;
+      var match = matchText && matchScope;
+      if (match) { t.classList.remove("hidden-tile"); visible++; } else { t.classList.add("hidden-tile"); }
+    }
+    var nm = document.getElementById("noMatch");
+    if (nm) {
+      if (visible === 0 && (q.length > 0 || !!activeScope)) nm.classList.add("show");
+      else nm.classList.remove("show");
+    }
+    updateMeta();
+  }
+
   for (var i = 0; i < cats.length; i++) {
     (function(c, idx) {
       var tile = document.createElement("div");
@@ -259,6 +501,9 @@
       grid.appendChild(tile);
     })(cats[i], i);
   }
+  updateScopeCountsMeta();
+  updateMeta();
+
   var pendingScopeUrl = null;
   function selectCategory(cat, tile) {
     if (selectedTile === tile) { selectedTile = null; closeResult(); return; }
@@ -298,6 +543,10 @@
     selectedTile = null;
     var tabs = document.querySelectorAll(".scope-tab");
     for (var k = 0; k < tabs.length; k++) tabs[k].classList.remove("active");
+    if (activeScope) {
+      var t = document.getElementById("tab" + activeScope);
+      if (t) t.classList.add("active");
+    }
   }
   document.getElementById("closeBtn").addEventListener("click", closeResult);
   document.getElementById("btnGoToScope").addEventListener("click", function() {
@@ -310,29 +559,27 @@
   document.addEventListener("keydown", function(e) {
     if (e.key === "Escape" && document.getElementById("scopeModal").classList.contains("show")) closeResult();
   });
-  document.getElementById("search").addEventListener("input", function() {
-    var q = this.value.trim().toLowerCase();
-    var visible = 0;
-    var tiles = document.querySelectorAll(".cat-tile");
-    for (var i = 0; i < tiles.length; i++) {
-      var t = tiles[i];
-      var cid = t.getAttribute("data-id");
-      var cat = null;
-      for (var j = 0; j < cats.length; j++) { if (cats[j].id === cid) { cat = cats[j]; break; } }
-      var match = q === "" || cat.name.toLowerCase().indexOf(q) !== -1 || cat.hint.toLowerCase().indexOf(q) !== -1 || cat.sources.join(" ").toLowerCase().indexOf(q) !== -1;
-      if (match) { t.classList.remove("hidden-tile"); visible++; } else { t.classList.add("hidden-tile"); }
-    }
-    var nm = document.getElementById("noMatch");
-    if (visible === 0 && q.length > 0) nm.classList.add("show"); else nm.classList.remove("show");
-  });
+  if (searchEl) searchEl.addEventListener("input", function() { applyFilters(); });
+
+  if (clearSearchBtn) clearSearchBtn.addEventListener("click", function(){ setSearchValue(""); searchEl && searchEl.focus(); });
+  if (clearNoMatchBtn) clearNoMatchBtn.addEventListener("click", function(){ setSearchValue(""); searchEl && searchEl.focus(); });
+
+  var kw = document.querySelectorAll(".kw-chip");
+  for (var i = 0; i < kw.length; i++) {
+    kw[i].addEventListener("click", function(){
+      var v = this.getAttribute("data-kw") || "";
+      setSearchValue(v);
+      searchEl && searchEl.focus();
+    });
+  }
+
   function handleTabClick(scope, el) {
     var tabs = document.querySelectorAll(".scope-tab");
     for (var k = 0; k < tabs.length; k++) tabs[k].classList.remove("active");
-    if (activeScope === scope) { activeScope = null; var tiles = document.querySelectorAll(".cat-tile"); for (var i = 0; i < tiles.length; i++) tiles[i].classList.remove("hidden-tile"); return; }
+    if (activeScope === scope) { activeScope = null; applyFilters(); return; }
     activeScope = scope;
     el.classList.add("active");
-    var tiles = document.querySelectorAll(".cat-tile");
-    for (var i = 0; i < tiles.length; i++) { var ts = parseInt(tiles[i].getAttribute("data-scope")); if (ts === scope) tiles[i].classList.remove("hidden-tile"); else tiles[i].classList.add("hidden-tile"); }
+    applyFilters();
   }
   document.getElementById("tab1").addEventListener("click", function() { handleTabClick(1, this); });
   document.getElementById("tab2").addEventListener("click", function() { handleTabClick(2, this); });

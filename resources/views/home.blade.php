@@ -734,26 +734,17 @@
                 </table>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mt-4 gap-2">
                 <div class="text-muted">
-                    <i class="fas fa-info-circle me-2"></i>Showing {{ $recentRecords->count() }} of {{ $totalRecords }} records
+                    <i class="fas fa-info-circle me-2"></i>
+                    @if($recentRecords->total() > 0)
+                        Showing {{ $recentRecords->firstItem() }} to {{ $recentRecords->lastItem() }} of {{ $recentRecords->total() }} records
+                    @else
+                        No records to display
+                    @endif
                 </div>
                 <nav aria-label="Table pagination">
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1">
-                                <i class="fas fa-chevron-left"></i> Previous
-                            </a>
-                        </li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">
-                                Next <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
+                    {{ $recentRecords->links('pagination::bootstrap-5') }}
                 </nav>
             </div>
         </div>

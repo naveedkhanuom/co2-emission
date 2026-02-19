@@ -1,531 +1,195 @@
 @extends('layouts.app')
 
 @push('styles')
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
-    
-    <!-- ApexCharts CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.css">
-    
-    <!-- Flatpickr CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    
-    <style>
-        :root {
-            --primary-green: #2e7d32;
-            --light-green: #4caf50;
-            --dark-green: #1b5e20;
-            --primary-blue: #0277bd;
-            --light-blue: #03a9f4;
-            --gray-50: #f8f9fa;
-            --gray-100: #f1f3f4;
-            --gray-200: #e8eaed;
-            --gray-600: #5f6368;
-            --gray-800: #3c4043;
-            --warning-orange: #f57c00;
-            --danger-red: #d32f2f;
-            --purple: #7b1fa2;
-        }
-        
-        /* Report Stats Cards */
-        .stats-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            height: 100%;
-        }
-        
-        .stats-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: white;
-            margin-bottom: 15px;
-        }
-        
-        /* Report Cards */
-        .report-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-            transition: all 0.3s;
-            border-left: 4px solid var(--primary-green);
-            height: 100%;
-        }
-        
-        .report-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .report-card.executive {
-            border-left-color: var(--primary-blue);
-        }
-        
-        .report-card.regulatory {
-            border-left-color: var(--warning-orange);
-        }
-        
-        .report-card.internal {
-            border-left-color: var(--light-green);
-        }
-        
-        .report-card.public {
-            border-left-color: var(--purple);
-        }
-        
-        /* Report Status Badges */
-        .report-status {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .status-published {
-            background-color: rgba(76, 175, 80, 0.1);
-            color: var(--light-green);
-        }
-        
-        .status-draft {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
-        }
-        
-        .status-scheduled {
-            background-color: rgba(3, 169, 244, 0.1);
-            color: var(--light-blue);
-        }
-        
-        .status-archived {
-            background-color: rgba(158, 158, 158, 0.1);
-            color: #9e9e9e;
-        }
-        
-        /* Report Type Badges */
-        .report-type {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background-color: var(--gray-100);
-            color: var(--gray-800);
-        }
-        
-        .type-pdf {
-            background-color: rgba(211, 47, 47, 0.1);
-            color: var(--danger-red);
-        }
-        
-        .type-excel {
-            background-color: rgba(46, 125, 50, 0.1);
-            color: var(--primary-green);
-        }
-        
-        .type-pptx {
-            background-color: rgba(245, 124, 0, 0.1);
-            color: var(--warning-orange);
-        }
-        
-        .type-web {
-            background-color: rgba(3, 169, 244, 0.1);
-            color: var(--light-blue);
-        }
-        
-        /* Report Actions */
-        .report-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 15px;
-        }
-        
-        .action-btn {
-            flex: 1;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--gray-200);
-            background-color: white;
-            color: var(--gray-600);
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-        
-        .action-btn:hover {
-            background-color: var(--gray-50);
-            color: var(--gray-800);
-        }
-        
-        .download-btn:hover {
-            background-color: rgba(46, 125, 50, 0.1);
-            color: var(--primary-green);
-            border-color: rgba(46, 125, 50, 0.3);
-        }
-        
-        .edit-btn:hover {
-            background-color: rgba(3, 169, 244, 0.1);
-            color: var(--light-blue);
-            border-color: rgba(3, 169, 244, 0.3);
-        }
-        
-        .share-btn:hover {
-            background-color: rgba(156, 39, 176, 0.1);
-            color: #9c27b0;
-            border-color: rgba(156, 39, 176, 0.3);
-        }
-        
-        /* Tab Navigation */
-        .reports-tabs {
-            background: white;
-            border-radius: 10px;
-            padding: 0;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        
-        .nav-tabs-reports {
-            border-bottom: none;
-            background-color: var(--gray-50);
-            padding: 0 20px;
-        }
-        
-        .nav-tabs-reports .nav-link {
-            border: none;
-            color: var(--gray-600);
-            font-weight: 500;
-            padding: 15px 20px;
-            position: relative;
-        }
-        
-        .nav-tabs-reports .nav-link.active {
-            color: var(--primary-green);
-            background-color: white;
-        }
-        
-        .nav-tabs-reports .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background-color: var(--primary-green);
-        }
-        
-        .tab-content-reports {
-            padding: 20px;
-        }
-        
-        /* Quick Actions */
-        .quick-action-card {
-            text-align: center;
-            padding: 30px 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            cursor: pointer;
-            transition: all 0.3s;
-            height: 100%;
-        }
-        
-        .quick-action-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .quick-action-icon {
-            font-size: 40px;
-            margin-bottom: 15px;
-        }
-        
-        /* Report Builder */
-        .report-builder {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-        
-        .builder-section {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--gray-200);
-        }
-        
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--primary-green);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .section-title i {
-            margin-right: 10px;
-        }
-        
-        /* Component Library */
-        .component-card {
-            border: 1px solid var(--gray-200);
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            cursor: move;
-            transition: all 0.2s;
-        }
-        
-        .component-card:hover {
-            border-color: var(--primary-green);
-            background-color: rgba(46, 125, 50, 0.05);
-        }
-        
-        /* Report Preview */
-        .report-preview {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--gray-200);
-            min-height: 600px;
-        }
-        
-        .preview-header {
-            text-align: center;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid var(--primary-green);
-        }
-        
-        .preview-placeholder {
-            height: 300px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: var(--gray-50);
-            border-radius: 8px;
-            border: 2px dashed var(--gray-300);
-            color: var(--gray-600);
-        }
-        
-        /* Template Cards */
-        .template-card {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s;
-            height: 100%;
-        }
-        
-        .template-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .template-header {
-            padding: 20px;
-            background-color: var(--primary-green);
-            color: white;
-        }
-        
-        .template-body {
-            padding: 20px;
-        }
-        
-        /* Schedule Card */
-        .schedule-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 15px;
-            border-left: 4px solid var(--primary-blue);
-        }
-        
-        /* Filter Panel */
-        .filter-panel {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
-        }
-        
-        /* Export Options */
-        .export-options {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .export-option {
-            flex: 1;
-            min-width: 120px;
-            text-align: center;
-            padding: 15px;
-            border: 1px solid var(--gray-200);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .export-option:hover {
-            border-color: var(--primary-green);
-            background-color: rgba(46, 125, 50, 0.05);
-        }
-        
-        .export-option.active {
-            border-color: var(--primary-green);
-            background-color: rgba(46, 125, 50, 0.1);
-        }
-        
-        .config-label {
-            font-weight: 600;
-            color: var(--gray-800);
-            margin-bottom: 5px;
-            font-size: 0.875rem;
-        }
-    </style>
+<style>
+.reports-app * { box-sizing: border-box; }
+.reports-app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+/* Topbar */
+.reports-app .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; padding: 20px 24px; background: linear-gradient(135deg, #fff 0%, var(--gray-50) 100%); border: 1px solid var(--gray-200); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.reports-app .topbar h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--gray-800); }
+.reports-app .topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; font-size: 1rem; font-weight: 700; box-shadow: 0 2px 8px rgba(46,125,50,.25); }
+.reports-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
+/* Stats */
+.reports-app .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.reports-app .sc { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; }
+.reports-app .sc:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.reports-app .sc .si { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+.reports-app .sc .si.g { background: linear-gradient(135deg, rgba(46,125,50,.15) 0%, rgba(76,175,80,.12) 100%); color: var(--primary-green); }
+.reports-app .sc .si.suc { background: linear-gradient(135deg, rgba(76,175,80,.2) 0%, rgba(129,199,132,.15) 100%); color: var(--light-green); }
+.reports-app .sc .si.b { background: linear-gradient(135deg, rgba(2,119,189,.12) 0%, rgba(3,169,244,.1) 100%); color: var(--primary-blue); }
+.reports-app .sc .si.w { background: linear-gradient(135deg, rgba(245,124,0,.15) 0%, rgba(255,152,0,.1) 100%); color: var(--warning-orange); }
+.reports-app .sc .si.d { background: linear-gradient(135deg, rgba(211,47,47,.15) 0%, rgba(244,67,54,.1) 100%); color: var(--danger-red); }
+.reports-app .sc .sv { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; color: var(--gray-800); }
+.reports-app .sc .sl { font-size: 0.75rem; color: var(--gray-600); margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+.reports-app .stat-sub { font-size: 0.8125rem; font-weight: 600; color: var(--light-green); }
+.reports-app .stat-muted { font-size: 0.75rem; color: var(--gray-600); margin-left: 4px; }
+.reports-app .btn-pending { margin-top: 8px; padding: 6px 12px; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; border: none; background: rgba(211,47,47,0.12); color: var(--danger-red); cursor: pointer; }
+.reports-app .btn-pending:hover { background: rgba(211,47,47,0.2); }
+/* Quick action grid */
+.reports-app .qa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.reports-app .qa-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 20px; text-align: center; cursor: pointer; transition: all .2s; box-shadow: 0 2px 8px rgba(0,0,0,.06); display: block; text-decoration: none; color: inherit; }
+.reports-app .qa-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); border-color: var(--gray-300); }
+.reports-app .qa-card-link:hover { color: inherit; }
+.reports-app .qa-card .qa-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 12px; }
+.reports-app .qa-card .qa-icon.g { background: linear-gradient(135deg, rgba(46,125,50,.15) 0%, rgba(76,175,80,.12) 100%); color: var(--primary-green); }
+.reports-app .qa-card .qa-icon.suc { background: linear-gradient(135deg, rgba(76,175,80,.2) 0%, rgba(129,199,132,.15) 100%); color: var(--light-green); }
+.reports-app .qa-card .qa-icon.b { background: linear-gradient(135deg, rgba(2,119,189,.12) 0%, rgba(3,169,244,.1) 100%); color: var(--primary-blue); }
+.reports-app .qa-card .qa-icon.w { background: linear-gradient(135deg, rgba(245,124,0,.15) 0%, rgba(255,152,0,.1) 100%); color: var(--warning-orange); }
+.reports-app .qa-card h5 { font-size: 1rem; font-weight: 700; color: var(--gray-800); margin-bottom: 6px; }
+.reports-app .qa-card p { font-size: 0.8125rem; color: var(--gray-600); margin: 0; }
+/* Tabs */
+.reports-app .reports-tabs.tw { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+.reports-app .nav-tabs-reports { border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); padding: 0 16px; }
+.reports-app .nav-tabs-reports .nav-link { border: none; color: var(--gray-600); font-weight: 600; padding: 14px 18px; position: relative; font-size: 0.875rem; }
+.reports-app .nav-tabs-reports .nav-link:hover { color: var(--gray-800); }
+.reports-app .nav-tabs-reports .nav-link.active { color: var(--primary-green); background: transparent; }
+.reports-app .nav-tabs-reports .nav-link.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--primary-green); border-radius: 2px 2px 0 0; }
+.reports-app .tab-content-reports { padding: 24px; }
+/* Filter panel */
+.reports-app .filter-panel { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+.reports-app .filter-panel .form-label { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+.reports-app .filter-panel .form-select { padding: 10px 14px; font-size: 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; background: #fff; }
+.reports-app .filter-panel .form-select:focus { border-color: var(--primary-green); outline: none; }
+.reports-app .filter-panel .btn-reset { background: var(--gray-100); border: 1.5px solid var(--gray-200); color: var(--gray-600); padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.reports-app .filter-panel .btn-reset:hover { background: var(--gray-200); color: var(--gray-800); }
+.reports-app .filter-panel .btn-outline { border: 1.5px solid var(--primary-green); color: var(--primary-green); background: #fff; padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.reports-app .filter-panel .btn-outline:hover { background: rgba(46,125,50,0.08); color: var(--primary-green); }
+.reports-app .filter-panel .btn-apply { background: var(--primary-green); color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.reports-app .filter-panel .btn-apply:hover { background: var(--dark-green); }
+/* Report cards (library grid) */
+.reports-app .report-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; transition: all .2s; border-left: 4px solid var(--primary-green); height: 100%; }
+.reports-app .report-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.reports-app .report-card.executive { border-left-color: var(--primary-blue); }
+.reports-app .report-card.regulatory { border-left-color: var(--warning-orange); }
+.reports-app .report-card.internal { border-left-color: var(--light-green); }
+.reports-app .report-card.public { border-left-color: #7b1fa2; }
+.reports-app .report-status { padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.reports-app .status-published { background: rgba(76,175,80,0.12); color: var(--light-green); }
+.reports-app .status-draft { background: rgba(255,193,7,0.12); color: #b38600; }
+.reports-app .status-scheduled { background: rgba(3,169,244,0.12); color: var(--light-blue); }
+.reports-app .status-archived { background: rgba(158,158,158,0.12); color: #9e9e9e; }
+.reports-app .report-type { padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.reports-app .type-pdf { background: rgba(211,47,47,0.12); color: var(--danger-red); }
+.reports-app .type-excel { background: rgba(46,125,50,0.12); color: var(--primary-green); }
+.reports-app .type-pptx { background: rgba(245,124,0,0.12); color: var(--warning-orange); }
+.reports-app .type-web { background: rgba(3,169,244,0.12); color: var(--light-blue); }
+.reports-app .report-actions { display: flex; gap: 8px; margin-top: 15px; }
+.reports-app .action-btn { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--gray-200); background: #fff; color: var(--gray-600); font-size: 0.8125rem; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all .2s; text-decoration: none; }
+.reports-app .action-btn:hover { background: var(--gray-50); color: var(--gray-800); }
+.reports-app .download-btn:hover { border-color: var(--primary-green); background: rgba(46,125,50,0.08); color: var(--primary-green); }
+.reports-app .edit-btn:hover { border-color: var(--light-blue); background: rgba(3,169,244,0.08); color: var(--light-blue); }
+.reports-app .config-label { font-weight: 600; color: var(--gray-800); margin-bottom: 5px; font-size: 0.875rem; }
+/* Exports table */
+.reports-app .reports-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.reports-app .reports-table thead th { background: var(--gray-100); color: var(--gray-600); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 16px; border-bottom: 1px solid var(--gray-200); }
+.reports-app .reports-table tbody td { padding: 14px 16px; font-size: 0.875rem; color: var(--gray-800); border-bottom: 1px solid var(--gray-100); }
+.reports-app .reports-table tbody tr:hover td { background: var(--gray-50); }
+.reports-app .reports-table tbody tr:last-child td { border-bottom: none; }
+/* Builder, templates, schedule */
+.reports-app .report-builder { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.reports-app .builder-section { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--gray-200); }
+.reports-app .section-title { font-size: 1rem; font-weight: 700; color: var(--primary-green); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.reports-app .component-card { border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 14px; text-align: center; cursor: move; transition: all .2s; background: #fff; }
+.reports-app .component-card:hover { border-color: var(--primary-green); background: rgba(46,125,50,0.06); }
+.reports-app .report-preview { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 20px; min-height: 600px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.reports-app .preview-header { text-align: center; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 2px solid var(--primary-green); }
+.reports-app .preview-placeholder { height: 300px; display: flex; align-items: center; justify-content: center; background: var(--gray-50); border-radius: 12px; border: 2px dashed var(--gray-200); color: var(--gray-600); }
+.reports-app .template-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: all .2s; height: 100%; }
+.reports-app .template-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.reports-app .template-header { padding: 18px 20px; background: var(--primary-green); color: #fff; }
+.reports-app .template-body { padding: 20px; }
+.reports-app .schedule-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid var(--primary-blue); }
+.reports-app .export-option { flex: 1; min-width: 100px; text-align: center; padding: 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; cursor: pointer; transition: all .2s; background: #fff; }
+.reports-app .export-option:hover { border-color: var(--primary-green); background: rgba(46,125,50,0.06); }
+.reports-app .export-option.active { border-color: var(--primary-green); background: rgba(46,125,50,0.1); }
+.reports-app .card { border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.reports-app .card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); font-weight: 700; color: var(--gray-800); }
+</style>
 @endpush
+
+@section('title', 'Reports')
+@section('page-title', 'Reports')
 
 @section('content')
     <div id="content">
         @include('layouts.top-nav')
-        
-        <!-- Statistics Cards -->
-        <div class="row mt-4">
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--primary-green);">
-                        <i class="fas fa-file-pdf"></i>
-                    </div>
-                    <h3 class="mb-2" id="totalReports">0</h3>
-                    <p class="text-muted mb-2">Total Reports</p>
-                    <div class="d-flex align-items-center">
-                        <span class="text-success fw-bold" id="reportsThisMonth">+0</span>
-                        <span class="text-muted ms-2">this month</span>
-                    </div>
-                </div>
-        </div>
 
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--light-blue);">
-                        <i class="fas fa-calendar-alt"></i>
+        <div class="reports-app container-fluid mt-4">
+            <!-- Topbar -->
+            <div class="topbar">
+                <h2><span class="sb"><i class="fas fa-chart-pie"></i></span> Reports</h2>
+                <p>Create, schedule, and export GHG reports. Use templates or build custom reports.</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats">
+                <div class="sc">
+                    <div class="si g"><i class="fas fa-file-pdf"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="totalReports">0</div>
+                        <div class="sl">Total Reports</div>
+                        <span class="stat-sub" id="reportsThisMonth">+0</span> <span class="stat-muted">this month</span>
                     </div>
-                    <h3 class="mb-2" id="scheduledReports">0</h3>
-                    <p class="text-muted mb-2">Scheduled Reports</p>
-                    <div class="connection-status">
-                        <span class="text-primary fw-bold" id="dueToday">0 due today</span>
+                </div>
+                <div class="sc">
+                    <div class="si b"><i class="fas fa-calendar-alt"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="scheduledReports">0</div>
+                        <div class="sl">Scheduled</div>
+                        <span class="stat-sub" id="dueToday">0 due today</span>
+                    </div>
+                </div>
+                <div class="sc">
+                    <div class="si w"><i class="fas fa-users"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="sharedReports">0</div>
+                        <div class="sl">Shared</div>
+                        <span class="stat-sub"><i class="fas fa-eye me-1"></i><span id="viewsThisWeek">0 views this week</span></span>
+                    </div>
+                </div>
+                <div class="sc">
+                    <div class="si d"><i class="fas fa-clock"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="pendingReports">0</div>
+                        <div class="sl">Pending</div>
+                        <button type="button" class="btn-pending" onclick="showPendingReports()">
+                            <i class="fas fa-external-link-alt me-1"></i>Review Now
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--warning-orange);">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3 class="mb-2" id="sharedReports">0</h3>
-                    <p class="text-muted mb-2">Shared Reports</p>
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-eye text-warning me-2"></i>
-                        <span class="small" id="viewsThisWeek">0 views this week</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--danger-red);">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <h3 class="mb-2" id="pendingReports">0</h3>
-                    <p class="text-muted mb-2">Reports Pending</p>
-                    <button class="btn btn-sm btn-danger mt-2" onclick="showPendingReports()">
-                        <i class="fas fa-external-link-alt me-1"></i>Review Now
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Quick Actions -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="quick-action-card" onclick="startNewReport()">
-                    <div class="quick-action-icon text-primary">
-                        <i class="fas fa-plus-circle"></i>
-                    </div>
+
+            <!-- Quick Actions -->
+            <div class="qa-grid">
+                <div class="qa-card" onclick="startNewReport()">
+                    <div class="qa-icon g"><i class="fas fa-plus-circle"></i></div>
                     <h5>New Report</h5>
-                    <p class="text-muted small">Create a custom report from scratch</p>
+                    <p>Create a custom report from scratch</p>
                 </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="quick-action-card" onclick="useTemplateWizard()">
-                    <div class="quick-action-icon text-success">
-                        <i class="fas fa-clone"></i>
-                    </div>
+                <div class="qa-card" onclick="useTemplateWizard()">
+                    <div class="qa-icon suc"><i class="fas fa-clone"></i></div>
                     <h5>Use Template</h5>
-                    <p class="text-muted small">Start with a pre-designed template</p>
+                    <p>Start with a pre-designed template</p>
                 </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="quick-action-card" onclick="scheduleNewReport()">
-                    <div class="quick-action-icon text-warning">
-                        <i class="fas fa-clock"></i>
-                    </div>
+                <div class="qa-card" onclick="scheduleNewReport()">
+                    <div class="qa-icon w"><i class="fas fa-clock"></i></div>
                     <h5>Schedule Report</h5>
-                    <p class="text-muted small">Set up automated report generation</p>
+                    <p>Set up automated report generation</p>
                 </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="quick-action-card" onclick="exportAllReports()">
-                    <div class="quick-action-icon text-info">
-                        <i class="fas fa-download"></i>
-                    </div>
+                <div class="qa-card" onclick="exportAllReports()">
+                    <div class="qa-icon b"><i class="fas fa-download"></i></div>
                     <h5>Export All</h5>
-                    <p class="text-muted small">Batch export reports in multiple formats</p>
+                    <p>Batch export in multiple formats</p>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Additional Quick Actions -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <a href="{{ route('reports.ghg_protocol') }}" class="text-decoration-none">
-                    <div class="quick-action-card">
-                        <div class="quick-action-icon" style="color: #0066cc;">
-                            <i class="fas fa-file-contract"></i>
-                        </div>
-                        <h5>GHG Protocol Report</h5>
-                        <p class="text-muted small">Generate standard GHG Protocol compliance report</p>
-                    </div>
+                <a href="{{ route('reports.ghg_protocol') }}" class="qa-card qa-card-link">
+                    <div class="qa-icon b"><i class="fas fa-file-contract"></i></div>
+                    <h5>GHG Protocol Report</h5>
+                    <p>Generate GHG Protocol compliance report</p>
                 </a>
             </div>
-        </div>
-        
-        <!-- Reports Tabs -->
-        <div class="reports-tabs">
+
+            <!-- Reports Tabs -->
+            <div class="reports-tabs tw">
             <ul class="nav nav-tabs nav-tabs-reports" id="reportsTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="library-tab" data-bs-toggle="tab" data-bs-target="#library" type="button">
@@ -605,15 +269,15 @@
                                 </select>
                             </div>
                             
-                            <div class="col-12 mt-3 d-flex justify-content-between">
-                                <button class="btn btn-outline-secondary" id="resetFilters">
+                            <div class="col-12 mt-3 d-flex justify-content-between flex-wrap gap-2">
+                                <button type="button" class="btn btn-reset" id="resetFilters">
                                     <i class="fas fa-redo me-2"></i>Reset Filters
                                 </button>
-                                <div>
-                                    <button class="btn btn-outline-primary me-2" id="saveFilterBtn">
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline" id="saveFilterBtn">
                                         <i class="fas fa-save me-2"></i>Save Filter
                                     </button>
-                                    <button class="btn btn-success" id="applyFilters" onclick="loadReports()">
+                                    <button type="button" class="btn btn-apply" id="applyFilters" onclick="loadReports()">
                                         <i class="fas fa-filter me-2"></i>Apply Filters
                                     </button>
                                 </div>
@@ -991,9 +655,9 @@
                                         <i class="fas fa-plus me-2"></i>New Export
                                     </button>
                                 </div>
-                                <div class="card-body">
-        <div class="table-responsive">
-                                        <table class="table table-hover">
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0 reports-table">
                                             <thead>
                                                 <tr>
                                                     <th>Export Job</th>
@@ -1117,6 +781,7 @@
                     </div>
                     </div>
             </div>
+        </div>
         </div>
     </div>
 

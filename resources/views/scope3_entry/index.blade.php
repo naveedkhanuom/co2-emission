@@ -136,7 +136,7 @@
             <div class="th2"><h3>Entries</h3></div>
             <div class="p-3">
                 <table class="table table-sm table-hover mb-0" id="scope3Table" width="100%">
-                    <thead><tr><th>Category</th><th>Activity</th><th>tCO2e</th><th>Facility</th><th>Date</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Category</th><th>Activity</th><th>tCO2e</th><th>Facility</th><th>Date</th><th>Attachments</th><th>Actions</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -188,10 +188,104 @@
             <div class="suc" id="scope3Suc"><div class="sk">&#10003;</div><h3>Saved!</h3><p id="scope3SucM"></p><div class="sr"><button type="button" class="btn bs" id="scope3SucC">Close</button><button type="button" class="btn bp" id="scope3SucA">+ Another</button></div></div>
         </div>
     </div>
+
+    <!-- Attachments modal -->
+    <div class="modal fade" id="scope3AttachmentsModal" tabindex="-1" aria-labelledby="scope3AttachmentsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="scope3AttachmentsModalLabel"><i class="fas fa-paperclip me-2"></i>Attachments</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="scope3AttachmentsModalBody">
+                    <p class="text-muted mb-0">No attachments.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Record modal (popup) -->
+    <div class="modal fade" id="scope3ViewRecordModal" tabindex="-1" aria-labelledby="scope3ViewRecordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg scope3-view-modal-dialog">
+            <div class="modal-content scope3-view-modal-content">
+                <div class="modal-header scope3-view-modal-header">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1">
+                        <div class="scope3-view-modal-icon"><i class="fas fa-globe-americas"></i></div>
+                        <div>
+                            <h5 class="modal-title mb-0" id="scope3ViewRecordModalLabel">Emission Record</h5>
+                            <p class="scope3-view-modal-subtitle mb-0">Scope 3 · Value chain</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body scope3-view-modal-body" id="scope3ViewRecordModalBody">
+                    <div class="text-center py-5 scope3-view-loading">
+                        <div class="spinner-border text-success" role="status" style="width:2.5rem;height:2.5rem;"><span class="visually-hidden">Loading...</span></div>
+                        <p class="text-muted mt-3 mb-0">Loading record...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.min.css" rel="stylesheet">
+<style>
+/* View Record modal — Scope 3 */
+.scope3-view-modal-dialog { max-width: 560px; }
+.scope3-view-modal-content { border: none; border-radius: 16px; overflow: hidden; box-shadow: 0 24px 48px rgba(0,0,0,.15); }
+.scope3-view-modal-header {
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+  color: #fff; padding: 18px 20px; border-bottom: none;
+}
+.scope3-view-modal-icon {
+  width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;
+}
+.scope3-view-modal-subtitle { font-size: 0.8rem; opacity: .9; margin-top: 2px; }
+.scope3-view-modal-body { padding: 24px; background: var(--gray-50); }
+#scope3ViewRecordModal .scope3-view-details-card {
+  background: #fff; border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
+  border: 1px solid var(--gray-200); box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+#scope3ViewRecordModal .scope3-view-co2e {
+  background: linear-gradient(135deg, rgba(46,125,50,.1) 0%, rgba(76,175,80,.08) 100%);
+  border: 1px solid rgba(46,125,50,.25); border-radius: 12px; padding: 14px 18px;
+  text-align: center; margin-bottom: 18px;
+}
+#scope3ViewRecordModal .scope3-view-co2e .val { font-size: 1.75rem; font-weight: 800; color: var(--primary-green); letter-spacing: -0.02em; }
+#scope3ViewRecordModal .scope3-view-co2e .lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-600); margin-top: 2px; }
+#scope3ViewRecordModal .scope3-view-row { display: flex; padding: 8px 0; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; }
+#scope3ViewRecordModal .scope3-view-row:last-child { border-bottom: none; }
+#scope3ViewRecordModal .scope3-view-row .k { color: var(--gray-600); min-width: 120px; flex-shrink: 0; }
+#scope3ViewRecordModal .scope3-view-row .v { color: var(--gray-800); font-weight: 500; }
+#scope3ViewRecordModal .scope3-view-attachments {
+  background: #fff; border-radius: 12px; padding: 16px 18px; border: 1px solid var(--gray-200);
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+#scope3ViewRecordModal .scope3-view-attachments .title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--gray-600); margin-bottom: 10px; }
+#scope3ViewRecordModal .scope3-view-attachment-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px;
+  background: var(--gray-50); border: 1px solid var(--gray-200); margin-bottom: 8px; font-size: 0.875rem;
+  transition: background .15s, border-color .15s;
+}
+#scope3ViewRecordModal .scope3-view-attachment-item:last-child { margin-bottom: 0; }
+#scope3ViewRecordModal .scope3-view-attachment-item:hover { background: #fff; border-color: var(--primary-green); }
+#scope3ViewRecordModal .scope3-view-attachment-item a { color: var(--gray-800); text-decoration: none; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#scope3ViewRecordModal .scope3-view-attachment-item a:hover { color: var(--primary-green); }
+#scope3ViewRecordModal .scope3-view-attachment-item .open-btn {
+  flex-shrink: 0; padding: 6px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;
+  background: var(--primary-green); color: #fff; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+#scope3ViewRecordModal .scope3-view-attachment-item .open-btn:hover { background: var(--dark-green); color: #fff; }
+#scope3ViewRecordModal .scope3-view-no-attach { color: var(--gray-600); font-size: 0.875rem; padding: 8px 0; }
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 window.scope3Categories = {!! $categoriesJson !!};
 window.scope3EntryForms = {!! $entryFormsJson ?? '{}' !!};

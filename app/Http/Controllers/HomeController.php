@@ -371,17 +371,13 @@ class HomeController extends Controller
             $sourceValues = [];
         }
         
-        // Recent emission records (latest 8) with filters
+        // Recent emission records with server-side pagination (respects filters)
         // Automatically scoped to current company via HasCompanyScope trait
         $recentRecords = $baseQuery()
             ->orderBy('entry_date', 'desc')
             ->orderBy('created_at', 'desc')
-            ->limit(8)
-            ->get();
-        
-        // Total record count with filters
-        // Automatically scoped to current company via HasCompanyScope trait
-        $totalRecords = $baseQuery()->count();
+            ->paginate(10)
+            ->withQueryString();
         
         // Get facilities and departments for filters (automatically scoped to current company via HasCompanyScope)
         $facilities = Facilities::all();
@@ -409,7 +405,6 @@ class HomeController extends Controller
             'sourceNames',
             'sourceValues',
             'recentRecords',
-            'totalRecords',
             'facilities',
             'departments',
             'emissionCategories',

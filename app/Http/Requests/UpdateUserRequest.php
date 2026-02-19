@@ -27,6 +27,9 @@ class UpdateUserRequest extends FormRequest
             'password' => 'nullable|string|min:8|confirmed',
             'roles' => 'required',
             'is_demo_user' => 'sometimes|boolean',
+            'company_id' => 'nullable|exists:companies,id',
+            'company_access' => 'nullable|array',
+            'company_access.*' => 'exists:companies,id',
         ];
     }
 }

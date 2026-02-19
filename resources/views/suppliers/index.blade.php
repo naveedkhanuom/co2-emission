@@ -7,60 +7,42 @@
 <div id="content">
     @include('layouts.top-nav')
 
-    <div class="container mt-4">
-
+    <div class="suppliers-app container-fluid mt-4">
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show">
-                {{ session('success') }}
-                <button class="btn-close" data-bs-dismiss="alert"></button>
+                <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
-
         @if(session('error'))
             <div class="alert alert-danger alert-dismissible fade show">
-                {{ session('error') }}
-                <button class="btn-close" data-bs-dismiss="alert"></button>
+                <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
 
-        <!-- Header Card -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="mb-0">
-                            <i class="fas fa-truck me-2 text-primary"></i>Manage Suppliers
-                        </h4>
-                        <p class="text-muted mb-0 mt-1">View and manage your suppliers for Scope 3 emissions tracking</p>
-                    </div>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
-                        <i class="fas fa-plus me-1"></i>Add New Supplier
-                    </button>
-                </div>
-            </div>
+        <!-- Topbar -->
+        <div class="topbar">
+            <h2><span class="sb"><i class="fas fa-truck"></i></span> Suppliers</h2>
+            <p>View and manage your suppliers for Scope 3 emissions tracking.</p>
+            <button type="button" class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">
+                <i class="fas fa-plus"></i> Add New Supplier
+            </button>
         </div>
 
         <!-- DataTable Card -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-table me-2"></i>Suppliers List
-                    </h5>
-                    <div class="d-flex gap-2">
-                        <div class="input-group input-group-sm" style="width: 250px;">
-                            <span class="input-group-text">
-                                <i class="fas fa-search"></i>
-                            </span>
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search suppliers...">
-                        </div>
-                    </div>
+        <div class="card suppliers-datatable-card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <h5 class="mb-0">Suppliers List</h5>
+                <div class="input-group" style="width: 280px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search suppliers...">
                 </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0" id="suppliersTable">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th width="50">#</th>
                                 <th>Name</th>
@@ -73,10 +55,15 @@
                                 <th width="150" class="text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Data will be loaded via DataTables -->
-                        </tbody>
+                        <tbody></tbody>
                     </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="table-info-text">
+                        Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalCount">0</span> suppliers
+                    </div>
                 </div>
             </div>
         </div>
@@ -272,30 +259,43 @@
 @endsection
 
 @push('styles')
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <style>
-    #suppliersTable_wrapper .dataTables_filter {
-        display: none;
-    }
-    
-    #suppliersTable thead th {
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        border-bottom: 2px solid #dee2e6;
-    }
-    
-    #suppliersTable tbody tr {
-        transition: all 0.2s ease;
-    }
-    
-    #suppliersTable tbody tr:hover {
-        background-color: #f8f9fa;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
+.suppliers-app * { box-sizing: border-box; }
+.suppliers-app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+/* Topbar */
+.suppliers-app .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; padding: 20px 24px; background: linear-gradient(135deg, #fff 0%, var(--gray-50) 100%); border: 1px solid var(--gray-200); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.suppliers-app .topbar h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--gray-800); }
+.suppliers-app .topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; font-size: 1rem; font-weight: 700; box-shadow: 0 2px 8px rgba(46,125,50,.25); }
+.suppliers-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
+.suppliers-app .btn-add { margin-left: auto; padding: 10px 20px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.suppliers-app .btn-add:hover { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,125,50,.35); }
+/* Alerts */
+.suppliers-app .alert { border-radius: 12px; border: 1px solid transparent; }
+.suppliers-app .alert-success { background: rgba(76,175,80,0.1); border-color: rgba(76,175,50,0.25); color: var(--dark-green); }
+.suppliers-app .alert-danger { background: rgba(211,47,47,0.08); border-color: rgba(211,47,47,0.2); color: var(--danger-red); }
+/* DataTable card */
+.suppliers-app .suppliers-datatable-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.suppliers-app .suppliers-datatable-card .card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); }
+.suppliers-app .suppliers-datatable-card .card-header h5 { font-size: 1.0625rem; font-weight: 700; color: var(--gray-800); }
+.suppliers-app .suppliers-datatable-card .card-header .input-group { border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-200); }
+.suppliers-app .suppliers-datatable-card .card-header .input-group-text { background: var(--gray-50); border: none; color: var(--gray-600); padding: 10px 14px; }
+.suppliers-app .suppliers-datatable-card .card-header .form-control { border: none; padding: 10px 14px; font-size: 0.875rem; }
+.suppliers-app .suppliers-datatable-card #suppliersTable { width: 100% !important; border-collapse: separate; border-spacing: 0; }
+.suppliers-app .suppliers-datatable-card #suppliersTable thead th { background: var(--gray-100); color: var(--gray-600); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 16px; border: none; border-bottom: 1px solid var(--gray-200); }
+.suppliers-app .suppliers-datatable-card #suppliersTable thead th:first-child { padding-left: 20px; }
+.suppliers-app .suppliers-datatable-card #suppliersTable tbody td { padding: 14px 16px; font-size: 0.875rem; color: var(--gray-800); border: none; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.suppliers-app .suppliers-datatable-card #suppliersTable tbody td:first-child { padding-left: 20px; }
+.suppliers-app .suppliers-datatable-card #suppliersTable tbody tr:hover td { background: var(--gray-50); }
+.suppliers-app .suppliers-datatable-card #suppliersTable tbody tr:last-child td { border-bottom: none; }
+.suppliers-app .suppliers-datatable-card .card-footer { padding: 12px 20px; border-top: 1px solid var(--gray-200); background: var(--gray-50); font-size: 0.8125rem; color: var(--gray-600); }
+.suppliers-app .suppliers-datatable-card .dataTables_wrapper { padding: 0; }
+.suppliers-app .suppliers-datatable-card .dataTables_wrapper .dataTables_length,
+.suppliers-app .suppliers-datatable-card .dataTables_wrapper .dataTables_filter { display: none; }
+.suppliers-app .suppliers-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 6px 12px; margin: 0 2px; border-radius: 8px; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-700) !important; font-size: 0.8125rem; font-weight: 600; }
+.suppliers-app .suppliers-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: var(--gray-100) !important; border-color: var(--gray-300) !important; color: var(--gray-800) !important; }
+.suppliers-app .suppliers-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--primary-green) !important; border-color: var(--primary-green) !important; color: #fff !important; }
+.suppliers-app .suppliers-datatable-card .dataTables_wrapper .dataTables_processing { background: rgba(255,255,255,0.95); border-radius: 10px; padding: 14px 24px; font-weight: 600; font-size: 0.875rem; color: var(--gray-700); border: 1px solid var(--gray-200); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.suppliers-app .suppliers-datatable-card .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 </style>
 @endpush
 
@@ -379,6 +379,12 @@
             order: [[0, 'asc']],
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            drawCallback: function() {
+                var info = table.page.info();
+                $('#showingFrom').text(info.recordsDisplay ? info.start + 1 : 0);
+                $('#showingTo').text(info.end);
+                $('#totalCount').text(info.recordsDisplay);
+            },
             language: {
                 processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
                 emptyTable: 'No suppliers found',
@@ -396,7 +402,7 @@
                     last: '<i class="fas fa-angle-double-right"></i>'
                 }
             },
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            dom: 'rt<"row mt-3"<"col-sm-12"p>>',
         });
         
         // Custom search input
@@ -419,7 +425,7 @@
                         $('#addForm')[0].reset();
                         table.ajax.reload();
                         $('.alert-success').remove();
-                        $('.container').prepend('<div class="alert alert-success alert-dismissible fade show">' + response.message + '<button class="btn-close" data-bs-dismiss="alert"></button></div>');
+                        $('.suppliers-app').prepend('<div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check-circle me-2"></i>' + response.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
                         setTimeout(function() {
                             $('.alert-success').fadeOut('slow');
                         }, 5000);
@@ -476,7 +482,7 @@
                         $('#editModal').modal('hide');
                         table.ajax.reload();
                         $('.alert-success').remove();
-                        $('.container').prepend('<div class="alert alert-success alert-dismissible fade show">' + response.message + '<button class="btn-close" data-bs-dismiss="alert"></button></div>');
+                        $('.suppliers-app').prepend('<div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check-circle me-2"></i>' + response.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
                         setTimeout(function() {
                             $('.alert-success').fadeOut('slow');
                         }, 5000);
@@ -531,7 +537,7 @@
                         if (response.success) {
                             table.ajax.reload();
                             $('.alert-success').remove();
-                            $('.container').prepend('<div class="alert alert-success alert-dismissible fade show">' + response.message + '<button class="btn-close" data-bs-dismiss="alert"></button></div>');
+                            $('.suppliers-app').prepend('<div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check-circle me-2"></i>' + response.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
                             setTimeout(function() {
                                 $('.alert-success').fadeOut('slow');
                             }, 5000);

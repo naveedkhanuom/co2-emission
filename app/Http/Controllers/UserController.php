@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Company;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Illuminate\View\View;
@@ -103,9 +104,11 @@ class UserController extends Controller
      */
     public function create(): View
     {
+        $companies = Company::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']);
         return view('users.create', [
             'roles' => Role::pluck('name')->all(),
             'sidebarMenuItems' => config('sidebar.menu_items', []),
+            'companies' => $companies,
         ]);
     }
 
@@ -119,6 +122,15 @@ class UserController extends Controller
         $input['is_demo_user'] = $request->boolean('is_demo_user');
         $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
         $input['restricted_sidebar_routes'] = $request->boolean('is_demo_user') ? $request->input('restricted_sidebar_routes', []) : null;
+
+        $primaryCompanyId = $request->input('company_id') ? (int) $request->input('company_id') : null;
+        $companyAccess = $request->input('company_access', []);
+        $companyAccess = is_array($companyAccess) ? array_map('intval', array_filter($companyAccess)) : [];
+        if ($primaryCompanyId !== null) {
+            $companyAccess = array_values(array_unique(array_diff($companyAccess, [$primaryCompanyId])));
+        }
+        $input['company_id'] = $primaryCompanyId;
+        $input['company_access'] = $companyAccess;
 
         $user = User::create($input);
         $user->assignRole($request->roles);
@@ -150,6 +162,7 @@ class UserController extends Controller
         $sidebarMenuItems = config('sidebar.menu_items', []);
         $allowedSidebarRoutes = $user->allowed_sidebar_routes;
         $useDefaultSidebar = $allowedSidebarRoutes === null || ! is_array($allowedSidebarRoutes);
+        $companies = Company::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']);
 
         return view('users.edit', [
             'user' => $user,
@@ -158,6 +171,7 @@ class UserController extends Controller
             'sidebarMenuItems' => $sidebarMenuItems,
             'allowedSidebarRoutes' => is_array($allowedSidebarRoutes) ? $allowedSidebarRoutes : [],
             'useDefaultSidebar' => $useDefaultSidebar,
+            'companies' => $companies,
         ]);
     }
 
@@ -176,6 +190,15 @@ class UserController extends Controller
         $input['is_demo_user'] = $request->boolean('is_demo_user');
         $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
         $input['restricted_sidebar_routes'] = $request->boolean('is_demo_user') ? $request->input('restricted_sidebar_routes', []) : null;
+
+        $primaryCompanyId = $request->input('company_id') ? (int) $request->input('company_id') : null;
+        $companyAccess = $request->input('company_access', []);
+        $companyAccess = is_array($companyAccess) ? array_map('intval', array_filter($companyAccess)) : [];
+        if ($primaryCompanyId !== null) {
+            $companyAccess = array_values(array_unique(array_diff($companyAccess, [$primaryCompanyId])));
+        }
+        $input['company_id'] = $primaryCompanyId;
+        $input['company_access'] = $companyAccess;
 
         $user->update($input);
 

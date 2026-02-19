@@ -311,7 +311,7 @@
             </a>
         </li>
 
-        <li>
+        <!-- <li>
             <a href="#">
                 <i class="fas fa-project-diagram"></i>
                 <span>Projects & Initiatives</span>
@@ -323,7 +323,7 @@
                 <i class="fas fa-users"></i>
                 <span>Team Management</span>
             </a>
-        </li>
+        </li> -->
 
 
         <!-- Settings with Submenu -->

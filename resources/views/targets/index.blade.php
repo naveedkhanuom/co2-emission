@@ -1,515 +1,217 @@
 @extends('layouts.app')
 
+@section('title', 'Targets & Goals')
 @section('page-title', 'Targets & Goals Tracking')
 
 @push('styles')
 <style>
-    /* Additional styles specific to Targets & Goals page */
-    .config-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--gray-600);
-        text-transform: uppercase;
-        margin-bottom: 8px;
-        letter-spacing: 0.5px;
-    }
-    
-    /* Progress Indicators */
-    .progress-circle {
-        width: 80px;
-        height: 80px;
-        position: relative;
-        flex-shrink: 0;
-    }
-    
-    .progress-circle svg {
-        width: 100%;
-        height: 100%;
-        transform: rotate(-90deg);
-    }
-    
-    .progress-circle-bg {
-        fill: none;
-        stroke: var(--gray-200);
-        stroke-width: 8;
-    }
-    
-    .progress-circle-fill {
-        fill: none;
-        stroke-width: 8;
-        stroke-linecap: round;
-        stroke-dasharray: 226.2;
-        stroke-dashoffset: calc(226.2 * (1 - var(--progress)));
-        transition: stroke-dashoffset 0.5s ease;
-    }
-    
-    .progress-circle-value {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-weight: 700;
-        font-size: 1.2rem;
-    }
-    
-    /* Target Cards */
-    .target-card {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-        border-left: 4px solid var(--primary-green);
-        transition: all 0.3s;
-        height: 100%;
-    }
-    
-    .target-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-    
-    .target-card.on-track {
-        border-left-color: var(--light-green);
-    }
-    
-    .target-card.at-risk {
-        border-left-color: var(--warning-orange);
-    }
-    
-    .target-card.off-track {
-        border-left-color: var(--danger-red);
-    }
-    
-    .target-card.completed {
-        border-left-color: var(--success-teal);
-    }
-    
-    /* Target Status Badges */
-    .target-status {
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    .status-on-track {
-        background-color: rgba(76, 175, 80, 0.1);
-        color: var(--light-green);
-    }
-    
-    .status-at-risk {
-        background-color: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-    }
-    
-    .status-off-track {
-        background-color: rgba(211, 47, 47, 0.1);
-        color: var(--danger-red);
-    }
-    
-    .status-completed {
-        background-color: rgba(0, 150, 136, 0.1);
-        color: var(--success-teal);
-    }
-    
-    /* Goal Type Badges */
-    .goal-type {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        background-color: var(--gray-100);
-        color: var(--gray-800);
-    }
-    
-    .type-sbt {
-        background-color: rgba(123, 31, 162, 0.1);
-        color: var(--purple);
-    }
-    
-    .type-net-zero {
-        background-color: rgba(3, 169, 244, 0.1);
-        color: var(--light-blue);
-    }
-    
-    .type-carbon-neutral {
-        background-color: rgba(46, 125, 50, 0.1);
-        color: var(--primary-green);
-    }
-    
-    .type-regulatory {
-        background-color: rgba(245, 124, 0, 0.1);
-        color: var(--warning-orange);
-    }
-    
-    .type-internal {
-        background-color: rgba(158, 158, 158, 0.1);
-        color: #757575;
-    }
-    
-    /* Progress Bar */
-    .target-progress {
-        height: 8px;
-        border-radius: 4px;
-        background-color: var(--gray-200);
-        overflow: hidden;
-        margin: 15px 0;
-    }
-    
-    .target-progress-bar {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.5s ease;
-    }
-    
-    /* Milestone Timeline */
-    .milestone-timeline {
-        position: relative;
-        padding-left: 30px;
-    }
-    
-    .milestone-timeline::before {
-        content: '';
-        position: absolute;
-        left: 15px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background-color: var(--gray-200);
-    }
-    
-    .milestone-item {
-        position: relative;
-        margin-bottom: 25px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid var(--gray-200);
-    }
-    
-    .milestone-item:last-child {
-        border-bottom: none;
-    }
-    
-    .milestone-dot {
-        position: absolute;
-        left: -22px;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background-color: white;
-        border: 3px solid var(--gray-300);
-    }
-    
-    .milestone-dot.completed {
-        border-color: var(--light-green);
-        background-color: var(--light-green);
-    }
-    
-    .milestone-dot.current {
-        border-color: var(--light-blue);
-        background-color: white;
-    }
-    
-    .milestone-dot.upcoming {
-        border-color: var(--gray-400);
-        background-color: white;
-    }
-    
-    /* New Target Wizard */
-    .target-wizard {
-        background: white;
-        border-radius: 10px;
-        padding: 30px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        margin-bottom: 30px;
-    }
-    
-    .wizard-step {
-        padding: 20px 0;
-        display: none;
-    }
-    
-    .wizard-step.active {
-        display: block;
-    }
-    
-    .wizard-header {
-        border-bottom: 1px solid var(--gray-200);
-        padding-bottom: 20px;
-        margin-bottom: 30px;
-    }
-    
-    /* Target Actions */
-    .target-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 15px;
-    }
-    
-    .action-btn {
-        flex: 1;
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 1px solid var(--gray-200);
-        background-color: white;
-        color: var(--gray-600);
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        transition: all 0.2s;
-        text-decoration: none;
-        cursor: pointer;
-    }
-    
-    .action-btn:hover {
-        background-color: var(--gray-50);
-        color: var(--gray-800);
-    }
-    
-    .update-btn:hover {
-        background-color: rgba(3, 169, 244, 0.1);
-        color: var(--light-blue);
-        border-color: rgba(3, 169, 244, 0.3);
-    }
-    
-    .report-btn:hover {
-        background-color: rgba(46, 125, 50, 0.1);
-        color: var(--primary-green);
-        border-color: rgba(46, 125, 50, 0.3);
-    }
-    
-    .edit-btn:hover {
-        background-color: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-        border-color: rgba(255, 193, 7, 0.3);
-    }
-    
-    .delete-btn:hover {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-        border-color: rgba(220, 53, 69, 0.3);
-    }
-    
-    /* Scenario Cards */
-    .scenario-card {
-        text-align: center;
-        padding: 25px 15px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        cursor: pointer;
-        transition: all 0.3s;
-        height: 100%;
-    }
-    
-    .scenario-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-    
-    .scenario-card.active {
-        border: 2px solid var(--primary-green);
-        background-color: rgba(46, 125, 50, 0.05);
-    }
-    
-    .scenario-icon {
-        font-size: 36px;
-        margin-bottom: 15px;
-    }
-    
-    /* Filter Panel */
-    .filter-panel {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-    }
-    
-    
-    :root {
-        --success-teal: #009688;
-        --purple: #7b1fa2;
-    }
+.targets-app * { box-sizing: border-box; }
+.targets-app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+/* Topbar */
+.targets-app .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; padding: 20px 24px; background: linear-gradient(135deg, #fff 0%, var(--gray-50) 100%); border: 1px solid var(--gray-200); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.targets-app .topbar h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--gray-800); }
+.targets-app .topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; font-size: 1rem; font-weight: 700; box-shadow: 0 2px 8px rgba(46,125,50,.25); }
+.targets-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
+.targets-app .btn-add { margin-left: auto; padding: 10px 20px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.targets-app .btn-add:hover { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,125,50,.35); }
+/* Stats */
+.targets-app .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.targets-app .sc { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; }
+.targets-app .sc:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.targets-app .sc .si { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+.targets-app .sc .si.g { background: linear-gradient(135deg, rgba(46,125,50,.15) 0%, rgba(76,175,80,.12) 100%); color: var(--primary-green); }
+.targets-app .sc .si.suc { background: linear-gradient(135deg, rgba(76,175,80,.2) 0%, rgba(129,199,132,.15) 100%); color: var(--light-green); }
+.targets-app .sc .si.b { background: linear-gradient(135deg, rgba(2,119,189,.12) 0%, rgba(3,169,244,.1) 100%); color: var(--primary-blue); }
+.targets-app .sc .si.w { background: linear-gradient(135deg, rgba(245,124,0,.15) 0%, rgba(255,152,0,.1) 100%); color: var(--warning-orange); }
+.targets-app .sc .sv { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; color: var(--gray-800); }
+.targets-app .sc .sl { font-size: 0.75rem; color: var(--gray-600); margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+.targets-app .sc .qm { height: 6px; border-radius: 3px; background: var(--gray-200); overflow: hidden; margin-top: 8px; flex: 1; min-width: 60px; }
+.targets-app .sc .qm-fill { height: 100%; border-radius: 3px; background: var(--light-green); }
+.targets-app .stat-sub { font-size: 0.8125rem; font-weight: 600; color: var(--light-green); }
+.targets-app .btn-at-risk { margin-top: 8px; padding: 6px 12px; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; border: none; background: rgba(245,124,0,0.15); color: var(--warning-orange); cursor: pointer; }
+.targets-app .btn-at-risk:hover { background: rgba(245,124,0,0.25); }
+/* Filter panel */
+.targets-app .filter-panel { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+.targets-app .filter-panel .form-label { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+.targets-app .filter-panel .form-select { padding: 10px 14px; font-size: 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; background: #fff; }
+.targets-app .filter-panel .form-select:focus { border-color: var(--primary-green); outline: none; }
+.targets-app .filter-panel .btn-reset { background: var(--gray-100); border: 1.5px solid var(--gray-200); color: var(--gray-600); padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.targets-app .filter-panel .btn-reset:hover { background: var(--gray-200); color: var(--gray-800); }
+.targets-app .filter-panel .btn-outline { border: 1.5px solid var(--primary-green); color: var(--primary-green); background: #fff; padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.targets-app .filter-panel .btn-apply { background: var(--primary-green); color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.targets-app .filter-panel .btn-apply:hover { background: var(--dark-green); }
+/* Chart container */
+.targets-app .chart-container { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+.targets-app .chart-title { font-size: 1rem; font-weight: 700; color: var(--gray-800); margin-bottom: 15px; }
+/* Target card, progress, badges */
+.targets-app .config-label { font-size: 0.75rem; font-weight: 600; color: var(--gray-600); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+.targets-app .progress-circle { width: 80px; height: 80px; position: relative; flex-shrink: 0; }
+.targets-app .progress-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.targets-app .progress-circle-bg { fill: none; stroke: var(--gray-200); stroke-width: 8; }
+.targets-app .progress-circle-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 226.2; stroke-dashoffset: calc(226.2 * (1 - var(--progress))); transition: stroke-dashoffset 0.5s ease; }
+.targets-app .progress-circle-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 700; font-size: 1.2rem; }
+.targets-app .target-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; border-left: 4px solid var(--primary-green); transition: all .2s; height: 100%; }
+.targets-app .target-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.targets-app .target-card.on-track { border-left-color: var(--light-green); }
+.targets-app .target-card.at-risk { border-left-color: var(--warning-orange); }
+.targets-app .target-card.off-track { border-left-color: var(--danger-red); }
+.targets-app .target-card.completed { border-left-color: #009688; }
+.targets-app .target-status { padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.targets-app .status-on-track { background: rgba(76,175,80,0.12); color: var(--light-green); }
+.targets-app .status-at-risk { background: rgba(255,193,7,0.12); color: #b38600; }
+.targets-app .status-off-track { background: rgba(211,47,47,0.12); color: var(--danger-red); }
+.targets-app .status-completed { background: rgba(0,150,136,0.12); color: #009688; }
+.targets-app .goal-type { padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.targets-app .type-sbt { background: rgba(123,31,162,0.12); color: #7b1fa2; }
+.targets-app .type-net-zero { background: rgba(3,169,244,0.12); color: var(--light-blue); }
+.targets-app .type-carbon-neutral { background: rgba(46,125,50,0.12); color: var(--primary-green); }
+.targets-app .type-regulatory { background: rgba(245,124,0,0.12); color: var(--warning-orange); }
+.targets-app .type-internal { background: rgba(158,158,158,0.12); color: #757575; }
+.targets-app .target-progress { height: 8px; border-radius: 4px; background: var(--gray-200); overflow: hidden; margin: 15px 0; }
+.targets-app .target-progress-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+.targets-app .target-actions { display: flex; gap: 8px; margin-top: 15px; }
+.targets-app .action-btn { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--gray-200); background: #fff; color: var(--gray-600); font-size: 0.8125rem; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all .2s; text-decoration: none; cursor: pointer; }
+.targets-app .action-btn:hover { background: var(--gray-50); color: var(--gray-800); }
+.targets-app .report-btn:hover { border-color: var(--primary-green); background: rgba(46,125,50,0.08); color: var(--primary-green); }
+.targets-app .edit-btn:hover { border-color: var(--warning-orange); background: rgba(255,193,7,0.08); color: #b38600; }
+.targets-app .delete-btn:hover { border-color: #dc3545; background: rgba(220,53,69,0.08); color: #dc3545; }
+/* Milestone */
+.targets-app .milestone-timeline { position: relative; padding-left: 30px; }
+.targets-app .milestone-timeline::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: var(--gray-200); }
+.targets-app .milestone-item { position: relative; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--gray-200); }
+.targets-app .milestone-item:last-child { border-bottom: none; }
+.targets-app .milestone-dot { position: absolute; left: -22px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--gray-300); }
+.targets-app .milestone-dot.completed { border-color: var(--light-green); background: var(--light-green); }
+.targets-app .milestone-dot.current { border-color: var(--light-blue); background: #fff; }
+.targets-app .milestone-dot.upcoming { border-color: var(--gray-300); background: #fff; }
+/* Cards */
+.targets-app .card { border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.targets-app .card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); font-weight: 700; color: var(--gray-800); }
+.targets-app .scenario-card { text-align: center; padding: 20px 16px; background: #fff; border: 1.5px solid var(--gray-200); border-radius: 14px; cursor: pointer; transition: all .2s; height: 100%; }
+.targets-app .scenario-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.targets-app .scenario-card.active { border-color: var(--primary-green); background: rgba(46,125,50,0.06); }
+.targets-app .scenario-icon { font-size: 2rem; margin-bottom: 12px; }
+.targets-app .target-wizard { background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 0; }
+.targets-app .wizard-step { padding: 20px 0; display: none; }
+.targets-app .wizard-step.active { display: block; }
+.targets-app .wizard-header { border-bottom: 1px solid var(--gray-200); padding-bottom: 20px; margin-bottom: 24px; }
 </style>
 @endpush
 
 @section('content')
-    <!-- Main Content -->
     <div id="content">
         @include('layouts.top-nav')
-        
-        <!-- Target Summary Banner -->
-        <div class="card mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-            <div class="card-body text-white">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h3 class="mb-3 text-white">Emission Reduction Targets</h3>
-                        <p class="mb-0 text-white-50">Track progress towards your climate goals and science-based targets. Set new targets, monitor progress, and adjust strategies.</p>
+
+        <div class="targets-app container-fluid mt-4">
+            <!-- Topbar -->
+            <div class="topbar">
+                <h2><span class="sb"><i class="fas fa-bullseye"></i></span> Emission Reduction Targets</h2>
+                <p>Track progress towards climate goals and science-based targets. Set new targets, monitor progress, and adjust strategies.</p>
+                <button type="button" class="btn-add" id="btnSetNewTarget" data-bs-toggle="modal" data-bs-target="#newTargetModal">
+                    <i class="fas fa-plus"></i> Set New Target
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats">
+                <div class="sc">
+                    <div class="si g"><i class="fas fa-bullseye"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv">{{ $activeTargets ?? 0 }}</div>
+                        <div class="sl">Active Targets</div>
+                        <span class="stat-sub" style="font-size: 0.75rem; color: var(--gray-600);">Saved in database</span>
                     </div>
-                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#newTargetModal">
-                            <i class="fas fa-plus me-2"></i>Set New Target
+                </div>
+                <div class="sc">
+                    <div class="si suc"><i class="fas fa-check-circle"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv">{{ $onTrackCount ?? 0 }}</div>
+                        <div class="sl">On Track</div>
+                        @php $totalTargets = isset($statusDistribution) ? array_sum($statusDistribution) : 0; $onTrackPct = $totalTargets > 0 ? round((($onTrackCount ?? 0) / $totalTargets) * 100) : 0; @endphp
+                        <div class="qm mt-2"><div class="qm-fill" style="width: {{ $onTrackPct }}%;"></div></div>
+                    </div>
+                </div>
+                <div class="sc">
+                    <div class="si b"><i class="fas fa-chart-line"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv">{{ number_format((float) ($totalReduction ?? 0), 2) }} <span style="font-size: 0.875rem;">tCO₂e</span></div>
+                        <div class="sl">Total Reduction</div>
+                        <span class="stat-sub"><i class="fas fa-arrow-down me-1"></i> vs baseline</span>
+                    </div>
+                </div>
+                <div class="sc">
+                    <div class="si w"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv">{{ $atRiskCount ?? 0 }}</div>
+                        <div class="sl">At Risk</div>
+                        <button type="button" class="btn-at-risk" onclick="showAtRiskTargets()">
+                            <i class="fas fa-external-link-alt me-1"></i>Review Now
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- KPI Cards -->
-        <div class="row mt-4">
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card kpi-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="kpi-label">ACTIVE TARGETS</div>
-                                <div class="kpi-value">{{ $activeTargets ?? 0 }}</div>
-                                <div class="d-flex align-items-center mt-2">
-                                    <span class="text-muted small">Saved targets in database</span>
-                                </div>
-                            </div>
-                            <div class="kpi-icon" style="background-color: var(--primary-green);">
-                                <i class="fas fa-bullseye"></i>
-                            </div>
-                        </div>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Target Status</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="all">All Status</option>
+                            <option value="on-track">On Track</option>
+                            <option value="at-risk">At Risk</option>
+                            <option value="off-track">Off Track</option>
+                            <option value="completed">Completed</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card kpi-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="kpi-label">ON TRACK</div>
-                                <div class="kpi-value">{{ $onTrackCount ?? 0 }}</div>
-                                <div class="progress mt-2" style="height: 6px;">
-                                    @php
-                                        $totalTargets = isset($statusDistribution) ? array_sum($statusDistribution) : 0;
-                                        $onTrackPct = $totalTargets > 0 ? round((($onTrackCount ?? 0) / $totalTargets) * 100) : 0;
-                                    @endphp
-                                    <div class="progress-bar bg-success" style="width: {{ $onTrackPct }}%"></div>
-                                </div>
-                            </div>
-                            <div class="kpi-icon" style="background-color: var(--light-green);">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                        </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Goal Type</label>
+                        <select class="form-select" id="typeFilter">
+                            <option value="all">All Types</option>
+                            <option value="sbt">Science-Based Target</option>
+                            <option value="net-zero">Net Zero</option>
+                            <option value="carbon-neutral">Carbon Neutral</option>
+                            <option value="regulatory">Regulatory</option>
+                            <option value="internal">Internal</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card kpi-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="kpi-label">TOTAL REDUCTION</div>
-                                <div class="kpi-value">{{ number_format((float) ($totalReduction ?? 0), 2) }} <span class="fs-6">tCO₂e</span></div>
-                                <div class="d-flex align-items-center mt-2">
-                                    <i class="fas fa-arrow-down text-success me-2"></i>
-                                    <span class="text-success fw-bold small">Estimated vs baseline</span>
-                                </div>
-                            </div>
-                            <div class="kpi-icon" style="background-color: var(--primary-blue);">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                        </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Scope</label>
+                        <select class="form-select" id="scopeFilter">
+                            <option value="all">All Scopes</option>
+                            <option value="1">Scope 1</option>
+                            <option value="2">Scope 2</option>
+                            <option value="3">Scope 3</option>
+                            <option value="1-2">Scope 1+2</option>
+                            <option value="all-scopes">All Scopes</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card kpi-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="kpi-label">AT RISK</div>
-                                <div class="kpi-value">{{ $atRiskCount ?? 0 }}</div>
-                                <button class="btn btn-sm btn-warning mt-2" onclick="showAtRiskTargets()">
-                                    <i class="fas fa-external-link-alt me-1"></i>Review Now
-                                </button>
-                            </div>
-                            <div class="kpi-icon" style="background-color: var(--warning-orange);">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                        </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Timeframe</label>
+                        <select class="form-select" id="timeframeFilter">
+                            <option value="all">All Timeframes</option>
+                            <option value="current-year">Current Year</option>
+                            <option value="next-year">Next Year</option>
+                            <option value="2025">2025 Targets</option>
+                            <option value="2030">2030 Targets</option>
+                            <option value="2050">2050 Targets</option>
+                        </select>
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Filter Panel -->
-        <div class="filter-panel">
-            <div class="row g-3">
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Target Status</label>
-                    <select class="form-select" id="statusFilter">
-                        <option value="all">All Status</option>
-                        <option value="on-track">On Track</option>
-                        <option value="at-risk">At Risk</option>
-                        <option value="off-track">Off Track</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Goal Type</label>
-                    <select class="form-select" id="typeFilter">
-                        <option value="all">All Types</option>
-                        <option value="sbt">Science-Based Target</option>
-                        <option value="net-zero">Net Zero</option>
-                        <option value="carbon-neutral">Carbon Neutral</option>
-                        <option value="regulatory">Regulatory</option>
-                        <option value="internal">Internal</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Scope</label>
-                    <select class="form-select" id="scopeFilter">
-                        <option value="all">All Scopes</option>
-                        <option value="1">Scope 1</option>
-                        <option value="2">Scope 2</option>
-                        <option value="3">Scope 3</option>
-                        <option value="1-2">Scope 1+2</option>
-                        <option value="all-scopes">All Scopes</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Timeframe</label>
-                    <select class="form-select" id="timeframeFilter">
-                        <option value="all">All Timeframes</option>
-                        <option value="current-year">Current Year</option>
-                        <option value="next-year">Next Year</option>
-                        <option value="2025">2025 Targets</option>
-                        <option value="2030">2030 Targets</option>
-                        <option value="2050">2050 Targets</option>
-                    </select>
-                </div>
-                
-                <div class="col-12 mt-3 d-flex justify-content-between">
-                    <button class="btn btn-outline-secondary" id="resetFilters">
-                        <i class="fas fa-redo me-2"></i>Reset Filters
-                    </button>
-                    <div>
-                        <button class="btn btn-outline-primary me-2" id="saveFilterBtn">
-                            <i class="fas fa-save me-2"></i>Save Filter
+                    <div class="col-12 mt-3 d-flex justify-content-between flex-wrap gap-2">
+                        <button type="button" class="btn btn-reset" id="resetFilters">
+                            <i class="fas fa-redo me-2"></i>Reset Filters
                         </button>
-                        <button class="btn btn-success" id="applyFilters">
-                            <i class="fas fa-filter me-2"></i>Apply Filters
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline" id="saveFilterBtn">
+                                <i class="fas fa-save me-2"></i>Save Filter
+                            </button>
+                            <button type="button" class="btn btn-apply" id="applyFilters">
+                                <i class="fas fa-filter me-2"></i>Apply Filters
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         
         <!-- Charts Row -->
         <div class="row mt-4">
@@ -766,7 +468,7 @@
                         
                         <div class="row">
                             <div class="col-md-3 mb-3">
-                                <div class="scenario-card active" onclick="selectScenario('baseline')">
+                                <div class="scenario-card active" onclick="selectScenario('baseline', event)">
                                     <div class="scenario-icon text-primary">
                                         <i class="fas fa-chart-line"></i>
                                     </div>
@@ -779,7 +481,7 @@
                             </div>
                             
                             <div class="col-md-3 mb-3">
-                                <div class="scenario-card" onclick="selectScenario('accelerated')">
+                                <div class="scenario-card" onclick="selectScenario('accelerated', event)">
                                     <div class="scenario-icon text-success">
                                         <i class="fas fa-bolt"></i>
                                     </div>
@@ -792,7 +494,7 @@
                             </div>
                             
                             <div class="col-md-3 mb-3">
-                                <div class="scenario-card" onclick="selectScenario('innovative')">
+                                <div class="scenario-card" onclick="selectScenario('innovative', event)">
                                     <div class="scenario-icon text-warning">
                                         <i class="fas fa-lightbulb"></i>
                                     </div>
@@ -805,7 +507,7 @@
                             </div>
                             
                             <div class="col-md-3 mb-3">
-                                <div class="scenario-card" onclick="selectScenario('transformational')">
+                                <div class="scenario-card" onclick="selectScenario('transformational', event)">
                                     <div class="scenario-icon text-info">
                                         <i class="fas fa-rocket"></i>
                                     </div>
@@ -828,17 +530,16 @@
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- New Target Modal -->
-    <div class="modal fade" id="newTargetModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Set New Reduction Target</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
+        
+        <!-- New Target Modal -->
+        <div class="modal fade" id="newTargetModal" tabindex="-1" aria-labelledby="newTargetModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="newTargetModalLabel">Set New Reduction Target</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
                     <input type="hidden" id="targetId" value="">
                     <div class="target-wizard">
                         <div class="wizard-header">
@@ -876,7 +577,7 @@
                                         <option value="2">Scope 2 Only</option>
                                         <option value="3">Scope 3 Only</option>
                                         <option value="1-2">Scope 1+2</option>
-                                        <option value="all">All Scopes (1+2+3)</option>
+                                        <option value="all-scopes">All Scopes (1+2+3)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -1023,8 +724,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
+                    </div>
+                    <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="prevBtn" onclick="prevWizardStep()" style="display: none;">
                         <i class="fas fa-arrow-left me-2"></i>Previous
                     </button>
@@ -1034,29 +735,30 @@
                     <button type="button" class="btn btn-success" id="saveBtn" onclick="saveTarget()" style="display: none;">
                         <i class="fas fa-save me-2"></i>Save Target
                     </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Target Details Modal -->
-    <div class="modal fade" id="targetDetailsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Target Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="targetDetailsContent">
-                        <!-- Content loaded dynamically -->
+        
+        <!-- Target Details Modal -->
+        <div class="modal fade" id="targetDetailsModal" tabindex="-1" aria-labelledby="targetDetailsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="targetDetailsModalLabel">Target Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="downloadTargetReport()">
-                        <i class="fas fa-download me-2"></i>Download Report
-                    </button>
+                    <div class="modal-body">
+                        <div id="targetDetailsContent" class="min-vh-25">
+                            <p class="text-muted text-center py-4 mb-0">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="btnDownloadTargetReport" onclick="downloadTargetReport()">
+                            <i class="fas fa-download me-2"></i>Download Report
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1079,6 +781,12 @@
     
     // Initialize charts when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
+        // Reset New Target form when opening modal via "Set New Target" button
+        document.getElementById('btnSetNewTarget').addEventListener('click', resetNewTargetForm);
+        document.getElementById('newTargetModal').addEventListener('show.bs.modal', function(e) {
+            if (!document.getElementById('targetId').value) resetNewTargetForm();
+        });
+
         // Target Progress Chart
         const progressOptions = {
             series: [
@@ -1320,7 +1028,8 @@
             document.getElementById('targetId').value = data.id;
             document.getElementById('targetName').value = data.name ?? '';
             document.getElementById('targetType').value = data.type ?? '';
-            document.getElementById('targetScope').value = data.scope ?? '';
+            const scopeVal = (data.scope === 'all' ? 'all-scopes' : data.scope) ?? '';
+            document.getElementById('targetScope').value = scopeVal;
             document.getElementById('targetDeadline').value = data.target_year ?? '';
             document.getElementById('targetDescription').value = data.description ?? '';
 
@@ -1374,9 +1083,43 @@
     }
     
     function setNewTarget() {
+        resetNewTargetForm();
         const newTargetModal = new bootstrap.Modal(document.getElementById('newTargetModal'));
         newTargetModal.show();
         showToast('Setting new target', 'info');
+    }
+
+    function resetNewTargetForm() {
+        document.getElementById('targetId').value = '';
+        document.getElementById('targetName').value = '';
+        document.getElementById('targetType').value = '';
+        document.getElementById('targetScope').value = '';
+        document.getElementById('targetDeadline').value = '';
+        document.getElementById('targetDescription').value = '';
+        document.getElementById('baselineYear').value = '';
+        document.getElementById('baselineEmissions').value = '';
+        document.getElementById('reductionPercent').value = '';
+        document.getElementById('targetEmissions').value = '';
+        document.getElementById('reductionStrategy').value = '';
+        document.getElementById('reviewFrequency').value = 'quarterly';
+        document.getElementById('responsiblePerson').value = '';
+        document.getElementById('targetStatus').value = 'on-track';
+        document.getElementById('milestone2025').checked = false;
+        document.getElementById('milestone2030').checked = false;
+        document.getElementById('milestone2040').checked = false;
+        document.getElementById('milestone2050').checked = false;
+        document.getElementById('metricCarbon').checked = true;
+        document.getElementById('metricEnergy').checked = false;
+        document.getElementById('metricRenewable').checked = false;
+        document.getElementById('metricCost').checked = false;
+        currentWizardStep = 1;
+        document.querySelectorAll('.wizard-step').forEach(function(s) { s.classList.remove('active'); });
+        var step1 = document.getElementById('step1');
+        if (step1) step1.classList.add('active');
+        document.getElementById('wizardProgress').style.width = '33%';
+        document.getElementById('prevBtn').style.display = 'none';
+        document.getElementById('nextBtn').style.display = 'block';
+        document.getElementById('saveBtn').style.display = 'none';
     }
     
     // Wizard functionality
@@ -1460,16 +1203,12 @@
     }
     
     // Scenario selection
-    function selectScenario(scenario) {
+    function selectScenario(scenario, ev) {
         selectedScenario = scenario;
-        
-        // Update active scenario card
-        document.querySelectorAll('.scenario-card').forEach(card => {
-            card.classList.remove('active');
-        });
-        event.target.closest('.scenario-card').classList.add('active');
-        
-        showToast(`Scenario "${scenario}" selected`, 'info');
+        var card = (ev && ev.target) ? ev.target.closest('.scenario-card') : document.querySelector('.scenario-card[onclick*="' + scenario + '"]');
+        document.querySelectorAll('.scenario-card').forEach(function(c) { c.classList.remove('active'); });
+        if (card) card.classList.add('active');
+        showToast('Scenario "' + scenario + '" selected', 'info');
     }
     
     // Milestone actions
