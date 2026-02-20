@@ -1,8 +1,11 @@
 <!-- Sidebar Navigation -->
 <nav id="sidebar">
-    <div class="sidebar-header1">
-        <img src="https://cdn.prod.website-files.com/68ce511f0ec3dbdca3e16b5b/68ce5272a15164172603c206_logo%20green.avif" style="width: 250px; padding-bottom: 20px; padding-top: 20px; padding-left: 6px;padding-right: 10px;">
-        <!-- <h3><i class="fas fa-leaf me-2"></i> GHG Monitor</h3> -->
+    <div class="sidebar-brand">
+        <img
+            class="sidebar-logo"
+            src="https://cdn.prod.website-files.com/68ce511f0ec3dbdca3e16b5b/68ce5272a15164172603c206_logo%20green.avif"
+            alt="GHG Monitor"
+        >
     </div>
     
     @include('components.company-switcher')
@@ -460,7 +463,7 @@
                         $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
                     @endphp
                     <a href="{{ route('roles.index') }}"
-                       class="{{ request()->routeIs('roles.*') ? 'active' : '' }} {{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+                       class="{{ request()->routeIs('roles.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
                        @if($title) title="{{ $title }}" @endif>
                         <i class="fas fa-shield-alt"></i>
                         <span>Roles & Permissions</span>

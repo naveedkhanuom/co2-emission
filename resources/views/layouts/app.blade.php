@@ -55,22 +55,22 @@
         
         /* Sidebar Styles */
         #sidebar {
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+            box-shadow: 0 18px 50px rgba(17, 24, 39, 0.10);
             height: 100vh;
             position: fixed;
             top: 0;
             left: 0;
             width: 250px;
             z-index: 1000;
-            padding-top: 0px;
-            padding-bottom: 20px;
+            padding: 14px 12px 18px 12px;
             transition: all 0.3s;
             overflow-y: auto;
             overflow-x: hidden;
             scrollbar-width: thin;
             scrollbar-color: rgba(46, 125, 50, 0.3) transparent;
             scroll-behavior: smooth;
+            border-right: 1px solid rgba(60, 64, 67, 0.08);
         }
         
         /* Custom Scrollbar for Webkit browsers (Chrome, Safari, Edge) */
@@ -95,11 +95,57 @@
             border: 1px solid rgba(46, 125, 50, 0.2);
         }
         
-        .sidebar-header {
-            padding: 20px;
-            background-color: var(--primary-green);
-            color: white;
-            margin: -70px -15px 20px -15px;
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 10px 14px 10px;
+            margin-bottom: 10px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(46, 125, 50, 0.10) 0%, rgba(3, 169, 244, 0.06) 100%);
+            border: 1px solid rgba(46, 125, 50, 0.10);
+        }
+
+        .sidebar-logo {
+            width: 100%;
+            max-width: 220px;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 6px 14px rgba(46, 125, 50, 0.14));
+        }
+
+        /* Make company switcher feel native */
+        #sidebar .company-switcher,
+        #sidebar .company-switcher-container {
+            margin: 8px 0 14px 0;
+        }
+
+        /* Override component's embedded negative margins inside sidebar only */
+        #sidebar .company-switcher-container {
+            padding: 1px !important;
+            background: transparent !important;
+            border: 0 !important;
+            margin: 8px 0 14px 0 !important;
+        }
+
+        #sidebar .company-switcher-header {
+            border-radius: 14px !important;
+            border-color: rgba(60, 64, 67, 0.15) !important;
+        }
+
+        #sidebar select,
+        #sidebar .form-select,
+        #sidebar .form-control {
+            border-radius: 12px;
+            border-color: rgba(60, 64, 67, 0.15);
+            box-shadow: none;
+        }
+
+        #sidebar select:focus,
+        #sidebar .form-select:focus,
+        #sidebar .form-control:focus {
+            border-color: rgba(46, 125, 50, 0.35);
+            box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.12);
         }
         
         .sidebar-menu {
@@ -109,22 +155,64 @@
         }
         
         .sidebar-menu li {
-            margin-bottom: 5px;
+            margin: 2px 0;
         }
         
         .sidebar-menu a {
             display: flex;
             align-items: center;
-            padding: 12px 20px;
+            gap: 10px;
+            padding: 10px 12px;
             color: var(--gray-800);
             text-decoration: none;
-            border-radius: 0 30px 30px 0;
-            transition: all 0.2s;
+            border-radius: 14px;
+            transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+            position: relative;
+            border: 1px solid transparent;
         }
-        
-        .sidebar-menu a:hover, .sidebar-menu a.active {
-            background-color: var(--gray-100);
+
+        .sidebar-menu a i {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 16px;
+            color: var(--gray-600);
+            background: rgba(60, 64, 67, 0.06);
+            transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+            flex-shrink: 0;
+        }
+
+        .sidebar-menu a span {
+            font-weight: 400;
+            letter-spacing: 0.1px;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(46, 125, 50, 0.08);
+            color: var(--dark-green);
+            border-color: rgba(46, 125, 50, 0.16);
+            transform: translateX(2px);
+        }
+
+        .sidebar-menu a:hover i {
+            background: rgba(46, 125, 50, 0.14);
             color: var(--primary-green);
+            transform: translateY(-1px);
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, rgba(46, 125, 50, 0.16) 0%, rgba(3, 169, 244, 0.10) 100%);
+            color: var(--dark-green);
+            border-color: rgba(46, 125, 50, 0.22);
+            box-shadow: 0 10px 22px rgba(46, 125, 50, 0.10);
+        }
+
+        .sidebar-menu a.active i {
+            background: rgba(46, 125, 50, 0.18);
+            color: var(--dark-green);
         }
         
         /* Demo restricted: show lock; link still works so click shows "no permission" page */
@@ -143,9 +231,9 @@
             flex-shrink: 0;
         }
         
-        .sidebar-menu i {
-            width: 30px;
-            font-size: 18px;
+        /* keep lock icon aligned nicely */
+        .sidebar-menu a .fa-lock {
+            margin-left: auto;
         }
         
         /* Main Content Styles */
@@ -483,6 +571,7 @@
             font-size: 0.8rem;
             margin-left: auto;
             margin-right: 5px;
+            color: rgba(60, 64, 67, 0.55);
         }
 
         .has-submenu.active .dropdown-arrow {
@@ -491,17 +580,20 @@
 
         .submenu {
             list-style: none;
-            padding: 0;
+            padding: 6px 6px 8px 6px;
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease;
-            background-color: var(--gray-50);
-            margin: 5px 0;
-            border-radius: 0 20px 20px 0;
+            background: rgba(60, 64, 67, 0.04);
+            margin: 6px 0 4px 0;
+            border-radius: 14px;
+            border: 1px solid rgba(60, 64, 67, 0.08);
         }
 
         .has-submenu.active .submenu {
-            max-height: 500px; /* Adjust based on content */
+            /* Expand fully; let the sidebar handle scrolling (avoid 2nd scrollbar) */
+            max-height: 2000px;
+            overflow: visible;
         }
 
         .submenu li {
@@ -509,24 +601,26 @@
         }
 
         .submenu a {
-            padding: 10px 20px 10px 50px !important; /* Extra left padding for indentation */
+            padding: 9px 10px 9px 16px !important; /* Extra left padding for indentation */
             font-size: 0.9rem;
+            border-radius: 12px !important;
         }
 
         .submenu a:hover {
-            background-color: var(--gray-100) !important;
+            background: rgba(46, 125, 50, 0.10) !important;
         }
 
         .submenu i {
-            width: 20px !important;
+            width: 28px !important;
+            height: 28px !important;
             font-size: 0.9rem !important;
         }
 
         /* Active state for submenu items */
         .submenu a.active {
-            background-color: var(--gray-100) !important;
-            color: var(--primary-green) !important;
-            border-left: 3px solid var(--primary-green);
+            background: rgba(46, 125, 50, 0.14) !important;
+            color: var(--dark-green) !important;
+            border-left: 0;
         }
     </style>
 
@@ -574,7 +668,7 @@
         if (sidebarCollapse) {
             sidebarCollapse.addEventListener('click', function() {
                 sidebar.classList.toggle('active');
-                content.classList.toggle('active');
+                if (content) content.classList.toggle('active');
             });
         }
         
