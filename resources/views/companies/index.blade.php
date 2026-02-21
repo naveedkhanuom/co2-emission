@@ -7,60 +7,44 @@
 <div id="content">
     @include('layouts.top-nav')
 
-    <div class="container mt-4">
+    <div class="companies-app container-fluid mt-4">
 
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show">
-                {{ session('success') }}
-                <button class="btn-close" data-bs-dismiss="alert"></button>
+                <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
 
         @if(session('error'))
             <div class="alert alert-danger alert-dismissible fade show">
-                {{ session('error') }}
-                <button class="btn-close" data-bs-dismiss="alert"></button>
+                <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
 
-        <!-- Header Card -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="mb-0">
-                            <i class="fas fa-building me-2 text-primary"></i>Manage Companies
-                        </h4>
-                        <p class="text-muted mb-0 mt-1">Register and manage companies for GHG emissions tracking</p>
-                    </div>
-                    <button class="btn btn-primary" id="addCompanyBtn">
-                        <i class="fas fa-plus me-1"></i>Register New Company
-                    </button>
-                </div>
-            </div>
+        <!-- Topbar -->
+        <div class="topbar">
+            <h2><span class="sb"><i class="fas fa-building"></i></span> Companies</h2>
+            <p>Register and manage companies for GHG emissions tracking.</p>
+            <button type="button" class="btn-add" id="addCompanyBtn">
+                <i class="fas fa-plus"></i> Register New Company
+            </button>
         </div>
 
         <!-- DataTable Card -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white border-bottom">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-table me-2"></i>Companies List
-                    </h5>
-                    <div class="d-flex gap-2">
-                        <div class="input-group input-group-sm" style="width: 250px;">
-                            <span class="input-group-text">
-                                <i class="fas fa-search"></i>
-                            </span>
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search companies...">
-                        </div>
-                    </div>
+        <div class="card companies-datatable-card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <h5 class="mb-0">Companies List</h5>
+                <div class="input-group" style="width: 280px;">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search companies...">
                 </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0" id="companiesTable">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th width="50">#</th>
                                 <th>Name</th>
@@ -72,10 +56,15 @@
                                 <th width="150" class="text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Data will be loaded via DataTables -->
-                        </tbody>
+                        <tbody></tbody>
                     </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="table-info-text">
+                        Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalCount">0</span> companies
+                    </div>
                 </div>
             </div>
         </div>
@@ -88,11 +77,12 @@
         <div class="modal-content">
             <form id="companyForm">
                 <input type="hidden" name="id" id="companyId">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="modalTitle">
-                        <i class="fas fa-building me-2"></i>Register New Company
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header">
+                    <div class="icon-circle">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h5 class="modal-title" id="modalTitle">Register New Company</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                     <div id="formErrors" class="alert alert-danger d-none"></div>
@@ -280,7 +270,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-2"></i>Cancel
                     </button>
                     <button type="submit" class="btn btn-primary">
@@ -341,73 +331,60 @@
             max-height: 95vh;
         }
     }
-    
-    #companiesTable_wrapper .dataTables_filter {
-        display: none;
-    }
-    
-    #companiesTable thead th {
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        border-bottom: 2px solid #dee2e6;
-    }
-    
-    #companiesTable tbody tr {
-        transition: all 0.2s ease;
-    }
-    
-    #companiesTable tbody tr:hover {
-        background-color: #f8f9fa;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    #companiesTable .badge {
-        font-size: 0.75rem;
-        padding: 0.35em 0.65em;
-        font-weight: 500;
-    }
-    
-    #companiesTable .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-    }
-    
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-        padding: 0.5rem 0.75rem;
-        margin: 0 0.25rem;
-        border-radius: 0.375rem;
-    }
-    
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-        background: var(--primary-green) !important;
-        color: white !important;
-        border: none !important;
-    }
-    
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-        background: var(--light-green) !important;
-        color: white !important;
-        border: none !important;
-    }
-    
-    .dataTables_wrapper .dataTables_length,
-    .dataTables_wrapper .dataTables_info {
-        padding: 1rem;
-        color: #6c757d;
-    }
-    
-    .dataTables_wrapper .dataTables_filter {
-        padding: 1rem;
-    }
-    
-    .dataTables_processing {
-        background: rgba(255, 255, 255, 0.9) !important;
-        border: 1px solid #dee2e6 !important;
-        border-radius: 0.5rem !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+
+    /* New design (match other modules) */
+    .companies-app * { box-sizing: border-box; }
+    .companies-app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .companies-app .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; padding: 20px 24px; background: linear-gradient(135deg, #fff 0%, var(--gray-50) 100%); border: 1px solid var(--gray-200); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .companies-app .topbar h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--gray-800); }
+    .companies-app .topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; font-size: 1rem; font-weight: 700; box-shadow: 0 2px 8px rgba(46,125,50,.25); }
+    .companies-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
+    .companies-app .btn-add { margin-left: auto; padding: 10px 20px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+    .companies-app .btn-add:hover { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,125,50,.35); }
+    .companies-app .alert { border-radius: 12px; border: 1px solid transparent; }
+    .companies-app .alert-success { background: rgba(76,175,80,0.1); border-color: rgba(76,175,50,0.25); color: var(--dark-green); }
+    .companies-app .alert-danger { background: rgba(211,47,47,0.08); border-color: rgba(211,47,47,0.2); color: var(--danger-red); }
+
+    .companies-app .companies-datatable-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .companies-app .companies-datatable-card .card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); }
+    .companies-app .companies-datatable-card .card-header h5 { font-size: 1.0625rem; font-weight: 700; color: var(--gray-800); }
+    .companies-app .companies-datatable-card .card-header .input-group { border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-200); }
+    .companies-app .companies-datatable-card .card-header .input-group-text { background: var(--gray-50); border: none; color: var(--gray-600); padding: 10px 14px; }
+    .companies-app .companies-datatable-card .card-header .form-control { border: none; padding: 10px 14px; font-size: 0.875rem; }
+
+    .companies-app .companies-datatable-card #companiesTable { width: 100% !important; border-collapse: separate; border-spacing: 0; }
+    .companies-app .companies-datatable-card #companiesTable thead th { background: var(--gray-100); color: var(--gray-600); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 16px; border: none; border-bottom: 1px solid var(--gray-200); }
+    .companies-app .companies-datatable-card #companiesTable thead th:first-child { padding-left: 20px; }
+    .companies-app .companies-datatable-card #companiesTable tbody td { padding: 14px 16px; font-size: 0.875rem; color: var(--gray-800); border: none; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+    .companies-app .companies-datatable-card #companiesTable tbody td:first-child { padding-left: 20px; }
+    .companies-app .companies-datatable-card #companiesTable tbody tr:hover td { background: var(--gray-50); }
+    .companies-app .companies-datatable-card #companiesTable tbody tr:last-child td { border-bottom: none; }
+
+    .companies-app .companies-datatable-card .card-footer { padding: 12px 20px; border-top: 1px solid var(--gray-200); background: var(--gray-50); font-size: 0.8125rem; color: var(--gray-600); }
+
+    .companies-app .companies-datatable-card .dataTables_wrapper { padding: 0; }
+    .companies-app .companies-datatable-card .dataTables_wrapper .dataTables_length,
+    .companies-app .companies-datatable-card .dataTables_wrapper .dataTables_filter { display: none; }
+    .companies-app .companies-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 6px 12px; margin: 0 2px; border-radius: 8px; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-700) !important; font-size: 0.8125rem; font-weight: 600; }
+    .companies-app .companies-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: var(--gray-100) !important; border-color: var(--gray-300) !important; color: var(--gray-800) !important; }
+    .companies-app .companies-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--primary-green) !important; border-color: var(--primary-green) !important; color: #fff !important; }
+    .companies-app .companies-datatable-card .dataTables_wrapper .dataTables_processing { background: rgba(255,255,255,0.95) !important; border-radius: 10px !important; padding: 14px 24px !important; font-weight: 600 !important; font-size: 0.875rem !important; color: var(--gray-700) !important; border: 1px solid var(--gray-200) !important; box-shadow: 0 2px 8px rgba(0,0,0,.06) !important; }
+    .companies-app .companies-datatable-card .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* System modal look (shared) */
+    .modal-content { border-radius: 16px; }
+    .modal-header { gap: 10px; }
+    .icon-circle {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(46,125,50,.25);
+        flex: 0 0 auto;
     }
 </style>
 @endpush
@@ -585,12 +562,8 @@ $(document).ready(function() {
             processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
             emptyTable: 'No companies found',
             zeroRecords: 'No matching companies found',
-            info: 'Showing _START_ to _END_ of _TOTAL_ companies',
-            infoEmpty: 'Showing 0 to 0 of 0 companies',
-            infoFiltered: '(filtered from _MAX_ total companies)',
             search: '',
             searchPlaceholder: 'Search...',
-            lengthMenu: 'Show _MENU_ companies',
             paginate: {
                 first: '<i class="fas fa-angle-double-left"></i>',
                 previous: '<i class="fas fa-angle-left"></i>',
@@ -598,9 +571,13 @@ $(document).ready(function() {
                 last: '<i class="fas fa-angle-double-right"></i>'
             }
         },
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-        drawCallback: function(settings) {
-            // Add any post-draw functionality here
+        dom: 'rt<"row mt-3"<"col-sm-12"p>>',
+        drawCallback: function () {
+            var api = this.api();
+            var info = api.page.info();
+            $('#showingFrom').text(info.recordsDisplay ? info.start + 1 : 0);
+            $('#showingTo').text(info.end);
+            $('#totalCount').text(info.recordsDisplay);
         }
     });
     
@@ -620,7 +597,7 @@ $(document).ready(function() {
     $('#addCompanyBtn').click(function() {
         $('#companyForm')[0].reset();
         $('#companyId').val('');
-        $('#modalTitle').html('<i class="fas fa-building me-2"></i>Register New Company');
+        $('#modalTitle').text('Register New Company');
         $('#formErrors').html('').addClass('d-none');
         $('#scope1, #scope2, #scope3').prop('checked', true);
         $('#isActive').prop('checked', true);
@@ -739,7 +716,7 @@ $(document).ready(function() {
                     });
                 }
 
-                $('#modalTitle').html('<i class="fas fa-edit me-2"></i>Edit Company');
+                $('#modalTitle').text('Edit Company');
                 $('#formErrors').html('').addClass('d-none');
                 companyModal.show();
             }

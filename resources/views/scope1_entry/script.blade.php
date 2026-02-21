@@ -356,6 +356,186 @@ function renderFiles() {
   });
 }
 
+// Escape for safe HTML
+function esc(s) {
+  if (s == null) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Delete record button (SweetAlert2)
+$(document).on('click', '.deleteBtn', function() {
+  var id = this.getAttribute('data-id');
+  if (!id) return;
+  var btn = this;
+  if (typeof Swal === 'undefined') {
+    if (confirm('Are you sure you want to delete this emission record? This cannot be undone.')) doDelete();
+    return;
+  }
+  Swal.fire({
+    title: 'Are you sure?',
+    text: 'This emission record will be deleted. This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#2e7d32',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Yes, delete it!'
+  }).then(function(result) {
+    if (result.isConfirmed) doDelete();
+  });
+
+  function doDelete() {
+    btn.disabled = true;
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    var token = csrf ? csrf.getAttribute('content') : (typeof window.scope1Csrf !== 'undefined' ? window.scope1Csrf : '');
+    var baseUrl = (document.body.getAttribute('data-app-url') || '') || '';
+    var deleteUrl = (baseUrl ? baseUrl.replace(/\/$/, '') + '/' : '/') + 'emission-records/' + id;
+    fetch(deleteUrl, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-TOKEN': token,
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+      .then(function(r) {
+        return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+      })
+      .then(function(res) {
+        btn.disabled = false;
+        if (res.ok) {
+          if (window.scope1Table && $.fn.DataTable.isDataTable('#scope1Table')) {
+            window.scope1Table.ajax.reload(null, false);
+          }
+          if (typeof loadStats === 'function') loadStats();
+          if (typeof Swal !== 'undefined') {
+            Swal.fire('Deleted!', res.data.message || 'Emission record deleted successfully.', 'success');
+          }
+        } else {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', res.data && res.data.message ? res.data.message : 'Failed to delete record.', 'error');
+          } else {
+            alert(res.data && res.data.message ? res.data.message : 'Failed to delete record.');
+          }
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        if (typeof Swal !== 'undefined') {
+          Swal.fire('Error', 'Failed to delete record. Please try again.', 'error');
+        } else {
+          alert('Failed to delete record. Please try again.');
+        }
+      });
+  }
+});
+
+// View record button: open popup modal with record details
+$(document).on('click', '.viewBtn', function() {
+  var id = this.getAttribute('data-id');
+  if (!id) return;
+  var modalEl = document.getElementById('scope1ViewRecordModal');
+  var bodyEl = document.getElementById('scope1ViewRecordModalBody');
+  if (!modalEl || !bodyEl) return;
+  bodyEl.innerHTML = '<div class="text-center py-5 scope1-view-loading"><div class="spinner-border text-success" role="status" style="width:2.5rem;height:2.5rem;"></div><p class="text-muted mt-3 mb-0">Loading record...</p></div>';
+  var modal = typeof bootstrap !== 'undefined' && bootstrap.Modal ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+  if (modal) modal.show();
+  var baseUrl = (typeof window.scope1RecordViewUrl !== 'undefined')
+    ? window.scope1RecordViewUrl.replace(/\/[^/]+$/, '')
+    : (document.body.getAttribute('data-app-url') || '') || '';
+  if (!baseUrl) baseUrl = '';
+  var fetchUrl = (baseUrl ? baseUrl.replace(/\/$/, '') + '/' : '/') + 'emission-records/' + id;
+  fetch(fetchUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Could not load record');
+      return r.json();
+    })
+    .then(function(data) {
+      var docBase = (baseUrl ? baseUrl.replace(/\/$/, '') + '/' : '/') + 'emission-records/' + data.id + '/document/';
+      var co2Val = data.co2e_value != null ? Number(data.co2e_value).toFixed(4) : '—';
+      var dateStr = data.entry_date_formatted || (data.entry_date ? data.entry_date.split('T')[0] : '—');
+      var html = '<div class="scope1-view-co2e"><div class="val">' + esc(co2Val) + '</div><div class="lbl">tCO₂e</div></div>';
+      html += '<div class="scope1-view-details-card">';
+      html += '<div class="scope1-view-row"><span class="k">Source</span><span class="v">' + esc(data.emission_source || '—') + '</span></div>';
+      html += '<div class="scope1-view-row"><span class="k">Scope</span><span class="v">Scope ' + esc(String(data.scope || '—')) + '</span></div>';
+      html += '<div class="scope1-view-row"><span class="k">Facility</span><span class="v">' + esc(data.facility || '—') + '</span></div>';
+      html += '<div class="scope1-view-row"><span class="k">Date</span><span class="v">' + esc(dateStr) + '</span></div>';
+      html += '<div class="scope1-view-row"><span class="k">Activity data</span><span class="v">' + (data.activity_data != null ? Number(data.activity_data) : '—') + '</span></div>';
+      html += '<div class="scope1-view-row"><span class="k">Data source</span><span class="v">' + esc(data.data_source || '—') + '</span></div>';
+      if (data.notes) html += '<div class="scope1-view-row"><span class="k">Notes</span><span class="v">' + esc(data.notes).replace(/\n/g, '<br>') + '</span></div>';
+      html += '</div>';
+      html += '<div class="scope1-view-attachments"><div class="title"><i class="fas fa-paperclip me-1"></i>Attachments</div>';
+      var docs = data.supporting_documents || [];
+      if (docs.length === 0) {
+        html += '<p class="scope1-view-no-attach mb-0">No attachments for this record.</p>';
+      } else {
+        for (var i = 0; i < docs.length; i++) {
+          var name = (docs[i] && docs[i].split && docs[i].split('/').pop()) || ('Document ' + (i + 1));
+          var url = docBase + i;
+          html += '<div class="scope1-view-attachment-item"><a href="' + esc(url) + '" target="_blank" rel="noopener" title="Open in new tab">' + esc(name) + '</a><a href="' + esc(url) + '" target="_blank" rel="noopener" class="open-btn"><i class="fas fa-external-link-alt"></i> Open</a></div>';
+        }
+      }
+      html += '</div>';
+      bodyEl.innerHTML = html;
+    })
+    .catch(function() {
+      bodyEl.innerHTML = '<div class="alert alert-danger mb-0 rounded-3"><i class="fas fa-exclamation-circle me-2"></i>Failed to load record. Please try again.</div>';
+    });
+});
+
+// Attachments modal: delegate click to view-attachments buttons (dynamically added by DataTables)
+$(document).ready(function() {
+  $(document).on('click', '.view-attachments-btn', function() {
+    var btn = this;
+    var docs = [];
+    try {
+      docs = JSON.parse(btn.getAttribute('data-docs') || '[]');
+    } catch (e) {}
+    var urlTemplate = btn.getAttribute('data-url-template') || '';
+    var body = document.getElementById('scope1AttachmentsModalBody');
+    if (!body) return;
+    if (docs.length === 0) {
+      body.innerHTML = '<p class="text-muted mb-0">No attachments.</p>';
+    } else {
+      var ul = document.createElement('ul');
+      ul.className = 'list-group list-group-flush';
+      docs.forEach(function(d) {
+        var url = urlTemplate.replace(':index', d.idx);
+        var name = (d.name && String(d.name)) || ('Document ' + (d.idx + 1));
+        var li = document.createElement('li');
+        li.className = 'list-group-item d-flex align-items-center';
+        var icon = document.createElement('i');
+        icon.className = 'fas fa-file me-2 text-muted';
+        var link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.className = 'flex-grow-1';
+        link.textContent = name;
+        li.appendChild(icon);
+        li.appendChild(link);
+        ul.appendChild(li);
+      });
+      body.innerHTML = '';
+      body.appendChild(ul);
+    }
+    var modalEl = document.getElementById('scope1AttachmentsModal');
+    if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    } else if (modalEl) {
+      modalEl.classList.add('show');
+      modalEl.style.display = 'block';
+      modalEl.setAttribute('aria-hidden', 'false');
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.id = 'scope1AttachmentsBackdrop';
+      document.body.appendChild(backdrop);
+    }
+  });
+});
+
 // DataTable
 $(document).ready(function() {
   window.scope1Table = $('#scope1Table').DataTable({
@@ -373,6 +553,7 @@ $(document).ready(function() {
       { data: 'co2e_value', name: 'co2e_value' },
       { data: 'facility', name: 'facility' },
       { data: 'entry_date', name: 'entry_date' },
+      { data: 'attachments', name: 'attachments', orderable: false, searchable: false, createdCell: function(td, cellData) { $(td).html(cellData || ''); } },
       { data: 'actions', name: 'actions', orderable: false, searchable: false, createdCell: function(td, cellData) { $(td).html(cellData || ''); } }
     ],
     order: [[4, 'desc']],

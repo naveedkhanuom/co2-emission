@@ -3,409 +3,486 @@
 @section('title', 'Data Review & Validation')
 @section('page-title', 'Data Review & Validation')
 
-@section('content')
-    <!-- Main Content -->
-    <div id="content">
-        <!-- Top Navigation Bar -->
-        @include('layouts.top-nav')
-        
-        <style>
-            /* Data Summary Cards */
-            .summary-card {
-                background: white;
-                border-radius: 10px;
-                padding: 20px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                height: 100%;
-            }
-            
-            .summary-icon {
-                width: 50px;
-                height: 50px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-                color: white;
-                margin-bottom: 15px;
-            }
-            
-            /* Validation Tags */
-            .validation-tag {
-                padding: 3px 10px;
-                border-radius: 12px;
-                font-size: 0.75rem;
-                font-weight: 600;
-            }
-            
-            .valid-tag {
-                background-color: rgba(76, 175, 80, 0.1);
-                color: var(--light-green);
-            }
-            
-            .warning-tag {
-                background-color: rgba(245, 124, 0, 0.1);
-                color: var(--warning-orange);
-            }
-            
-            .error-tag {
-                background-color: rgba(211, 47, 47, 0.1);
-                color: var(--danger-red);
-            }
-            
-            /* Data Quality Indicators */
-            .quality-meter {
-                height: 8px;
-                border-radius: 4px;
-                background-color: var(--gray-200);
+@push('styles')
+<style>
+.review-app * { box-sizing: border-box; }
+.review-app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+/* Topbar - same as Scope / Utility Bills */
+.review-app .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; padding: 20px 24px; background: linear-gradient(135deg, #fff 0%, var(--gray-50) 100%); border: 1px solid var(--gray-200); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.review-app .topbar h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--gray-800); }
+.review-app .topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; font-size: 1rem; font-weight: 700; box-shadow: 0 2px 8px rgba(46,125,50,.25); }
+.review-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
+/* Stats / Summary cards - same as Scope */
+.review-app .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.review-app .sc { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; }
+.review-app .sc:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.review-app .sc .si { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+.review-app .sc .si.g { background: linear-gradient(135deg, rgba(46,125,50,.15) 0%, rgba(76,175,80,.12) 100%); color: var(--primary-green); }
+.review-app .sc .si.suc { background: linear-gradient(135deg, rgba(76,175,80,.2) 0%, rgba(129,199,132,.15) 100%); color: var(--light-green); }
+.review-app .sc .si.w { background: linear-gradient(135deg, rgba(245,124,0,.15) 0%, rgba(255,152,0,.1) 100%); color: var(--warning-orange); }
+.review-app .sc .si.d { background: linear-gradient(135deg, rgba(211,47,47,.15) 0%, rgba(244,67,54,.1) 100%); color: var(--danger-red); }
+.review-app .sc .sv { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; color: var(--gray-800); }
+.review-app .sc .sl { font-size: 0.75rem; color: var(--gray-600); margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+.review-app .sc .qm { height: 6px; border-radius: 3px; background: var(--gray-200); overflow: hidden; margin-top: 8px; flex: 1; min-width: 60px; }
+.review-app .sc .qm-fill { height: 100%; border-radius: 3px; background: var(--light-green); }
+.review-app .validation-tag { padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.review-app .valid-tag { background: rgba(76,175,80,0.12); color: var(--light-green); }
+.review-app .warning-tag { background: rgba(245,124,0,0.12); color: var(--warning-orange); }
+.review-app .error-tag { background: rgba(211,47,47,0.12); color: var(--danger-red); }
+/* Filter panel */
+.review-app .filter-panel { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+.review-app .filter-panel .form-label { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+.review-app .filter-panel .form-select { padding: 10px 14px; font-size: 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; background: #fff; }
+.review-app .filter-panel .form-select:focus { border-color: var(--primary-green); outline: none; }
+.review-app .filter-panel .btn { padding: 8px 16px; border-radius: 10px; font-size: 0.875rem; font-weight: 600; }
+.review-app .filter-panel #resetFilters { background: var(--gray-100); border: 1.5px solid var(--gray-200); color: var(--gray-600); }
+.review-app .filter-panel #resetFilters:hover { background: var(--gray-200); color: var(--gray-800); }
+.review-app .filter-panel #exportData { border: 1.5px solid var(--primary-green); color: var(--primary-green); background: #fff; }
+.review-app .filter-panel #exportData:hover { background: rgba(46,125,50,0.08); color: var(--primary-green); }
+.review-app .filter-panel #applyFilters { background: var(--primary-green); color: #fff; border: none; }
+.review-app .filter-panel #applyFilters:hover { background: var(--dark-green); color: #fff; }
+/* Alert */
+.review-app .alert-review { border-radius: 12px; padding: 16px 20px; border: 1px solid rgba(245,124,0,0.25); background: rgba(245,124,0,0.08); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.review-app .alert-review .alert-review-btn { padding: 8px 16px; border-radius: 10px; font-size: 0.875rem; font-weight: 600; background: var(--warning-orange); color: #fff; border: none; cursor: pointer; }
+.review-app .alert-review .alert-review-btn:hover { filter: brightness(1.05); color: #fff; }
+/* Status badges (in table) */
+.review-app .status-validated { background: rgba(76,175,80,0.12); color: var(--light-green); padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.review-app .status-pending { background: rgba(255,193,7,0.12); color: #b38600; padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.review-app .status-rejected { background: rgba(220,53,69,0.12); color: #dc3545; padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+/* Row states */
+.review-app tr.data-warning { background: rgba(255,193,7,0.05) !important; }
+.review-app tr.data-error { background: rgba(220,53,69,0.05) !important; }
+.review-app tr.data-success { background: rgba(40,167,69,0.05) !important; }
+.review-app .action-buttons { display: flex; gap: 5px; }
+.review-app .action-btn { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: none; background: var(--gray-100); color: var(--gray-600); transition: all .2s; cursor: pointer; }
+.review-app .action-btn:hover { background: var(--gray-200); }
+.review-app .edit-btn:hover { background: rgba(3,169,244,0.1); color: var(--light-blue); }
+.review-app .delete-btn:hover { background: rgba(220,53,69,0.1); color: #dc3545; }
+/* Quick action cards */
+.review-app .qa-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); height: 100%; }
+.review-app .qa-card .qa-head { padding: 14px 18px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); font-size: 0.9375rem; font-weight: 700; color: var(--gray-800); }
+.review-app .qa-card .qa-body { padding: 18px; }
+.review-app .qa-card .btn { padding: 10px 16px; border-radius: 10px; font-size: 0.875rem; font-weight: 600; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .15s; border: none; cursor: pointer; }
+.review-app .qa-card .btn-validate { background: var(--primary-green); color: #fff; }
+.review-app .qa-card .btn-validate:hover { background: var(--dark-green); color: #fff; }
+.review-app .qa-card .btn-flag { background: rgba(245,124,0,0.15); color: var(--warning-orange); }
+.review-app .qa-card .btn-flag:hover { background: rgba(245,124,0,0.25); color: var(--warning-orange); }
+.review-app .qa-card .btn-delete { background: rgba(211,47,47,0.1); color: var(--danger-red); }
+.review-app .qa-card .btn-delete:hover { background: rgba(211,47,47,0.2); color: var(--danger-red); }
+.review-app .qa-card .btn-export { background: var(--gray-100); color: var(--gray-700); border: 1.5px solid var(--gray-200); }
+.review-app .qa-card .btn-export:hover { background: var(--gray-200); color: var(--gray-800); }
+.review-app .qa-card .progress { height: 8px; border-radius: 4px; background: var(--gray-200); }
+.review-app .qa-card .progress-bar { border-radius: 4px; }
+.review-app .qa-card .list-group-item { border: none; padding: 10px 0; font-size: 0.875rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); }
+.review-app .qa-card .list-group-item:last-child { border-bottom: none; }
+.review-app .qa-card .badge { font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 100px; }
+/* DataTable card */
+.review-app .review-datatable-card {
+                background: #fff;
+                border: 1px solid var(--gray-200);
+                border-radius: 16px;
                 overflow: hidden;
-                margin: 10px 0;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             }
-            
-            .quality-fill {
-                height: 100%;
-                border-radius: 4px;
+            .review-app .review-datatable-card .card-header {
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--gray-200);
+                background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%);
             }
-            
-            /* Highlighted Rows */
-            tr.data-warning {
-                background-color: rgba(255, 193, 7, 0.05) !important;
+            .review-app .review-datatable-card .card-header h5 {
+                font-size: 1.0625rem;
+                font-weight: 700;
+                color: var(--gray-800);
+                letter-spacing: -0.01em;
             }
-            
-            tr.data-error {
-                background-color: rgba(220, 53, 69, 0.05) !important;
+            .review-app .review-datatable-card .card-header .input-group {
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid var(--gray-200);
+                max-width: 280px;
             }
-            
-            tr.data-success {
-                background-color: rgba(40, 167, 69, 0.05) !important;
-            }
-            
-            /* Action Buttons */
-            .action-buttons {
-                display: flex;
-                gap: 5px;
-            }
-            
-            .action-btn {
-                width: 32px;
-                height: 32px;
-                border-radius: 6px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+            .review-app .review-datatable-card .card-header .input-group-text {
+                background: var(--gray-50);
                 border: none;
-                background-color: var(--gray-100);
                 color: var(--gray-600);
-                transition: all 0.2s;
+                padding: 10px 14px;
+            }
+            .review-app .review-datatable-card .card-header .form-control {
+                border: none;
+                padding: 10px 14px;
+                font-size: 0.875rem;
+            }
+            .review-app .review-datatable-card .card-header .form-control::placeholder {
+                color: var(--gray-300);
+            }
+            .review-app .review-datatable-card .card-header .btn-outline-primary {
+                border-radius: 10px;
+                font-weight: 600;
+                font-size: 0.875rem;
+                padding: 8px 16px;
+                border: 1.5px solid var(--primary-green);
+                color: var(--primary-green);
+            }
+            .review-app .review-datatable-card .card-header .btn-outline-primary:hover {
+                background: rgba(46, 125, 50, 0.08);
+                border-color: var(--primary-green);
+                color: var(--primary-green);
+            }
+            
+            /* Table */
+            .review-app .review-datatable-card #dataReviewTable {
+                width: 100% !important;
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+            .review-app .review-datatable-card #dataReviewTable thead th {
+                background: var(--gray-100);
+                color: var(--gray-600);
+                font-size: 0.6875rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                padding: 14px 16px;
+                border: none;
+                border-bottom: 1px solid var(--gray-200);
+                white-space: nowrap;
+            }
+            .review-app .review-datatable-card #dataReviewTable thead th:first-child {
+                padding-left: 20px;
+                border-radius: 0;
+            }
+            .review-app .review-datatable-card #dataReviewTable tbody td {
+                padding: 14px 16px;
+                font-size: 0.875rem;
+                color: var(--gray-800);
+                border: none;
+                border-bottom: 1px solid var(--gray-100);
+                vertical-align: middle;
+            }
+            .review-app .review-datatable-card #dataReviewTable tbody td:first-child {
+                padding-left: 20px;
+            }
+            .review-app .review-datatable-card #dataReviewTable tbody tr:hover td {
+                background: var(--gray-50);
+            }
+            .review-app .review-datatable-card #dataReviewTable tbody tr:last-child td {
+                border-bottom: none;
+            }
+            .review-app .review-datatable-card #dataReviewTable .form-check-input {
+                width: 1.1em;
+                height: 1.1em;
+                border-radius: 4px;
+                border: 1.5px solid var(--gray-300);
                 cursor: pointer;
             }
-            
-            .action-btn:hover {
-                background-color: var(--gray-200);
+            .review-app .review-datatable-card #dataReviewTable .form-check-input:checked {
+                background-color: var(--primary-green);
+                border-color: var(--primary-green);
             }
             
-            .edit-btn:hover {
-                background-color: rgba(3, 169, 244, 0.1);
-                color: var(--light-blue);
+            /* Row status (keep subtle) */
+            .review-app .review-datatable-card #dataReviewTable tbody tr.data-success:hover td {
+                background: rgba(76, 175, 80, 0.06) !important;
+            }
+            .review-app .review-datatable-card #dataReviewTable tbody tr.data-warning:hover td {
+                background: rgba(255, 193, 7, 0.08) !important;
+            }
+            .review-app .review-datatable-card #dataReviewTable tbody tr.data-error:hover td {
+                background: rgba(220, 53, 69, 0.06) !important;
             }
             
-            .delete-btn:hover {
-                background-color: rgba(220, 53, 69, 0.1);
-                color: #dc3545;
+            .review-app .review-datatable-card .card-footer {
+                padding: 12px 20px;
+                border-top: 1px solid var(--gray-200);
+                background: var(--gray-50);
+                font-size: 0.8125rem;
+                color: var(--gray-600);
             }
             
-            /* Filter Panel */
-            .filter-panel {
-                background: white;
-                border-radius: 10px;
-                padding: 20px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-                margin-bottom: 20px;
+            /* DataTables wrapper (when it wraps our table) */
+            .review-app .review-datatable-card .dataTables_wrapper {
+                padding: 0;
             }
-            
-            /* Status Badges */
-            .status-badge {
-                padding: 5px 12px;
-                border-radius: 20px;
-                font-size: 0.8rem;
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_length,
+.review-app .review-datatable-card .dataTables_wrapper .dataTables_filter {
+                display: none;
+            }
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_info {
+                padding: 0;
+                font-size: 0.8125rem;
+                color: var(--gray-600);
+            }
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_paginate {
+                padding: 0;
+            }
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button {
+                padding: 6px 12px;
+                margin: 0 2px;
+                border-radius: 8px;
+                border: 1px solid var(--gray-200);
+                background: #fff;
+                color: var(--gray-700) !important;
+                font-size: 0.8125rem;
                 font-weight: 600;
             }
-            
-            .status-validated {
-                background-color: rgba(76, 175, 80, 0.1);
-                color: var(--light-green);
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+                background: var(--gray-100) !important;
+                border-color: var(--gray-300) !important;
+                color: var(--gray-800) !important;
             }
-            
-            .status-pending {
-                background-color: rgba(255, 193, 7, 0.1);
-                color: #ffc107;
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+                background: var(--primary-green) !important;
+                border-color: var(--primary-green) !important;
+                color: #fff !important;
             }
-            
-            .status-rejected {
-                background-color: rgba(220, 53, 69, 0.1);
-                color: #dc3545;
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
             }
-        </style>
-        
-        <!-- Data Summary Cards -->
-        <div class="row mt-4">
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="summary-card">
-                    <div class="summary-icon" style="background-color: var(--primary-green);">
-                        <i class="fas fa-database"></i>
-                    </div>
-                    <h4 class="mb-2">{{ number_format($totalRecords) }}</h4>
-                    <p class="text-muted mb-2">Total Records</p>
-                    <div class="d-flex align-items-center">
-                        <div class="quality-meter" style="width: 100%;">
-                            <div class="quality-fill" style="width: {{ $dataQuality }}%; background-color: var(--light-green);"></div>
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_processing {
+                background: rgba(255,255,255,0.95);
+                border-radius: 10px;
+                padding: 14px 24px;
+                font-weight: 600;
+                font-size: 0.875rem;
+                color: var(--gray-700);
+                border: 1px solid var(--gray-200);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            }
+            .review-app .review-datatable-card .dataTables_wrapper .dataTables_empty {
+                padding: 32px 20px;
+                font-size: 0.9375rem;
+                color: var(--gray-600);
+                text-align: center;
+            }
+.review-app .review-datatable-card .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+</style>
+@endpush
+
+@section('content')
+    <div id="content">
+        @include('layouts.top-nav')
+
+        <div class="review-app container-fluid mt-4">
+            <!-- Topbar -->
+            <div class="topbar">
+                <h2><span class="sb"><i class="fas fa-clipboard-check"></i></span> Data Review & Validation</h2>
+                <p>Review and validate emission data before reporting. Filter by status, source, and scope.</p>
+            </div>
+
+            <!-- Stats / Summary cards -->
+            <div class="stats">
+                <div class="sc">
+                    <div class="si g"><i class="fas fa-database"></i></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="sv">{{ number_format($totalRecords) }}</div>
+                        <div class="sl">Total Records</div>
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            <div class="qm"><div class="qm-fill" style="width: {{ $dataQuality }}%;"></div></div>
+                            <span style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700);">{{ $dataQuality }}%</span>
                         </div>
-                        <span class="ms-2 fw-bold">{{ $dataQuality }}%</span>
+                    </div>
+                </div>
+                <div class="sc">
+                    <div class="si suc"><i class="fas fa-check-circle"></i></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="sv">{{ number_format($validatedRecords) }}</div>
+                        <div class="sl">Validated</div>
+                        <span class="valid-tag validation-tag mt-2 d-inline-block"><i class="fas fa-check me-1"></i> Ready</span>
+                    </div>
+                </div>
+                <div class="sc">
+                    <div class="si w"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="sv">{{ number_format($draftRecords) }}</div>
+                        <div class="sl">Requires Review</div>
+                        <span class="warning-tag validation-tag mt-2 d-inline-block"><i class="fas fa-exclamation me-1"></i> Attention</span>
+                    </div>
+                </div>
+                <div class="sc">
+                    <div class="si d"><i class="fas fa-times-circle"></i></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="sv">{{ number_format($invalidRecords) }}</div>
+                        <div class="sl">Invalid</div>
+                        <span class="error-tag validation-tag mt-2 d-inline-block"><i class="fas fa-times me-1"></i> Action</span>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="summary-card">
-                    <div class="summary-icon" style="background-color: var(--light-green);">
-                        <i class="fas fa-check-circle"></i>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Data Status</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="active">Validated</option>
+                            <option value="draft">Pending Review</option>
+                        </select>
                     </div>
-                    <h4 class="mb-2">{{ number_format($validatedRecords) }}</h4>
-                    <p class="text-muted mb-2">Validated Records</p>
-                    <span class="valid-tag validation-tag">
-                        <i class="fas fa-check me-1"></i> Ready for Reporting
-                    </span>
-                </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="summary-card">
-                    <div class="summary-icon" style="background-color: var(--warning-orange);">
-                        <i class="fas fa-exclamation-triangle"></i>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Data Source</label>
+                        <select class="form-select" id="sourceFilter">
+                            <option value="">All Sources</option>
+                            <option value="import">CSV Import</option>
+                            <option value="manual">Manual Entry</option>
+                            <option value="api">API Integration</option>
+                        </select>
                     </div>
-                    <h4 class="mb-2">{{ number_format($draftRecords) }}</h4>
-                    <p class="text-muted mb-2">Requires Review</p>
-                    <span class="warning-tag validation-tag">
-                        <i class="fas fa-exclamation me-1"></i> Needs Attention
-                    </span>
-                </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="summary-card">
-                    <div class="summary-icon" style="background-color: var(--danger-red);">
-                        <i class="fas fa-times-circle"></i>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-select" id="dateFilter">
+                            <option value="">All Dates</option>
+                            <option value="last30">Last 30 Days</option>
+                            <option value="last90">Last 90 Days</option>
+                            <option value="ytd">Year to Date</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
                     </div>
-                    <h4 class="mb-2">{{ number_format($invalidRecords) }}</h4>
-                    <p class="text-muted mb-2">Invalid Records</p>
-                    <span class="error-tag validation-tag">
-                        <i class="fas fa-times me-1"></i> Requires Action
-                    </span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Filter Panel -->
-        <div class="filter-panel">
-            <div class="row g-3">
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Data Status</label>
-                    <select class="form-select" id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="active">Validated</option>
-                        <option value="draft">Pending Review</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Data Source</label>
-                    <select class="form-select" id="sourceFilter">
-                        <option value="">All Sources</option>
-                        <option value="import">CSV Import</option>
-                        <option value="manual">Manual Entry</option>
-                        <option value="api">API Integration</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Date Range</label>
-                    <select class="form-select" id="dateFilter">
-                        <option value="">All Dates</option>
-                        <option value="last30">Last 30 Days</option>
-                        <option value="last90">Last 90 Days</option>
-                        <option value="ytd">Year to Date</option>
-                        <option value="custom">Custom Range</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Scope</label>
-                    <select class="form-select" id="scopeFilter">
-                        <option value="">All Scopes</option>
-                        <option value="1">Scope 1</option>
-                        <option value="2">Scope 2</option>
-                        <option value="3">Scope 3</option>
-                    </select>
-                </div>
-                
-                <div class="col-12 mt-3 d-flex justify-content-between">
-                    <button class="btn btn-outline-secondary" id="resetFilters">
-                        <i class="fas fa-redo me-2"></i>Reset Filters
-                    </button>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary" id="exportData">
-                            <i class="fas fa-download me-2"></i>Export Selection
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Scope</label>
+                        <select class="form-select" id="scopeFilter">
+                            <option value="">All Scopes</option>
+                            <option value="1">Scope 1</option>
+                            <option value="2">Scope 2</option>
+                            <option value="3">Scope 3</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mt-3 d-flex justify-content-between flex-wrap gap-2">
+                        <button type="button" class="btn" id="resetFilters">
+                            <i class="fas fa-redo me-2"></i>Reset Filters
                         </button>
-                        <button class="btn btn-success" id="applyFilters">
-                            <i class="fas fa-filter me-2"></i>Apply Filters
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn" id="exportData">
+                                <i class="fas fa-download me-2"></i>Export Selection
+                            </button>
+                            <button type="button" class="btn" id="applyFilters">
+                                <i class="fas fa-filter me-2"></i>Apply Filters
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         
-        <!-- Validation Issues Summary -->
-        @if($draftRecords > 0 || $invalidRecords > 0)
-        <div class="alert alert-warning mb-4">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+            <!-- Validation Issues Summary -->
+            @if($draftRecords > 0 || $invalidRecords > 0)
+            <div class="alert-review">
+                <i class="fas fa-exclamation-triangle fa-2x" style="color: var(--warning-orange);"></i>
                 <div class="flex-grow-1">
-                    <h5 class="alert-heading mb-1">{{ $draftRecords + $invalidRecords }} Records Require Your Attention</h5>
-                    <p class="mb-0">There are validation issues that need to be resolved before the next reporting cycle.</p>
+                    <h5 class="mb-1" style="font-size: 1rem; font-weight: 700; color: var(--gray-800);">{{ $draftRecords + $invalidRecords }} Records Require Your Attention</h5>
+                    <p class="mb-0" style="font-size: 0.875rem; color: var(--gray-600);">Validation issues need to be resolved before the next reporting cycle.</p>
                 </div>
-                <button class="btn btn-warning" onclick="showValidationIssues()">
+                <button type="button" class="alert-review-btn" onclick="showValidationIssues()">
                     <i class="fas fa-external-link-alt me-2"></i>Review Issues
                 </button>
             </div>
-        </div>
-        @endif
+            @endif
         
-        <!-- Data Review Table -->
-        <div class="card">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Emission Data Records</h5>
-                <div class="d-flex gap-2">
-                    <div class="input-group" style="width: 300px;">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control" placeholder="Search records..." id="searchInput">
-                    </div>
-                    <button class="btn btn-outline-primary" onclick="showBulkActions()">
-                        <i class="fas fa-tasks me-2"></i>Bulk Actions
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" id="dataReviewTable">
-                        <thead>
-                            <tr>
-                                <th width="50">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="selectAll">
-                                    </div>
-                                </th>
-                                <th>Date</th>
-                                <th>Facility</th>
-                                <th>Scope</th>
-                                <th>Source</th>
-                                <th>CO₂e Value</th>
-                                <th>Status</th>
-                                <th>Validation</th>
-                                <th>Last Updated</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data will be loaded via DataTables -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer bg-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-muted">
-                        Showing <span id="showingCount">0</span> of <span id="totalCount">{{ number_format($totalRecords) }}</span> records
+            <!-- Data Review Table -->
+            <div class="card review-datatable-card">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <h5 class="mb-0">Emission Data Records</h5>
+                    <div class="d-flex gap-2">
+                        <div class="input-group" style="width: 280px;">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Search records..." id="searchInput">
+                        </div>
+                        <button type="button" class="btn btn-outline-primary" onclick="showBulkActions()">
+                            <i class="fas fa-tasks me-2"></i>Bulk Actions
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Quick Actions -->
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Quick Actions</h6>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="dataReviewTable">
+                            <thead>
+                                <tr>
+                                    <th width="50">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAll">
+                                        </div>
+                                    </th>
+                                    <th>Date</th>
+                                    <th>Facility</th>
+                                    <th>Scope</th>
+                                    <th>Source</th>
+                                    <th>CO₂e Value</th>
+                                    <th>Status</th>
+                                    <th>Validation</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data loaded via DataTables -->
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-success" onclick="validateSelected()">
-                                <i class="fas fa-check-circle me-2"></i>Validate Selected
-                            </button>
-                            <button class="btn btn-warning" onclick="flagForReview()">
-                                <i class="fas fa-flag me-2"></i>Flag for Review
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteSelected()">
-                                <i class="fas fa-trash me-2"></i>Delete Selected
-                            </button>
-                            <button class="btn btn-outline-primary" onclick="exportSelected()">
-                                <i class="fas fa-download me-2"></i>Export Selected
-                            </button>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            Showing <span id="showingCount">0</span> of <span id="totalCount">{{ number_format($totalRecords) }}</span> records
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Validation Summary</h6>
+
+            <!-- Quick Actions -->
+            <div class="row mt-4">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="qa-card">
+                        <div class="qa-head">Quick Actions</div>
+                        <div class="qa-body d-grid gap-2">
+                            <button type="button" class="btn btn-validate" onclick="validateSelected()">
+                                <i class="fas fa-check-circle"></i> Validate Selected
+                            </button>
+                            <button type="button" class="btn btn-flag" onclick="flagForReview()">
+                                <i class="fas fa-flag"></i> Flag for Review
+                            </button>
+                            <button type="button" class="btn btn-delete" onclick="deleteSelected()">
+                                <i class="fas fa-trash"></i> Delete Selected
+                            </button>
+                            <button type="button" class="btn btn-export" onclick="exportSelected()">
+                                <i class="fas fa-download"></i> Export Selected
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        @php
-                            $validPercent = $totalRecords > 0 ? round(($validatedRecords / $totalRecords) * 100, 1) : 0;
-                            $reviewPercent = $totalRecords > 0 ? round(($draftRecords / $totalRecords) * 100, 1) : 0;
-                            $invalidPercent = $totalRecords > 0 ? round(($invalidRecords / $totalRecords) * 100, 1) : 0;
-                        @endphp
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Valid Records</span>
-                                <span>{{ $validPercent }}%</span>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <div class="qa-card">
+                        <div class="qa-head">Validation Summary</div>
+                        <div class="qa-body">
+                            @php
+                                $validPercent = $totalRecords > 0 ? round(($validatedRecords / $totalRecords) * 100, 1) : 0;
+                                $reviewPercent = $totalRecords > 0 ? round(($draftRecords / $totalRecords) * 100, 1) : 0;
+                                $invalidPercent = $totalRecords > 0 ? round(($invalidRecords / $totalRecords) * 100, 1) : 0;
+                            @endphp
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1" style="font-size: 0.875rem; color: var(--gray-700);">
+                                    <span>Valid</span><span>{{ $validPercent }}%</span>
+                                </div>
+                                <div class="progress"><div class="progress-bar bg-success" style="width: {{ $validPercent }}%"></div></div>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-success" style="width: {{ $validPercent }}%"></div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1" style="font-size: 0.875rem; color: var(--gray-700);">
+                                    <span>Requires Review</span><span>{{ $reviewPercent }}%</span>
+                                </div>
+                                <div class="progress"><div class="progress-bar bg-warning" style="width: {{ $reviewPercent }}%"></div></div>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Requires Review</span>
-                                <span>{{ $reviewPercent }}%</span>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-warning" style="width: {{ $reviewPercent }}%"></div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Invalid Records</span>
-                                <span>{{ $invalidPercent }}%</span>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-danger" style="width: {{ $invalidPercent }}%"></div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1" style="font-size: 0.875rem; color: var(--gray-700);">
+                                    <span>Invalid</span><span>{{ $invalidPercent }}%</span>
+                                </div>
+                                <div class="progress"><div class="progress-bar bg-danger" style="width: {{ $invalidPercent }}%"></div></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Common Issues</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="list-group list-group-flush">
+                <div class="col-md-4">
+                    <div class="qa-card">
+                        <div class="qa-head">Common Issues</div>
+                        <div class="qa-body">
                             @php
                                 $missingFacility = \App\Models\EmissionRecord::where(function($q) {
                                     $q->whereNull('facility')->orWhere('facility', '');
@@ -414,20 +491,16 @@
                                     $q->whereNull('department')->orWhere('department', '');
                                 })->count();
                             @endphp
-                            <div class="list-group-item px-0">
-                                <div class="d-flex justify-content-between">
-                                    <span>Missing Facility Data</span>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Missing Facility</span>
                                     <span class="badge bg-danger">{{ $missingFacility }}</span>
                                 </div>
-                            </div>
-                            <div class="list-group-item px-0">
-                                <div class="d-flex justify-content-between">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
                                     <span>Missing Department</span>
                                     <span class="badge bg-warning text-dark">{{ $missingDept }}</span>
                                 </div>
-                            </div>
-                            <div class="list-group-item px-0">
-                                <div class="d-flex justify-content-between">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
                                     <span>Pending Validation</span>
                                     <span class="badge bg-info">{{ $draftRecords }}</span>
                                 </div>
@@ -492,12 +565,8 @@
         </div>
     </div>
     
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    
-    <!-- jQuery and DataTables JS -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <!-- DataTables: use base CSS from layout; this page overrides with custom table design -->
+    <!-- jQuery and DataTables JS (layout may already include; ensure init runs) -->
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     
     <script>
@@ -545,7 +614,10 @@
                     }
                 },
                 drawCallback: function(settings) {
-                    // Update select all checkbox
+                    var api = this.api();
+                    var info = api.page.info();
+                    $('#showingCount').text(info.recordsDisplay === 0 ? 0 : (info.start + 1) + '–' + Math.min(info.end, info.recordsDisplay));
+                    $('#totalCount').text(info.recordsDisplay.toLocaleString());
                     $('#selectAll').prop('checked', false);
                     updateSelectedCount();
                 }

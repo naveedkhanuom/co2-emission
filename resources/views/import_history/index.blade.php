@@ -4,254 +4,221 @@
 @section('page-title', 'Import History')
 
 @section('content')
-    <!-- Main Content -->
     <div id="content">
         @include('layouts.top-nav')
-        
-        <!-- Import Summary -->
-        <div class="import-summary">
-            <div class="row">
-                <div class="col-md-8">
-                    <h3 class="mb-3">Import Activity Summary</h3>
-                    <p class="mb-0">Track and monitor all data import activities with detailed logs and performance metrics.</p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <button class="btn btn-light" onclick="exportHistory()">
-                        <i class="fas fa-download me-2"></i>Export History
-                    </button>
-                </div>
+
+        <div class="import-history-app container-fluid mt-4">
+            <!-- Topbar -->
+            <div class="topbar">
+                <h2><span class="sb"><i class="fas fa-file-import"></i></span> Import History</h2>
+                <p>Track and monitor all data import activities with detailed logs and performance metrics.</p>
+                <button type="button" class="btn-export-top" onclick="exportHistory()">
+                    <i class="fas fa-download"></i> Export History
+                </button>
             </div>
-        </div>
-        
-        <!-- Statistics Cards -->
-        <div class="row mt-4">
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--primary-green);">
-                        <i class="fas fa-file-import"></i>
-                    </div>
-                    <h3 class="mb-2" id="totalImports">0</h3>
-                    <p class="text-muted mb-2">Total Imports</p>
-                    <div class="d-flex align-items-center">
-                        <span class="text-success fw-bold" id="importChange">+0%</span>
-                        <span class="text-muted ms-2">from last month</span>
+
+            <!-- Stats -->
+            <div class="stats">
+                <div class="sc">
+                    <div class="si g"><i class="fas fa-file-import"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="totalImports">0</div>
+                        <div class="sl">Total Imports</div>
+                        <span class="stat-sub" id="importChange">+0%</span> <span class="stat-muted">from last month</span>
                     </div>
                 </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--light-green);">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h3 class="mb-2" id="successRate">0%</h3>
-                    <p class="text-muted mb-2">Success Rate</p>
-                    <div class="progress progress-custom">
-                        <div class="progress-bar bg-success" id="successRateBar" style="width: 0%"></div>
+                <div class="sc">
+                    <div class="si suc"><i class="fas fa-check-circle"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="successRate">0%</div>
+                        <div class="sl">Success Rate</div>
+                        <div class="qm mt-2"><div class="qm-fill" id="successRateBar" style="width:0%"></div></div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--primary-blue);">
-                        <i class="fas fa-database"></i>
+                <div class="sc">
+                    <div class="si b"><i class="fas fa-database"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="totalRecords">0</div>
+                        <div class="sl">Total Records</div>
+                        <span class="stat-sub"><i class="fas fa-arrow-up me-1"></i><span id="thisMonthRecords">0 this month</span></span>
                     </div>
-                    <h3 class="mb-2" id="totalRecords">0</h3>
-                    <p class="text-muted mb-2">Total Records</p>
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-arrow-up text-success me-2"></i>
-                        <span id="thisMonthRecords">0 this month</span>
+                </div>
+                <div class="sc">
+                    <div class="si w"><i class="fas fa-clock"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="sv" id="pendingReviews">0</div>
+                        <div class="sl">Pending Reviews</div>
+                        <button type="button" class="btn-review-now" onclick="showPendingImports()">
+                            <i class="fas fa-external-link-alt me-1"></i>Review Now
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="stats-card">
-                    <div class="stats-icon" style="background-color: var(--warning-orange);">
-                        <i class="fas fa-clock"></i>
+
+            <!-- Filter Panel -->
+            <div class="filter-panel">
+                <div class="row g-3">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-select" id="dateRangeFilter">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week" selected>Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                            <option value="quarter">Last Quarter</option>
+                            <option value="year">Last Year</option>
+                        </select>
                     </div>
-                    <h3 class="mb-2" id="pendingReviews">0</h3>
-                    <p class="text-muted mb-2">Pending Reviews</p>
-                    <button class="btn btn-warning btn-sm mt-2" onclick="showPendingImports()">
-                        <i class="fas fa-external-link-alt me-1"></i>Review Now
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Filter Panel -->
-        <div class="filter-panel">
-            <div class="row g-3">
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Date Range</label>
-                    <select class="form-select" id="dateRangeFilter">
-                        <option value="all">All Time</option>
-                        <option value="today">Today</option>
-                        <option value="week" selected>Last 7 Days</option>
-                        <option value="month">Last 30 Days</option>
-                        <option value="quarter">Last Quarter</option>
-                        <option value="year">Last Year</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Import Status</label>
-                    <select class="form-select" id="statusFilter">
-                        <option value="all">All Status</option>
-                        <option value="completed">Completed</option>
-                        <option value="processing">Processing</option>
-                        <option value="failed">Failed</option>
-                        <option value="partial">Partially Completed</option>
-                        <option value="queued">Queued</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Import Type</label>
-                    <select class="form-select" id="typeFilter">
-                        <option value="all">All Types</option>
-                        <option value="csv">CSV/Excel</option>
-                        <option value="api">API Integration</option>
-                        <option value="manual">Manual Entry</option>
-                        <option value="scheduled">Scheduled Import</option>
-                    </select>
-                </div>
-                
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">User</label>
-                    <select class="form-select" id="userFilter">
-                        <option value="all">All Users</option>
-                        <option value="system">System</option>
-                        @foreach(\App\Models\User::all() as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div class="col-12 mt-3 d-flex justify-content-between">
-                    <button class="btn btn-outline-secondary" id="resetFilters">
-                        <i class="fas fa-redo me-2"></i>Reset Filters
-                    </button>
-                    <div>
-                        <button class="btn btn-success" id="applyFilters">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Import Status</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="all">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="processing">Processing</option>
+                            <option value="failed">Failed</option>
+                            <option value="partial">Partially Completed</option>
+                            <option value="queued">Queued</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Import Type</label>
+                        <select class="form-select" id="typeFilter">
+                            <option value="all">All Types</option>
+                            <option value="csv">CSV/Excel</option>
+                            <option value="api">API Integration</option>
+                            <option value="manual">Manual Entry</option>
+                            <option value="scheduled">Scheduled Import</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">User</label>
+                        <select class="form-select" id="userFilter">
+                            <option value="all">All Users</option>
+                            <option value="system">System</option>
+                            @foreach(\App\Models\User::all() as $user)
+                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 mt-3 d-flex justify-content-between flex-wrap gap-2">
+                        <button type="button" class="btn btn-reset" id="resetFilters">
+                            <i class="fas fa-redo me-2"></i>Reset Filters
+                        </button>
+                        <button type="button" class="btn btn-apply" id="applyFilters">
                             <i class="fas fa-filter me-2"></i>Apply Filters
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Charts Row -->
-        <div class="row">
-            <div class="col-lg-8 mb-4">
-                <div class="chart-container">
-                    <div class="chart-title">Import Activity Trend</div>
-                    <div id="importTrendChart"></div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4 mb-4">
-                <div class="chart-container">
-                    <div class="chart-title">Import Status Distribution</div>
-                    <div id="statusDistributionChart"></div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Import History Table -->
-        <div class="card">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Recent Imports</h5>
-                <div class="d-flex gap-2">
-                    <div class="input-group" style="width: 250px;">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control" placeholder="Search imports..." id="searchInput">
+
+            <!-- Charts -->
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="chart-container">
+                        <div class="chart-title">Import Activity Trend</div>
+                        <div id="importTrendChart"></div>
                     </div>
-                    <button class="btn btn-outline-primary" onclick="showBulkActions()">
-                        <i class="fas fa-tasks me-2"></i>Bulk Actions
-                    </button>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="chart-container">
+                        <div class="chart-title">Import Status Distribution</div>
+                        <div id="statusDistributionChart"></div>
+                    </div>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" id="importHistoryTable" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th width="50">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="selectAll">
-                                    </div>
-                                </th>
-                                <th>Import ID</th>
-                                <th>Date & Time</th>
-                                <th>File / Source</th>
-                                <th>Type</th>
-                                <th>Records</th>
-                                <th>Status</th>
-                                <th>Duration</th>
-                                <th>User</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- DataTables will populate this -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Detailed View Sections -->
-        <div class="row mt-4">
-            <!-- Import Logs -->
-            <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Recent Import Logs</h5>
-                        <button class="btn btn-sm btn-outline-primary" onclick="refreshLogs()">
-                            <i class="fas fa-sync-alt"></i>
+
+            <!-- Import History Table -->
+            <div class="card import-datatable-card">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <h5 class="mb-0">Recent Imports</h5>
+                    <div class="d-flex gap-2">
+                        <div class="input-group" style="width: 280px;">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Search imports..." id="searchInput">
+                        </div>
+                        <button type="button" class="btn btn-outline-primary" onclick="showBulkActions()">
+                            <i class="fas fa-tasks me-2"></i>Bulk Actions
                         </button>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="timeline p-4" id="importLogs">
-                            <p class="text-muted text-center">Select an import to view logs</p>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="importHistoryTable" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th width="50">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAll">
+                                        </div>
+                                    </th>
+                                    <th>Import ID</th>
+                                    <th>Date & Time</th>
+                                    <th>File / Source</th>
+                                    <th>Type</th>
+                                    <th>Records</th>
+                                    <th>Status</th>
+                                    <th>Duration</th>
+                                    <th>User</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="table-info-text">
+                            Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> imports
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- Import Statistics -->
-            <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Import Statistics</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-6 mb-4">
-                                <div class="display-6 text-primary" id="statSuccessRate">0%</div>
-                                <div class="text-muted">Success Rate</div>
-                            </div>
-                            <div class="col-6 mb-4">
-                                <div class="display-6 text-success" id="statAvgTime">0s</div>
-                                <div class="text-muted">Avg. Processing Time</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="display-6 text-info" id="statTotalRecords">0</div>
-                                <div class="text-muted">Total Records</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="display-6 text-warning" id="statFailed">0</div>
-                                <div class="text-muted">Failed Last 30 Days</div>
+
+            <!-- Bottom cards -->
+            <div class="row mt-4">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="tw tw-card">
+                        <div class="card-head d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Recent Import Logs</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshLogs()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="timeline p-4" id="importLogs">
+                                <p class="text-muted text-center mb-0">Select an import to view logs</p>
                             </div>
                         </div>
-                        
-                        <hr class="my-4">
-                        
-                        <h6 class="mb-3">Top Import Sources</h6>
-                        <div id="importSourcesStats">
-                            <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="tw tw-card">
+                        <div class="card-head">
+                            <h5 class="mb-0">Import Statistics</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center stat-blocks">
+                                <div class="col-6 mb-4">
+                                    <div class="stat-val text-primary" id="statSuccessRate">0%</div>
+                                    <div class="stat-label">Success Rate</div>
+                                </div>
+                                <div class="col-6 mb-4">
+                                    <div class="stat-val text-success" id="statAvgTime">0s</div>
+                                    <div class="stat-label">Avg. Processing Time</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="stat-val text-info" id="statTotalRecords">0</div>
+                                    <div class="stat-label">Total Records</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="stat-val text-warning" id="statFailed">0</div>
+                                    <div class="stat-label">Failed Last 30 Days</div>
+                                </div>
+                            </div>
+                            <hr class="my-4">
+                            <h6 class="mb-3" style="font-size: 0.9375rem; font-weight: 700; color: var(--gray-800);">Top Import Sources</h6>
+                            <div id="importSourcesStats"></div>
                         </div>
                     </div>
                 </div>
@@ -316,278 +283,114 @@
 
 @push('styles')
 <style>
-    /* Import Summary - system color scheme */
-    .import-summary {
-        background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
-        color: white;
-        border-radius: 10px;
-        padding: 25px;
-        margin-bottom: 20px;
-    }
-    
-    /* Statistics Cards */
-    .stats-card {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        height: 100%;
-    }
-    
-    .stats-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        color: white;
-        margin-bottom: 15px;
-    }
-    
-    /* Status Badges */
-    .status-badge {
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    .status-completed {
-        background-color: rgba(46, 125, 50, 0.1);
-        color: var(--primary-green);
-    }
-    
-    .status-processing {
-        background-color: rgba(3, 169, 244, 0.1);
-        color: var(--light-blue);
-    }
-    
-    .status-failed {
-        background-color: rgba(211, 47, 47, 0.1);
-        color: var(--danger-red);
-    }
-    
-    .status-partial {
-        background-color: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-    }
-    
-    .status-queued {
-        background-color: rgba(108, 117, 125, 0.1);
-        color: #6c757d;
-    }
-    
-    /* Import Type Badges */
-    .import-type {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        background-color: var(--gray-100);
-        color: var(--gray-800);
-    }
-    
-    .type-csv, .type-excel {
-        background-color: rgba(46, 125, 50, 0.1);
-        color: var(--primary-green);
-    }
-    
-    .type-api {
-        background-color: rgba(3, 169, 244, 0.1);
-        color: var(--light-blue);
-    }
-    
-    .type-manual {
-        background-color: rgba(121, 85, 72, 0.1);
-        color: #795548;
-    }
-    
-    .type-scheduled {
-        background-color: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-    }
-    
-    /* Filter Panel */
-    .filter-panel {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-    }
-    
-    /* Chart Container */
-    .chart-container {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-        height: 100%;
-    }
-    
-    .chart-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--gray-800);
-        margin-bottom: 15px;
-    }
-    
-    /* Progress Bar */
-    .progress-custom {
-        height: 8px;
-        border-radius: 4px;
-        background-color: var(--gray-200);
-    }
-    
-    /* Action Buttons */
-    .action-buttons {
-        display: flex;
-        gap: 5px;
-    }
-    
-    .action-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        background-color: var(--gray-100);
-        color: var(--gray-600);
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-    
-    .action-btn:hover {
-        background-color: var(--gray-200);
-    }
-    
-    .view-btn:hover {
-        background-color: rgba(3, 169, 244, 0.1);
-        color: var(--light-blue);
-    }
-    
-    .retry-btn:hover {
-        background-color: rgba(40, 167, 69, 0.1);
-        color: #28a745;
-    }
-    
-    .delete-btn:hover {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
-    
-    /* Log Levels */
-    .log-level {
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-    
-    .log-info {
-        background-color: rgba(3, 169, 244, 0.1);
-        color: var(--light-blue);
-    }
-    
-    .log-warning {
-        background-color: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-    }
-    
-    .log-error {
-        background-color: rgba(220, 53, 69, 0.1);
-        color: #dc3545;
-    }
-    
-    .log-success {
-        background-color: rgba(40, 167, 69, 0.1);
-        color: #28a745;
-    }
-    
-    /* Log Details */
-    .log-details {
-        background-color: var(--gray-50);
-        border-radius: 8px;
-        padding: 15px;
-        font-family: monospace;
-        font-size: 0.875rem;
-        white-space: pre-wrap;
-        word-break: break-word;
-        max-height: 300px;
-        overflow-y: auto;
-        border-left: 3px solid var(--primary-blue);
-    }
-    
-    /* Timeline */
-    .timeline {
-        position: relative;
-        padding-left: 30px;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-    
-    .timeline::before {
-        content: '';
-        position: absolute;
-        left: 10px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background-color: var(--gray-200);
-    }
-    
-    .timeline-item {
-        position: relative;
-        margin-bottom: 20px;
-    }
-    
-    .timeline-dot {
-        position: absolute;
-        left: -20px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background-color: var(--gray-600);
-    }
-    
-    .timeline-dot.success {
-        background-color: var(--light-green);
-    }
-    
-    .timeline-dot.warning {
-        background-color: var(--warning-orange);
-    }
-    
-    .timeline-dot.error {
-        background-color: var(--danger-red);
-    }
+.import-history-app * { box-sizing: border-box; }
+.import-history-app { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+/* Topbar */
+.import-history-app .topbar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; padding: 20px 24px; background: linear-gradient(135deg, #fff 0%, var(--gray-50) 100%); border: 1px solid var(--gray-200); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.import-history-app .topbar h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; margin: 0; color: var(--gray-800); }
+.import-history-app .topbar h2 .sb { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; font-size: 1rem; font-weight: 700; box-shadow: 0 2px 8px rgba(46,125,50,.25); }
+.import-history-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
+.import-history-app .btn-export-top { margin-left: auto; padding: 10px 20px; border-radius: 10px; border: 1.5px solid var(--gray-200); background: #fff; color: var(--gray-700); font-size: 0.875rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.import-history-app .btn-export-top:hover { background: var(--gray-50); border-color: var(--gray-300); color: var(--gray-800); }
+/* Stats - same as review/scope */
+.import-history-app .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.import-history-app .sc { background: #fff; border: 1px solid var(--gray-200); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: transform .2s, box-shadow .2s; }
+.import-history-app .sc:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.import-history-app .sc .si { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+.import-history-app .sc .si.g { background: linear-gradient(135deg, rgba(46,125,50,.15) 0%, rgba(76,175,80,.12) 100%); color: var(--primary-green); }
+.import-history-app .sc .si.suc { background: linear-gradient(135deg, rgba(76,175,80,.2) 0%, rgba(129,199,132,.15) 100%); color: var(--light-green); }
+.import-history-app .sc .si.b { background: linear-gradient(135deg, rgba(2,119,189,.12) 0%, rgba(3,169,244,.1) 100%); color: var(--primary-blue); }
+.import-history-app .sc .si.w { background: linear-gradient(135deg, rgba(245,124,0,.15) 0%, rgba(255,152,0,.1) 100%); color: var(--warning-orange); }
+.import-history-app .sc .sv { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; color: var(--gray-800); }
+.import-history-app .sc .sl { font-size: 0.75rem; color: var(--gray-600); margin-top: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+.import-history-app .sc .qm { height: 6px; border-radius: 3px; background: var(--gray-200); overflow: hidden; margin-top: 8px; flex: 1; min-width: 60px; }
+.import-history-app .sc .qm-fill { height: 100%; border-radius: 3px; background: var(--light-green); }
+.import-history-app .stat-sub { font-size: 0.8125rem; font-weight: 600; color: var(--light-green); }
+.import-history-app .stat-muted { font-size: 0.75rem; color: var(--gray-600); margin-left: 4px; }
+.import-history-app .btn-review-now { margin-top: 8px; padding: 6px 12px; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; border: none; background: rgba(245,124,0,0.15); color: var(--warning-orange); cursor: pointer; }
+.import-history-app .btn-review-now:hover { background: rgba(245,124,0,0.25); color: var(--warning-orange); }
+/* Filter panel */
+.import-history-app .filter-panel { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 20px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+.import-history-app .filter-panel .form-label { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+.import-history-app .filter-panel .form-select { padding: 10px 14px; font-size: 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; background: #fff; }
+.import-history-app .filter-panel .form-select:focus { border-color: var(--primary-green); outline: none; }
+.import-history-app .filter-panel .btn-reset { background: var(--gray-100); border: 1.5px solid var(--gray-200); color: var(--gray-600); padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.import-history-app .filter-panel .btn-reset:hover { background: var(--gray-200); color: var(--gray-800); }
+.import-history-app .filter-panel .btn-apply { background: var(--primary-green); color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; }
+.import-history-app .filter-panel .btn-apply:hover { background: var(--dark-green); color: #fff; }
+/* Chart container */
+.import-history-app .chart-container { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; height: 100%; }
+.import-history-app .chart-title { font-size: 1rem; font-weight: 700; color: var(--gray-800); margin-bottom: 15px; }
+/* DataTable card */
+.import-history-app .import-datatable-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.import-history-app .import-datatable-card .card-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); }
+.import-history-app .import-datatable-card .card-header h5 { font-size: 1.0625rem; font-weight: 700; color: var(--gray-800); }
+.import-history-app .import-datatable-card .card-header .input-group { border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-200); }
+.import-history-app .import-datatable-card .card-header .input-group-text { background: var(--gray-50); border: none; color: var(--gray-600); padding: 10px 14px; }
+.import-history-app .import-datatable-card .card-header .form-control { border: none; padding: 10px 14px; font-size: 0.875rem; }
+.import-history-app .import-datatable-card .card-header .btn-outline-primary { border-radius: 10px; font-weight: 600; padding: 8px 16px; border: 1.5px solid var(--primary-green); color: var(--primary-green); }
+.import-history-app .import-datatable-card .card-header .btn-outline-primary:hover { background: rgba(46,125,50,0.08); color: var(--primary-green); }
+.import-history-app .import-datatable-card #importHistoryTable { width: 100% !important; border-collapse: separate; border-spacing: 0; }
+.import-history-app .import-datatable-card #importHistoryTable thead th { background: var(--gray-100); color: var(--gray-600); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 16px; border: none; border-bottom: 1px solid var(--gray-200); }
+.import-history-app .import-datatable-card #importHistoryTable thead th:first-child { padding-left: 20px; }
+.import-history-app .import-datatable-card #importHistoryTable tbody td { padding: 14px 16px; font-size: 0.875rem; color: var(--gray-800); border: none; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.import-history-app .import-datatable-card #importHistoryTable tbody td:first-child { padding-left: 20px; }
+.import-history-app .import-datatable-card #importHistoryTable tbody tr:hover td { background: var(--gray-50); }
+.import-history-app .import-datatable-card #importHistoryTable tbody tr:last-child td { border-bottom: none; }
+.import-history-app .import-datatable-card #importHistoryTable .form-check-input { width: 1.1em; height: 1.1em; border-radius: 4px; border: 1.5px solid var(--gray-300); cursor: pointer; }
+.import-history-app .import-datatable-card #importHistoryTable .form-check-input:checked { background-color: var(--primary-green); border-color: var(--primary-green); }
+.import-history-app .import-datatable-card .card-footer { padding: 12px 20px; border-top: 1px solid var(--gray-200); background: var(--gray-50); font-size: 0.8125rem; color: var(--gray-600); }
+.import-history-app .import-datatable-card .dataTables_wrapper { padding: 0; }
+.import-history-app .import-datatable-card .dataTables_wrapper .dataTables_length,
+.import-history-app .import-datatable-card .dataTables_wrapper .dataTables_filter { display: none; }
+.import-history-app .import-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 6px 12px; margin: 0 2px; border-radius: 8px; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-700) !important; font-size: 0.8125rem; font-weight: 600; }
+.import-history-app .import-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: var(--gray-100) !important; border-color: var(--gray-300) !important; color: var(--gray-800) !important; }
+.import-history-app .import-datatable-card .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--primary-green) !important; border-color: var(--primary-green) !important; color: #fff !important; }
+.import-history-app .import-datatable-card .dataTables_wrapper .dataTables_processing { background: rgba(255,255,255,0.95); border-radius: 10px; padding: 14px 24px; font-weight: 600; font-size: 0.875rem; color: var(--gray-700); border: 1px solid var(--gray-200); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.import-history-app .import-datatable-card .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* Bottom cards */
+.import-history-app .tw.tw-card { background: #fff; border: 1px solid var(--gray-200); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06); height: 100%; }
+.import-history-app .tw .card-head { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); font-size: 1rem; font-weight: 700; color: var(--gray-800); }
+.import-history-app .tw .stat-val { font-size: 1.5rem; font-weight: 700; }
+.import-history-app .tw .stat-label { font-size: 0.8125rem; color: var(--gray-600); margin-top: 2px; }
+/* Status/type badges (server-rendered in table) */
+.import-history-app .status-completed { background: rgba(76,175,80,0.12); color: var(--light-green); padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.import-history-app .status-processing { background: rgba(3,169,244,0.12); color: var(--light-blue); padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.import-history-app .status-failed { background: rgba(211,47,47,0.12); color: var(--danger-red); padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.import-history-app .status-partial { background: rgba(255,193,7,0.12); color: #b38600; padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.import-history-app .status-queued { background: rgba(108,117,125,0.12); color: #6c757d; padding: 4px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+.import-history-app .action-buttons { display: flex; gap: 5px; }
+.import-history-app .action-btn { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: none; background: var(--gray-100); color: var(--gray-600); transition: all .2s; cursor: pointer; }
+.import-history-app .action-btn:hover { background: var(--gray-200); }
+.import-history-app .view-btn:hover { background: rgba(3,169,244,0.1); color: var(--light-blue); }
+.import-history-app .retry-btn:hover { background: rgba(40,167,69,0.1); color: #28a745; }
+.import-history-app .delete-btn:hover { background: rgba(220,53,69,0.1); color: #dc3545; }
+/* Timeline & logs */
+.import-history-app .timeline { position: relative; padding-left: 30px; max-height: 400px; overflow-y: auto; }
+.import-history-app .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: var(--gray-200); }
+.import-history-app .timeline-item { position: relative; margin-bottom: 20px; }
+.import-history-app .timeline-dot { position: absolute; left: -20px; width: 12px; height: 12px; border-radius: 50%; background: var(--gray-600); }
+.import-history-app .timeline-dot.success { background: var(--light-green); }
+.import-history-app .timeline-dot.warning { background: var(--warning-orange); }
+.import-history-app .timeline-dot.error { background: var(--danger-red); }
+.import-history-app .log-level { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+.import-history-app .log-info { background: rgba(3,169,244,0.1); color: var(--light-blue); }
+.import-history-app .log-warning { background: rgba(255,193,7,0.1); color: #ffc107; }
+.import-history-app .log-error { background: rgba(220,53,69,0.1); color: #dc3545; }
+.import-history-app .log-success { background: rgba(40,167,69,0.1); color: #28a745; }
 </style>
 @endpush
 
 @push('scripts')
-<!-- DataTables -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-<!-- ApexCharts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
-
 <script>
 let importTable;
 let trendChart, distributionChart;
 let selectedImportId = null;
 
 $(document).ready(function() {
-    // Initialize DataTable
     importTable = $('#importHistoryTable').DataTable({
         processing: true,
         serverSide: true,
@@ -615,6 +418,14 @@ $(document).ready(function() {
         order: [[2, 'desc']],
         pageLength: 10,
         responsive: true,
+        drawCallback: function(settings) {
+            var api = this.api();
+            var info = api.page.info();
+            $('#showingCount').text(info.recordsDisplay === 0 ? 0 : (info.start + 1) + '\u2013' + Math.min(info.end, info.recordsDisplay));
+            $('#totalCount').text(info.recordsDisplay.toLocaleString());
+            $('#selectAll').prop('checked', false);
+            updateSelectedCount();
+        }
     });
     
     // Load statistics and charts
