@@ -6,8 +6,10 @@ use App\Models\SupplierSurvey;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use App\Helpers\CompanyHelper;
+use App\Mail\SupplierSurveyInvitation;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class SupplierSurveyController extends Controller
 {
@@ -164,19 +166,43 @@ class SupplierSurveyController extends Controller
             ], 400);
         }
 
+        $survey->loadMissing(['supplier', 'company']);
+
+        $recipient = $survey->supplier?->email;
+        if (empty($recipient)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This supplier has no email address. Add one on the supplier record before sending.'
+            ], 422);
+        }
+
         $survey->markAsSent();
 
-        // Email hook (implement Mail config later)
+        try {
+            Mail::to($recipient)->send(new SupplierSurveyInvitation($survey));
+        } catch (\Throwable $e) {
+            Log::error('Supplier survey email failed', [
+                'survey_id' => $survey->id,
+                'supplier_email' => $recipient,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Survey was marked as sent, but the email could not be delivered: ' . $e->getMessage(),
+            ], 502);
+        }
+
         Log::info('Supplier survey sent', [
             'survey_id' => $survey->id,
             'supplier_id' => $survey->supplier_id,
-            'supplier_email' => $survey->supplier?->email,
+            'supplier_email' => $recipient,
             'public_token' => $survey->public_token,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Survey sent successfully',
+            'message' => 'Survey emailed to ' . $recipient,
             'data' => $survey
         ]);
     }
@@ -193,19 +219,50 @@ class SupplierSurveyController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $survey->loadMissing(['supplier', 'company']);
+
+        $recipient = $survey->supplier?->email;
+        if (empty($recipient)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This supplier has no email address. Add one on the supplier record before sending a reminder.'
+            ], 422);
+        }
+
+        if (!$survey->isPublicLinkValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The survey link has expired. Re-send the survey to generate a new link.'
+            ], 422);
+        }
+
+        try {
+            Mail::to($recipient)->send(new SupplierSurveyInvitation($survey, isReminder: true));
+        } catch (\Throwable $e) {
+            Log::error('Supplier survey reminder email failed', [
+                'survey_id' => $survey->id,
+                'supplier_email' => $recipient,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'The reminder email could not be delivered: ' . $e->getMessage(),
+            ], 502);
+        }
+
         $survey->sendReminder();
 
-        // Email hook (implement Mail config later)
         Log::info('Supplier survey reminder sent', [
             'survey_id' => $survey->id,
             'supplier_id' => $survey->supplier_id,
-            'supplier_email' => $survey->supplier?->email,
+            'supplier_email' => $recipient,
             'reminder_count' => $survey->reminder_count,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Reminder sent successfully'
+            'message' => 'Reminder emailed to ' . $recipient
         ]);
     }
 
