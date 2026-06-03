@@ -238,6 +238,7 @@ class UtilityBillController extends Controller
         if ($extractedData['consumption'] && $extractedData['bill_date']) {
             $emissionRecord = EmissionRecord::create([
                 'entry_date' => $extractedData['bill_date'],
+                'company_id' => Auth::user()->company_id ?? $bill->company_id ?? null,
                 'facility' => $facility->name,
                 'scope' => $scope,
                 'emission_source' => $emissionSourceName,

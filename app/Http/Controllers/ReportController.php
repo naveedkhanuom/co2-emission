@@ -180,6 +180,9 @@ class ReportController extends Controller
             $data['created_by'] = auth()->id();
         }
 
+        // Scope to the current company so reports stay tenant-isolated
+        $data['company_id'] = current_company_id() ?? (auth()->user()->company_id ?? null);
+
         $report = Report::updateOrCreate(
             ['id' => $request->id ?? null],
             $data
