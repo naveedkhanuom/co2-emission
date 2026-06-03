@@ -15,7 +15,8 @@ class SupplierSurveyController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        // Public, token-authenticated supplier portal actions must NOT require a login.
+        $this->middleware('auth')->except(['publicShow', 'publicSubmit']);
         $this->middleware('permission:list-supplier-surveys|create-supplier-survey|edit-supplier-survey|delete-supplier-survey', ['only' => ['index', 'getData', 'show']]);
         $this->middleware('permission:create-supplier-survey', ['only' => ['store']]);
         $this->middleware('permission:edit-supplier-survey', ['only' => ['updateResponses', 'send', 'sendReminder']]);
@@ -272,7 +273,16 @@ class SupplierSurveyController extends Controller
      */
     public function publicShow(string $token)
     {
-        $survey = SupplierSurvey::where('public_token', $token)->with('supplier')->firstOrFail();
+        // Token is the credential here, so resolve it across all companies (no auth/company context).
+        $survey = SupplierSurvey::withoutGlobalScope('company')
+            ->where('public_token', $token)
+            ->with(['supplier', 'company'])
+            ->firstOrFail();
+
+        // One-time link: once submitted, show a thank-you page instead of the form.
+        if ($survey->status === 'completed') {
+            return view('supplier_portal.survey_submitted', compact('survey'));
+        }
 
         if (!$survey->isPublicLinkValid()) {
             return view('supplier_portal.survey_expired', compact('survey'));
@@ -287,7 +297,16 @@ class SupplierSurveyController extends Controller
      */
     public function publicSubmit(Request $request, string $token)
     {
-        $survey = SupplierSurvey::where('public_token', $token)->with('supplier')->firstOrFail();
+        // Token is the credential here, so resolve it across all companies (no auth/company context).
+        $survey = SupplierSurvey::withoutGlobalScope('company')
+            ->where('public_token', $token)
+            ->with(['supplier', 'company'])
+            ->firstOrFail();
+
+        // Already submitted: the one-time link is spent.
+        if ($survey->status === 'completed') {
+            return view('supplier_portal.survey_submitted', compact('survey'));
+        }
 
         if (!$survey->isPublicLinkValid()) {
             return redirect()->back()->with('error', 'This survey link has expired.');
@@ -307,7 +326,13 @@ class SupplierSurveyController extends Controller
 
         if ($allAnswered) {
             $survey->markAsCompleted($responses);
-            return redirect()->back()->with('success', 'Thank you! Survey submitted successfully.');
+
+            // Consume the one-time link so it cannot be reused after submission.
+            $survey->forceFill(['public_token_expires_at' => now()])->save();
+
+            return redirect()
+                ->route('supplier_portal.survey.show', $token)
+                ->with('success', 'Thank you! Survey submitted successfully.');
         }
 
         return redirect()->back()->with('success', 'Responses saved. You can return later to complete the survey.');
