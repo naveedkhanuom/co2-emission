@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             FactorOrganizationsSeeder::class,
             EmissionFactorsSeeder::class,
             EioFactorsSeeder::class,
+            ComprehensiveEmissionDataSeeder::class,
         ]);
     }
 }

@@ -31,6 +31,7 @@ use App\Http\Controllers\SupplierSurveyController;
 use App\Http\Controllers\EioFactorController;
 use App\Http\Controllers\DataQualityController;
 use App\Http\Controllers\CountryController;
+use App\Http\Controllers\AnalyticsController;
 
 
 Auth::routes();
@@ -41,6 +42,15 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+    // Analytics & Insights
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+        Route::get('/breakdown', [AnalyticsController::class, 'breakdown'])->name('breakdown');
+        Route::get('/intensity', [AnalyticsController::class, 'intensity'])->name('intensity');
+        Route::get('/year-over-year', [AnalyticsController::class, 'yearOverYear'])->name('yoy');
+        Route::get('/hotspots', [AnalyticsController::class, 'hotspots'])->name('hotspots');
+    });
 
     // Roles & Permissions (Spatie)
     Route::resource('roles', RoleController::class);

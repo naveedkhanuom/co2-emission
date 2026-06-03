@@ -28,6 +28,21 @@
 
         <li>
             @php
+                $demoRestricted = demo_route_restricted('analytics.index');
+                $userRestricted = ! user_can_see_sidebar_route('analytics.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('analytics.index') }}" class="{{ request()->routeIs('analytics.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-chart-pie"></i>
+                <span>Analytics</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <li>
+            @php
                 $demoRestricted = demo_route_restricted('emission_records.index');
                 $userRestricted = ! user_can_see_sidebar_route('emission_records.index');
                 $restricted = $demoRestricted || $userRestricted;
