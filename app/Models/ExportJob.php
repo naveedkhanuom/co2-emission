@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\HasCompanyScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ExportJob extends Model
 {
-    use HasFactory;
+    use HasFactory, HasCompanyScope;
 
     protected $fillable = [
+        'company_id',
         'name',
         'description',
         'format',

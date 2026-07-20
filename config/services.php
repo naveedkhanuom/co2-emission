@@ -31,4 +31,35 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Anthropic (Claude) — primary LLM provider
+    |--------------------------------------------------------------------------
+    | Used by App\Services\AI\ClaudeService. Never read ANTHROPIC_API_KEY
+    | directly in controllers/services — always go through this config.
+    */
+    'anthropic' => [
+        'key'         => env('ANTHROPIC_API_KEY'),
+        'model'       => env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
+        'version'     => env('ANTHROPIC_VERSION', '2023-06-01'),
+        'base_url'    => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+        'max_tokens'  => (int) env('ANTHROPIC_MAX_TOKENS', 1024),
+        'timeout'     => (int) env('ANTHROPIC_TIMEOUT', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | OCR (bill extraction)
+    |--------------------------------------------------------------------------
+    | Read via config() — never env() in controllers, which returns null under
+    | `php artisan config:cache` in production.
+    */
+    'ocr_space' => [
+        'key' => env('OCR_SPACE_API_KEY'),
+    ],
+
+    'tesseract' => [
+        'path' => env('TESSERACT_PATH', 'tesseract'),
+    ],
+
 ];

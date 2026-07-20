@@ -638,6 +638,14 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Keep a submenu (e.g. Settings) expanded when the current page is one
+        // of its child links, so it doesn't collapse after navigating.
+        document.querySelectorAll('.has-submenu').forEach(menu => {
+            if (menu.querySelector('.submenu a.active')) {
+                menu.classList.add('active');
+            }
+        });
+
         // Submenu toggle functionality
         const submenuToggles = document.querySelectorAll('.submenu-toggle');
         

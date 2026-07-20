@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class EioFactor extends Model
 {
@@ -47,19 +48,80 @@ class EioFactor extends Model
     }
 
     /**
-     * Calculate emissions from spend amount.
+     * Estimate emissions from a spend amount, returned in tonnes CO₂e (the
+     * app's canonical unit). Prefers a factor in the spend's currency, then the
+     * country's, then a generic default; normalises the result from the
+     * factor's stated unit (kg- vs tonne-denominated). Returns null if no
+     * factor is available.
      */
     public static function calculateFromSpend($spendAmount, $sectorCode, $country = 'USA', $currency = 'USD')
     {
-        $factor = static::getFactor($sectorCode, $country);
-        
+        $factor = static::resolveSpendFactor($sectorCode, $country, $currency);
+
         if (!$factor) {
             return null;
         }
 
-        // If currency differs, you might need conversion
-        // For now, assuming same currency
-        return $spendAmount * $factor->emission_factor;
+        if ($currency && strtoupper((string) $factor->currency) !== strtoupper((string) $currency)) {
+            // No factor in the spend's currency and no FX conversion is applied,
+            // so the estimate is approximate. Surface it rather than silently
+            // mixing currencies.
+            Log::warning('EIO spend estimate uses a different currency than the spend', [
+                'sector_code'     => $sectorCode,
+                'spend_currency'  => $currency,
+                'factor_currency' => $factor->currency,
+            ]);
+        }
+
+        $raw = (float) $spendAmount * (float) $factor->emission_factor;
+
+        return round(static::normalizeToTonnes($raw, $factor->factor_unit), 6);
+    }
+
+    /**
+     * Resolve the best EIO factor for a spend estimate: prefer the spend's
+     * currency, then the country's factor, then any factor for the sector.
+     */
+    protected static function resolveSpendFactor($sectorCode, $country, $currency)
+    {
+        if ($currency) {
+            $byCurrency = static::active()
+                ->where('sector_code', $sectorCode)
+                ->where('currency', $currency)
+                ->orderBy('year', 'desc')
+                ->first();
+
+            if ($byCurrency) {
+                return $byCurrency;
+            }
+        }
+
+        return static::getFactor($sectorCode, $country)
+            ?? static::active()
+                ->where('sector_code', $sectorCode)
+                ->orderBy('year', 'desc')
+                ->first();
+    }
+
+    /**
+     * Convert a raw (spend × factor) result to tonnes CO₂e using the factor's
+     * unit. Seeded factors are kg_CO2e_per_USD, so kg-denominated factors are
+     * divided by 1000; tonne-denominated factors pass through.
+     */
+    protected static function normalizeToTonnes(float $value, ?string $factorUnit): float
+    {
+        $unit = strtolower((string) $factorUnit);
+
+        if (str_contains($unit, 'kg')) {
+            return $value / 1000;
+        }
+
+        if (str_contains($unit, 'tonne') || str_contains($unit, 't_co2e') || str_contains($unit, 'tco2e')) {
+            return $value;
+        }
+
+        // Unknown unit: assume kg (the seeded convention) for consistency.
+        return $value / 1000;
     }
 
     /**

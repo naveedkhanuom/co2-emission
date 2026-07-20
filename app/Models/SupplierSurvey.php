@@ -22,6 +22,7 @@ class SupplierSurvey extends Model
         'sent_at',
         'due_date',
         'completed_at',
+        'emissions_generated_at',
         'reminder_sent_at',
         'reminder_count',
         'public_token',
@@ -36,6 +37,7 @@ class SupplierSurvey extends Model
         'sent_at' => 'datetime',
         'due_date' => 'datetime',
         'completed_at' => 'datetime',
+        'emissions_generated_at' => 'datetime',
         'reminder_sent_at' => 'datetime',
         'public_token_expires_at' => 'datetime',
     ];
@@ -79,10 +81,11 @@ class SupplierSurvey extends Model
      */
     public function markAsSent()
     {
-        if (!$this->public_token) {
+        // Mint a fresh link whenever the current one is missing or no longer
+        // valid (e.g. expired, or consumed by a previous submission). This lets
+        // an admin legitimately re-issue access.
+        if (!$this->isPublicLinkValid()) {
             $this->public_token = bin2hex(random_bytes(32));
-        }
-        if (!$this->public_token_expires_at) {
             $this->public_token_expires_at = now()->addDays(30);
         }
 
@@ -91,6 +94,18 @@ class SupplierSurvey extends Model
             'sent_at' => now(),
             'public_token' => $this->public_token,
             'public_token_expires_at' => $this->public_token_expires_at,
+        ]);
+    }
+
+    /**
+     * Force a brand-new public link (token + expiry), regardless of the current
+     * one. Used by the "re-send link" action for surveys that are already out.
+     */
+    public function regeneratePublicToken(int $validDays = 30): void
+    {
+        $this->update([
+            'public_token' => bin2hex(random_bytes(32)),
+            'public_token_expires_at' => now()->addDays($validDays),
         ]);
     }
 

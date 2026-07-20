@@ -11,38 +11,50 @@
     {{-- KPI Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="small text-muted fw-semibold mb-1">TOTAL EMISSIONS</div>
-                    <div class="h3 fw-bold text-dark mb-0" id="intensityTotal">-</div>
-                    <div class="small text-muted">tCO2e</div>
+            <div class="card analytics-kpi accent-dark">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-sm icon-grad-dark"><i class="fas fa-smog"></i></div>
+                    <div>
+                        <div class="kpi-cap">Total Emissions</div>
+                        <div class="kpi-num grad-dark" id="intensityTotal">-</div>
+                        <div class="small text-muted">tCO2e</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="small text-muted fw-semibold mb-1">PER EMPLOYEE</div>
-                    <div class="h3 fw-bold mb-0" style="color: var(--primary-green);" id="intensityPerEmployee">-</div>
-                    <div class="small text-muted">tCO2e / employee</div>
+            <div class="card analytics-kpi accent-green">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-sm icon-grad-green"><i class="fas fa-user-friends"></i></div>
+                    <div>
+                        <div class="kpi-cap">Per Employee</div>
+                        <div class="kpi-num grad-green" id="intensityPerEmployee">-</div>
+                        <div class="small text-muted">tCO2e / employee</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="small text-muted fw-semibold mb-1">PER REVENUE</div>
-                    <div class="h3 fw-bold mb-0" style="color: var(--primary-blue);" id="intensityPerRevenue">-</div>
-                    <div class="small text-muted" id="intensityRevenueUnit">tCO2e / $M revenue</div>
+            <div class="card analytics-kpi accent-blue">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-sm icon-grad-blue"><i class="fas fa-coins"></i></div>
+                    <div>
+                        <div class="kpi-cap">Per Revenue</div>
+                        <div class="kpi-num grad-blue" id="intensityPerRevenue">-</div>
+                        <div class="small text-muted" id="intensityRevenueUnit">tCO2e / $M revenue</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="small text-muted fw-semibold mb-1">EMPLOYEES</div>
-                    <div class="h3 fw-bold text-dark mb-0" id="intensityEmployeeCount">-</div>
-                    <div class="small text-muted" id="intensityRevenueInfo">-</div>
+            <div class="card analytics-kpi accent-orange">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-sm icon-grad-orange"><i class="fas fa-users"></i></div>
+                    <div>
+                        <div class="kpi-cap">Employees</div>
+                        <div class="kpi-num grad-orange" id="intensityEmployeeCount">-</div>
+                        <div class="small text-muted" id="intensityRevenueInfo">-</div>
+                    </div>
                 </div>
             </div>
         </div>

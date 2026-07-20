@@ -20,6 +20,18 @@ class HomeController extends Controller
 
     public function index(Request $request, $companyId = 1)
     {
+        // First-run experience: send brand-new companies through the plain-language
+        // setup wizard instead of dropping them onto an empty dashboard. Existing
+        // tenants (any sites/records) and super-admins are never redirected.
+        $onboarding = new OnboardingController();
+        $user = $request->user();
+        if ($user && !$user->is_super_admin) {
+            $company = $user->company_id ? $user->company : current_company();
+            if ($onboarding->needsOnboarding($company)) {
+                return redirect()->route('onboarding.index');
+            }
+        }
+
         // Get filter parameters
         $dateRange = $request->get('date_range', '12');
         $facilityFilter = $request->get('facility', '');

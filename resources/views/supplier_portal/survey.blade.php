@@ -47,7 +47,7 @@
                         @php
                             $qText = is_array($q) ? ($q['question'] ?? ('Question ' . ($index + 1))) : $q;
                             $qType = is_array($q) ? ($q['type'] ?? 'text') : 'text';
-                            $value = $responses[$index] ?? '';
+                            $value = old("responses.$index", $responses[$index] ?? '');
                         @endphp
 
                         <div class="mb-4">

@@ -1,6 +1,6 @@
 {{-- Analytics Filters --}}
-<div class="filters-section mb-4">
-    <div class="card border-0 shadow-sm">
+<div class="mb-4">
+    <div class="card">
         <div class="card-body py-3">
             <form id="analyticsFilterForm" class="row g-3 align-items-end">
                 {{-- Date Range --}}
@@ -56,6 +56,19 @@
                         @foreach($departments as $department)
                             <option value="{{ $department->id }}" {{ ($filters['department'] ?? '') == $department->id ? 'selected' : '' }}>
                                 {{ $department->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Emission Source / Category --}}
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-muted small mb-1">Emission Source</label>
+                    <select class="form-select form-select-sm" id="filterCategory" name="category">
+                        <option value="">All Sources</option>
+                        @foreach($emissionCategories as $category)
+                            <option value="{{ $category }}" {{ ($filters['category'] ?? '') == $category ? 'selected' : '' }}>
+                                {{ $category }}
                             </option>
                         @endforeach
                     </select>

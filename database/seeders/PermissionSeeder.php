@@ -126,6 +126,12 @@ class PermissionSeeder extends Seeder
             'edit-eio-factor',
             'delete-eio-factor',
 
+            // Energy Attribute Certificates (market-based Scope 2 instruments)
+            'list-energy-certificates',
+            'create-energy-certificate',
+            'edit-energy-certificate',
+            'delete-energy-certificate',
+
             // Data Quality
             'list-data-quality',
             'create-data-quality',

@@ -2,41 +2,211 @@
 
 @push('styles')
 <style>
+    /* ============================================================
+       ANALYTICS & INSIGHTS — polished design language
+       (matches the app dashboard: 16px gradient cards, accent bars,
+        gradient KPI badges, lift-on-hover)
+       ============================================================ */
+
+    /* ---- Page header ---- */
+    .analytics-header {
+        background: linear-gradient(135deg, #ffffff 0%, #f5f8f5 100%);
+        border-radius: 18px;
+        padding: 22px 26px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(46, 125, 50, 0.08);
+        margin-bottom: 24px;
+    }
+    .analytics-header .header-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        color: #fff;
+        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        box-shadow: 0 6px 16px rgba(46, 125, 50, 0.28);
+        flex-shrink: 0;
+    }
+    .analytics-header h4 {
+        background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ---- Cards (scoped) ---- */
+    .analytics-page .card {
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 16px;
+        background: linear-gradient(135deg, #ffffff 0%, #fafbfa 100%);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.03);
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+        overflow: hidden;
+    }
+    .analytics-page .card:hover {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09), 0 10px 28px rgba(0, 0, 0, 0.05);
+    }
+    .analytics-page .card-header {
+        background: transparent !important;
+        border-bottom: 1px solid #eef1ef !important;
+    }
+    .analytics-page .card-header h6 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        color: #2c3a30;
+    }
+    .analytics-page .card-header h6::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        border-radius: 3px;
+        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        flex-shrink: 0;
+    }
+    .analytics-page .card-header h6 i { display: none; } /* accent bar replaces leading icon */
+
+    /* ---- KPI cards ---- */
+    .analytics-kpi {
+        position: relative;
+        height: 100%;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease !important;
+    }
+    .analytics-kpi::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, transparent, currentColor, transparent);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .analytics-page .analytics-kpi:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12) !important;
+    }
+    .analytics-kpi:hover::before { opacity: 1; }
+    .analytics-kpi.accent-green  { color: #2e7d32; }
+    .analytics-kpi.accent-blue   { color: #0277bd; }
+    .analytics-kpi.accent-orange { color: #f57c00; }
+    .analytics-kpi.accent-dark   { color: #455a64; }
+
+    .kpi-icon-sm {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+        transition: transform 0.3s ease;
+    }
+    .analytics-kpi:hover .kpi-icon-sm { transform: scale(1.08) rotate(4deg); }
+    .icon-grad-green  { background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%); }
+    .icon-grad-blue   { background: linear-gradient(135deg, #0277bd 0%, #03a9f4 100%); }
+    .icon-grad-orange { background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%); }
+    .icon-grad-dark   { background: linear-gradient(135deg, #455a64 0%, #78909c 100%); }
+
+    .kpi-cap {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: #8a949c;
+        margin-bottom: 2px;
+    }
+    .kpi-num {
+        font-size: 1.85rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+    .kpi-num.grad-green  { background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .kpi-num.grad-blue   { background: linear-gradient(135deg, #0277bd 0%, #03a9f4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .kpi-num.grad-orange { background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .kpi-num.grad-dark   { background: linear-gradient(135deg, #37474f 0%, #607d8b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* ---- Tabs (pill style) ---- */
+    .analytics-tabs {
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.04);
+        gap: 4px;
+    }
     .analytics-tabs .nav-link {
         color: #6c757d;
-        border: none;
-        border-bottom: 3px solid transparent;
-        transition: all 0.2s;
+        border: none !important;
+        border-radius: 10px;
+        padding: 9px 18px;
+        transition: all 0.2s ease;
     }
     .analytics-tabs .nav-link:hover {
         color: var(--primary-green);
-        border-bottom-color: rgba(46, 125, 50, 0.3);
+        background: rgba(46, 125, 50, 0.07);
     }
     .analytics-tabs .nav-link.active {
-        color: var(--primary-green);
-        border-bottom-color: var(--primary-green);
-        background: transparent;
-        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.28);
     }
+
+    /* ---- Segmented selector buttons ---- */
+    .analytics-page .btn-group .btn {
+        border-radius: 10px !important;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
+    .analytics-page .btn-group .btn.btn-success {
+        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        border-color: transparent;
+        box-shadow: 0 3px 8px rgba(46, 125, 50, 0.22);
+    }
+    .analytics-page .btn-group { gap: 6px; }
+
+    /* ---- Breadcrumb ---- */
     .breadcrumb-item + .breadcrumb-item::before {
         content: "→";
+        color: #adb5bd;
     }
     .breadcrumb-item a {
         color: var(--primary-green);
         text-decoration: none;
+        font-weight: 600;
     }
-    .btn-group .btn.active {
-        box-shadow: none;
+    .breadcrumb-item.active { color: #6c757d; font-weight: 600; }
+
+    /* ---- Tables ---- */
+    .analytics-page .table thead th {
+        background: #f5f8f5;
+        color: #55615a;
+        font-weight: 700;
+        font-size: 0.78rem;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        border-bottom: none;
     }
+    .analytics-page .table tbody tr { transition: background 0.15s ease; }
+    .analytics-page .table-hover tbody tr:hover { background: rgba(46, 125, 50, 0.045); }
+
+    /* ---- Distribution / impact bars ---- */
     .hotspot-bar {
         height: 8px;
-        border-radius: 4px;
-        background: #e9ecef;
+        border-radius: 6px;
+        background: #eceef0;
+        overflow: hidden;
     }
     .hotspot-bar-fill {
         height: 100%;
-        border-radius: 4px;
-        transition: width 0.5s ease;
+        border-radius: 6px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 </style>
 @endpush
@@ -45,15 +215,16 @@
 <div id="content">
     @include('layouts.top-nav')
 
-    <div class="container-fluid py-4">
+    <div class="container-fluid py-4 analytics-page">
 
         {{-- Page Header --}}
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h4 class="fw-bold mb-1" style="color: var(--dark-green);">
-                    <i class="fas fa-chart-pie me-2"></i>Analytics & Insights
-                </h4>
-                <p class="text-muted mb-0 small">Drill-down analysis, intensity metrics, trends, and carbon hotspots</p>
+        <div class="analytics-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <div class="header-icon"><i class="fas fa-chart-pie"></i></div>
+                <div>
+                    <h4 class="fw-bold mb-1">Analytics &amp; Insights</h4>
+                    <p class="text-muted mb-0 small">Drill-down analysis, intensity metrics, trends, and carbon hotspots</p>
+                </div>
             </div>
         </div>
 
@@ -61,7 +232,7 @@
         @include('analytics.partials._filters')
 
         {{-- Tab Navigation --}}
-        <ul class="nav nav-tabs analytics-tabs mb-0" id="analyticsTabs" role="tablist" style="border-bottom: 2px solid #e9ecef;">
+        <ul class="nav nav-pills analytics-tabs mb-0 d-inline-flex" id="analyticsTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active fw-semibold px-4" id="breakdown-tab" data-bs-toggle="tab" data-bs-target="#breakdown" type="button" role="tab">
                     <i class="fas fa-layer-group me-1"></i> Breakdown
@@ -122,6 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
             facility: document.getElementById('filterFacility').value,
             department: document.getElementById('filterDepartment').value,
             scope: document.getElementById('filterScope').value,
+            category: document.getElementById('filterCategory') ? document.getElementById('filterCategory').value : '',
         };
     }
 
@@ -134,6 +306,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(2) + 'M';
         if (Math.abs(n) >= 1000) return (n / 1000).toFixed(2) + 'K';
         return parseFloat(n).toFixed(2);
+    }
+
+    // Escape DB-sourced strings (source / facility / department / supplier names)
+    // before injecting them into innerHTML, to prevent stored XSS.
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
     }
 
     // =====================================================
@@ -231,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = data.map((item, i) => `
             <tr>
                 <td class="ps-3 text-muted">${i + 1}</td>
-                <td class="fw-semibold">${item.label}</td>
+                <td class="fw-semibold">${escapeHtml(item.label)}</td>
                 <td class="text-end">${formatNumber(item.value)}</td>
                 <td class="text-end">${item.count}</td>
                 <td class="text-end">${item.percentage}%</td>
@@ -249,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let html = '<li class="breadcrumb-item"><a href="#" onclick="resetDrilldown(); return false;">All Emissions</a></li>';
         drilldownStack.forEach((item, i) => {
             if (item.clickedLabel) {
-                html += `<li class="breadcrumb-item"><a href="#" onclick="drillTo(${i}); return false;">${item.clickedLabel}</a></li>`;
+                html += `<li class="breadcrumb-item"><a href="#" onclick="drillTo(${i}); return false;">${escapeHtml(item.clickedLabel)}</a></li>`;
             }
         });
         html += `<li class="breadcrumb-item active">${currentDimension === 'scope' ? 'By Scope' : currentDimension === 'source' ? 'By Source' : 'Details'}</li>`;
@@ -404,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.scope_breakdown && data.scope_breakdown.length > 0) {
             tbody.innerHTML = data.scope_breakdown.map(s => `
                 <tr>
-                    <td class="ps-3 fw-semibold">${s.scope}</td>
+                    <td class="ps-3 fw-semibold">${escapeHtml(s.scope)}</td>
                     <td class="text-end">${formatNumber(s.total)}</td>
                     <td class="text-end">${s.per_employee !== null ? s.per_employee.toFixed(4) : 'N/A'}</td>
                     <td class="text-end">${s.per_revenue !== null ? s.per_revenue.toFixed(4) : 'N/A'}</td>
@@ -523,7 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 custom: function({ seriesIndex, dataPointIndex }) {
                     const item = data[dataPointIndex];
                     return `<div class="px-3 py-2">
-                        <strong>${item.category}</strong><br>
+                        <strong>${escapeHtml(item.category)}</strong><br>
                         Previous: ${item.previous.toFixed(2)} tCO2e<br>
                         Current: ${item.current.toFixed(2)} tCO2e<br>
                         Change: <span style="color:${item.type === 'increase' ? COLORS.increase : COLORS.decrease}">${item.delta > 0 ? '+' : ''}${item.delta.toFixed(2)} tCO2e</span>
@@ -544,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 : '<span class="badge bg-success-subtle text-success"><i class="fas fa-arrow-down"></i> Decrease</span>';
             return `
                 <tr>
-                    <td class="ps-3">${item.category}</td>
+                    <td class="ps-3">${escapeHtml(item.category)}</td>
                     <td class="text-end">${formatNumber(item.previous)}</td>
                     <td class="text-end">${formatNumber(item.current)}</td>
                     <td class="text-end" style="color:${item.type === 'increase' ? COLORS.increase : COLORS.decrease}">${item.delta > 0 ? '+' : ''}${formatNumber(item.delta)}</td>
@@ -632,8 +813,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return `
                 <tr>
                     <td class="ps-3 fw-bold text-center">${i + 1}</td>
-                    <td class="fw-semibold">${item.name}</td>
-                    <td><span class="badge" style="background:${scopeColor}; color: white;">${item.scope}</span></td>
+                    <td class="fw-semibold">${escapeHtml(item.name)}</td>
+                    <td><span class="badge" style="background:${scopeColor}; color: white;">${escapeHtml(item.scope)}</span></td>
                     <td class="text-end">${formatNumber(item.value)}</td>
                     <td class="text-end fw-semibold">${item.percentage}%</td>
                     <td class="text-end">${item.cumulative}%</td>

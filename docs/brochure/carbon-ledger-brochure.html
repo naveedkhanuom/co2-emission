@@ -1,0 +1,1344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Carbon Ledger - GHG accounting platform for regulated reporters. Product brochure by Altayaboon IT Solutions and Services." />
+</head>
+<body>
+<title>Carbon Ledger — Product Brochure</title>
+
+<style>
+  :root {
+    --navy:      #0A1E36;
+    --navy-2:    #123253;
+    --navy-3:    #1D4570;
+    --brand:     #00B37E;
+    --brand-2:   #04895F;
+    --brand-3:   #7CE8C0;
+    --paper:     #F4F7F9;
+    --surface:   #FFFFFF;
+    --ink:       #0A1E36;
+    --ink-2:     #46596F;
+    --ink-3:     #77899E;
+    --rule:      #DBE3EA;
+    --rule-2:    #EAF0F4;
+
+    --s1: #2E7D32;
+    --s2: #0277BD;
+    --s3: #F57C00;
+
+    --sans: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", "Roboto Mono", Consolas, monospace;
+
+    --page: 1140px;
+    --measure: 66ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --navy:    #061224;
+      --navy-2:  #0C2440;
+      --navy-3:  #17395C;
+      --brand:   #16C98F;
+      --brand-2: #0FA274;
+      --brand-3: #9CF2D4;
+      --paper:   #071626;
+      --surface: #0D2138;
+      --ink:     #EAF1F6;
+      --ink-2:   #A9BCCE;
+      --ink-3:   #7C90A5;
+      --rule:    #1D3B5A;
+      --rule-2:  #142E49;
+
+      --s1: #63C96C;
+      --s2: #4FAEE8;
+      --s3: #FFAB4A;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --navy:    #061224;
+    --navy-2:  #0C2440;
+    --navy-3:  #17395C;
+    --brand:   #16C98F;
+    --brand-2: #0FA274;
+    --brand-3: #9CF2D4;
+    --paper:   #071626;
+    --surface: #0D2138;
+    --ink:     #EAF1F6;
+    --ink-2:   #A9BCCE;
+    --ink-3:   #7C90A5;
+    --rule:    #1D3B5A;
+    --rule-2:  #142E49;
+
+    --s1: #63C96C;
+    --s2: #4FAEE8;
+    --s3: #FFAB4A;
+  }
+
+  :root[data-theme="light"] {
+    --navy:    #0A1E36;
+    --navy-2:  #123253;
+    --navy-3:  #1D4570;
+    --brand:   #00B37E;
+    --brand-2: #04895F;
+    --brand-3: #7CE8C0;
+    --paper:   #F4F7F9;
+    --surface: #FFFFFF;
+    --ink:     #0A1E36;
+    --ink-2:   #46596F;
+    --ink-3:   #77899E;
+    --rule:    #DBE3EA;
+    --rule-2:  #EAF0F4;
+
+    --s1: #2E7D32;
+    --s2: #0277BD;
+    --s3: #F57C00;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: var(--page);
+    margin-inline: auto;
+    padding-inline: 30px;
+  }
+
+  .icon { width: 22px; height: 22px; display: block; }
+
+  /* ================= COVER ================= */
+
+  .cover {
+    background:
+      radial-gradient(115% 85% at 88% 4%, rgba(0,179,126,0.30) 0%, rgba(0,179,126,0) 58%),
+      linear-gradient(168deg, var(--navy-2) 0%, var(--navy) 62%);
+    color: #FFFFFF;
+    padding-block: 76px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .brandbar {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 60px;
+  }
+
+  .brandmark {
+    width: 34px; height: 34px;
+    background: var(--brand);
+    display: grid;
+    place-items: center;
+    color: var(--navy);
+    font-weight: 900;
+    font-size: 17px;
+    border-radius: 5px;
+    flex: none;
+  }
+
+  .brandbar b { font-size: 15px; font-weight: 800; letter-spacing: 0.01em; }
+  .brandbar span {
+    font-size: 11px;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+    color: #92AAC4;
+    display: block;
+    font-weight: 600;
+  }
+
+  .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: rgba(0,179,126,0.16);
+    border: 1px solid rgba(0,179,126,0.42);
+    color: var(--brand-3);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 8px 15px;
+    border-radius: 999px;
+  }
+
+  .cover h1 {
+    font-size: clamp(40px, 7.4vw, 88px);
+    font-weight: 900;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    margin: 26px 0 0;
+    text-wrap: balance;
+    max-width: 15ch;
+  }
+
+  .cover h1 u {
+    text-decoration: none;
+    color: var(--brand);
+    position: relative;
+  }
+
+  .cover-lede {
+    font-size: clamp(16px, 2.1vw, 20px);
+    line-height: 1.55;
+    color: #B9CBDC;
+    max-width: 54ch;
+    margin: 26px 0 0;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 34px;
+  }
+
+  .chip {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: #C6D8E8;
+    border: 1px solid rgba(255,255,255,0.19);
+    background: rgba(255,255,255,0.05);
+    padding: 9px 14px;
+    border-radius: 4px;
+  }
+
+  .scopebar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    margin-top: 62px;
+    border-top: 1px solid rgba(255,255,255,0.13);
+  }
+
+  .scopebar div {
+    padding: 22px 22px 26px;
+    border-right: 1px solid rgba(255,255,255,0.13);
+    border-top: 4px solid var(--tint);
+  }
+
+  .scopebar div:last-child { border-right: none; }
+
+  .scopebar b {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 3px;
+  }
+
+  .scopebar span { font-size: 13px; color: #93A9C0; }
+
+  /* ================= CONTENTS ================= */
+
+  .contents { background: var(--surface); padding-block: 54px; }
+
+  .toc {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(258px, 1fr));
+    gap: 3px;
+    margin-top: 24px;
+  }
+
+  .toc a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 15px;
+    text-decoration: none;
+    color: var(--ink);
+    background: var(--paper);
+    border-radius: 5px;
+    font-size: 14.5px;
+    font-weight: 600;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+
+  .toc a:hover { background: var(--brand); color: #FFFFFF; }
+  .toc a:hover .toc-n { background: rgba(255,255,255,0.24); color: #FFFFFF; }
+  .toc a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .toc-n {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--rule-2);
+    color: var(--ink-3);
+    width: 27px; height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    flex: none;
+  }
+
+  /* ================= SECTIONS ================= */
+
+  .sec { padding-block: 72px; background: var(--paper); }
+  .sec--white { background: var(--surface); }
+
+  /* Dark sections re-point the tokens, so every child styles itself
+     correctly without a single override rule. */
+  .sec--dark {
+    background: linear-gradient(165deg, var(--navy-2) 0%, var(--navy) 70%);
+    --surface: rgba(255,255,255,0.055);
+    --paper: transparent;
+    --ink: #FFFFFF;
+    --ink-2: #B4C7D9;
+    --ink-3: #8AA1B8;
+    --rule: rgba(255,255,255,0.15);
+    --rule-2: rgba(255,255,255,0.09);
+  }
+
+  .sec-head { margin-bottom: 40px; }
+
+  .sec-num {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    background: var(--brand);
+    color: #052E22;
+    padding: 6px 11px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+
+  .sec-head h2 {
+    font-size: clamp(29px, 4.3vw, 47px);
+    font-weight: 900;
+    line-height: 1.04;
+    letter-spacing: -0.028em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .sec-head p {
+    font-size: 17px;
+    color: var(--ink-3);
+    margin: 12px 0 0;
+    max-width: var(--measure);
+  }
+
+  .prose {
+    max-width: var(--measure);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-size: 16.5px;
+    color: var(--ink-2);
+  }
+
+  .prose p { margin: 0; }
+  .prose strong { color: var(--ink); font-weight: 700; }
+
+  .h3 {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin: 0 0 20px;
+  }
+
+  .mt { margin-top: 52px; }
+
+  /* ================= CARDS ================= */
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .sec--white .card { background: var(--paper); border-color: var(--rule-2); }
+
+  .tile {
+    width: 42px; height: 42px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: var(--tint, var(--brand));
+    color: #FFFFFF;
+    margin-bottom: 3px;
+    flex: none;
+  }
+
+  .card h4 {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.014em;
+    margin: 0;
+    line-height: 1.26;
+    color: var(--ink);
+  }
+
+  .card p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.58;
+    color: var(--ink-2);
+  }
+
+  .ref {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--brand-2);
+    background: var(--rule-2);
+    border-radius: 4px;
+    padding: 6px 9px;
+    margin-top: auto;
+    align-self: flex-start;
+  }
+
+  .sec--dark .ref { color: var(--brand-3); }
+
+  .lbl {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--tint, var(--ink-3));
+  }
+
+  .t1 { --tint: var(--s1); }
+  .t2 { --tint: var(--s2); }
+  .t3 { --tint: var(--s3); }
+
+  /* ================= STAT BAND ================= */
+
+  .band {
+    background: linear-gradient(100deg, var(--brand-2) 0%, var(--brand) 100%);
+    color: #FFFFFF;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    overflow: hidden;
+  }
+
+  .band > div {
+    padding: 30px 26px;
+    border-right: 1px solid rgba(255,255,255,0.22);
+  }
+
+  .band > div:last-child { border-right: none; }
+
+  .band b {
+    display: block;
+    font-size: 52px;
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.045em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 10px;
+  }
+
+  .band span { font-size: 14px; line-height: 1.45; color: rgba(255,255,255,0.93); }
+
+  /* ================= STEPS ================= */
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
+    gap: 14px;
+  }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .step b {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand);
+    letter-spacing: 0.06em;
+  }
+
+  .step h4 {
+    font-size: 15.5px;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.25;
+    color: var(--ink);
+  }
+
+  .step p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+
+  /* ================= TABLE ================= */
+
+  .ledger {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 520px; }
+
+  th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    background: var(--navy);
+    padding: 14px 20px;
+    white-space: nowrap;
+  }
+
+  td { padding: 14px 20px; border-top: 1px solid var(--rule-2); color: var(--ink-2); vertical-align: top; }
+  td.k { color: var(--ink); font-weight: 700; white-space: nowrap; }
+
+  td.code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--brand-2);
+    white-space: nowrap;
+  }
+
+  /* ================= QUOTE ================= */
+
+  .quote {
+    background: var(--navy);
+    border-radius: 10px;
+    padding: 46px 38px;
+    color: #FFFFFF;
+    border-left: 6px solid var(--brand);
+  }
+
+  .sec--dark .quote { background: rgba(255,255,255,0.06); }
+
+  .quote q {
+    quotes: none;
+    display: block;
+    font-size: clamp(22px, 3.1vw, 33px);
+    font-weight: 800;
+    line-height: 1.18;
+    letter-spacing: -0.026em;
+    text-wrap: balance;
+  }
+
+  .quote span {
+    display: block;
+    margin-top: 15px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--brand-3);
+  }
+
+  /* ================= GALLERY ================= */
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 26px;
+  }
+
+  .shot {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .slot {
+    aspect-ratio: 16 / 9;
+    background:
+      repeating-linear-gradient(135deg, var(--rule-2) 0 12px, transparent 12px 24px),
+      var(--paper);
+    display: grid;
+    place-items: center;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .sec--white .slot { background: repeating-linear-gradient(135deg, var(--rule-2) 0 12px, transparent 12px 24px), var(--surface); }
+
+  .slot span {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-align: center;
+    line-height: 2;
+    background: var(--surface);
+    padding: 10px 16px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+  }
+
+  .shot figcaption { padding: 20px 22px 24px; display: flex; flex-direction: column; gap: 8px; }
+  .shot h4 { font-size: 16.5px; font-weight: 800; margin: 0; letter-spacing: -0.014em; color: var(--ink); }
+  .shot p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+
+  .value {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--brand-2);
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+  }
+
+  .value svg { flex: none; margin-top: 2px; }
+
+  /* ================= BADGES ================= */
+
+  .badges { display: flex; flex-wrap: wrap; gap: 9px; }
+
+  .badge {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 9px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); flex: none; }
+
+  /* ================= CONTACT ================= */
+
+  .contact { background: linear-gradient(165deg, var(--navy-2) 0%, var(--navy) 70%); color: #FFFFFF; padding-block: 72px; }
+  .contact .sec-head h2 { color: #FFFFFF; }
+  .contact .sec-head p { color: #9CB2C8; }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 40px;
+    align-items: start;
+  }
+
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+
+  .cta {
+    font-size: 15px;
+    font-weight: 800;
+    padding: 15px 26px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cta-a { background: var(--brand); color: #04241B; }
+  .cta-b { color: #FFFFFF; border: 1px solid rgba(255,255,255,0.34); }
+  .cta:focus-visible { outline: 2px solid var(--brand-3); outline-offset: 3px; }
+
+  .contact dl { margin: 0; display: grid; grid-template-columns: auto 1fr; }
+
+  .contact dt, .contact dd {
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.13);
+    margin: 0;
+  }
+
+  .contact dt {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--brand-3);
+    padding-right: 30px;
+    white-space: nowrap;
+  }
+
+  .contact dd { color: #DCE7F0; font-size: 15px; font-weight: 600; }
+
+  .foot {
+    background: var(--navy);
+    color: #7E96AF;
+    padding-block: 26px;
+    font-size: 12.5px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .foot b { color: #FFFFFF; font-weight: 800; letter-spacing: 0.05em; }
+
+  /* ================= MOTION ================= */
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rev { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .rev.on { opacity: 1; transform: none; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="i-flame" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s5 4.2 5 9a5 5 0 0 1-10 0c0-2 1-3.4 2-4.5.3 1.4 1 2.2 1.8 2.5C10.4 7.6 12 5.4 12 3Z"/></g>
+    <g id="i-bolt" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></g>
+    <g id="i-net" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2.4"/><circle cx="4.8" cy="18" r="2.4"/><circle cx="19.2" cy="18" r="2.4"/><path d="M10.4 6.6 6.3 15.6M13.6 6.6l4.1 9M7.2 18h9.6"/></g>
+    <g id="i-search" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.4 15.4 4.6 4.6"/></g>
+    <g id="i-scan" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/></g>
+    <g id="i-users" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5M16 5.4a3.2 3.2 0 0 1 0 5.2M17.5 14.8c2 .7 3.3 2.4 3.3 4.7"/></g>
+    <g id="i-check" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 20 6v6c0 4.4-3.2 7.9-8 9.2C7.2 19.9 4 16.4 4 12V6l8-3.2Z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/></g>
+    <g id="i-gauge" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 17a9 9 0 1 1 16.8 0"/><path d="m12 13 4-3.6"/><circle cx="12" cy="16.6" r="1.6"/></g>
+    <g id="i-doc" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V9l-6-6Z"/><path d="M13 3v6h6M8.5 13h7M8.5 17h5"/></g>
+    <g id="i-shield" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 20 6v6c0 4.4-3.2 7.9-8 9.2C7.2 19.9 4 16.4 4 12V6l8-3.2Z"/><path d="M12 8v5"/><circle cx="12" cy="16.2" r=".9" fill="currentColor" stroke="none"/></g>
+    <g id="i-chart" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12.5 16V8M17 16v-6"/></g>
+    <g id="i-clock" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 7v5.3l3.4 2"/></g>
+    <g id="i-lock" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.6" y="10.4" width="14.8" height="10.2" rx="1.8"/><path d="M8.2 10.4V7.6a3.8 3.8 0 0 1 7.6 0v2.8"/></g>
+    <g id="i-layers" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 4.6-9 4.6-9-4.6L12 3Z"/><path d="m3.6 12.4 8.4 4.3 8.4-4.3M3.6 16.9l8.4 4.3 8.4-4.3"/></g>
+    <g id="i-target" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></g>
+    <g id="i-globe" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2M12 3.4c2.2 2.4 3.4 5.4 3.4 8.6s-1.2 6.2-3.4 8.6c-2.2-2.4-3.4-5.4-3.4-8.6S9.8 5.8 12 3.4Z"/></g>
+    <g id="i-tick" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></g>
+    <g id="i-arrow" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></g>
+  </defs>
+</svg>
+
+<header class="cover">
+  <div class="wrap">
+    <div class="brandbar">
+      <div class="brandmark">A</div>
+      <div>
+        <b>Altayaboon</b>
+        <span>IT Solutions &amp; Services</span>
+      </div>
+    </div>
+
+    <div class="kicker"><svg class="icon" style="width:14px;height:14px"><use href="#i-tick"/></svg>Corporate Carbon Accounting Platform</div>
+
+    <h1>Carbon Ledger. Every Tonne <u>Defensible</u>.</h1>
+
+    <p class="cover-lede">Scopes 1, 2 and 3 on one platform — traced from the activity that caused the emission, through the factor version that converted it, to the person who approved it. CSRD, CDP, GRI and Abu Dhabi MRV from a single inventory.</p>
+
+    <div class="chips">
+      <span class="chip">GHG Protocol</span>
+      <span class="chip">CSRD / ESRS E1</span>
+      <span class="chip">CDP</span>
+      <span class="chip">GRI 305</span>
+      <span class="chip">EAD MRV</span>
+      <span class="chip">AI-Assisted</span>
+      <span class="chip">Multi-Entity</span>
+    </div>
+
+    <div class="scopebar">
+      <div style="--tint:#3DBE5A"><b>Scope 1 — Direct</b><span>Stationary, mobile, fugitive &amp; process</span></div>
+      <div style="--tint:#35A7E8"><b>Scope 2 — Indirect</b><span>Dual-reported: location &amp; market</span></div>
+      <div style="--tint:#FF9E2C"><b>Scope 3 — Value Chain</b><span>All fifteen categories</span></div>
+    </div>
+  </div>
+</header>
+
+<section class="contents">
+  <div class="wrap">
+    <h2 class="h3">Inside this brochure</h2>
+    <nav class="toc">
+      <a href="#s01"><span class="toc-n">01</span>About the Software</a>
+      <a href="#s02"><span class="toc-n">02</span>Why Choose Carbon Ledger</a>
+      <a href="#s03"><span class="toc-n">03</span>Key Features</a>
+      <a href="#s04"><span class="toc-n">04</span>Modules</a>
+      <a href="#s05"><span class="toc-n">05</span>The Dashboard Experience</a>
+      <a href="#s06"><span class="toc-n">06</span>End-to-End Workflow</a>
+      <a href="#s07"><span class="toc-n">07</span>Reports &amp; Analytics</a>
+      <a href="#s08"><span class="toc-n">08</span>Product Gallery</a>
+      <a href="#s09"><span class="toc-n">09</span>Business Benefits</a>
+      <a href="#s10"><span class="toc-n">10</span>Technical Highlights</a>
+      <a href="#s11"><span class="toc-n">11</span>Industries Served</a>
+      <a href="#s12"><span class="toc-n">12</span>Why Our Solution</a>
+      <a href="#s13"><span class="toc-n">13</span>Contact Us</a>
+    </nav>
+  </div>
+</section>
+
+<!-- 01 -->
+<section class="sec sec--white rev" id="s01">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <h2>About the Software</h2>
+      <p>Built for organisations that have to defend their numbers</p>
+    </div>
+
+    <div class="prose">
+      <p>Carbon Ledger is a cloud-based greenhouse gas accounting platform for companies that report emissions to regulators, investors, customers or the public. It covers the full inventory: <strong>Scope 1</strong> direct emissions, <strong>Scope 2</strong> purchased energy — dual-reported location-based and market-based — and all fifteen <strong>Scope 3</strong> value-chain categories defined by the GHG Protocol.</p>
+      <p>Most carbon tools stop at a number. Carbon Ledger is built around the harder requirement: <strong>showing your work.</strong> Every record stores the activity data, the exact emission factor version applied, the gas-by-gas breakdown, the GWP set used, the data-quality tier, and a complete audit trail of who entered and who approved it. When an assurer, a regulator or your own board asks where a figure came from, the answer is one click away.</p>
+    </div>
+
+    <div class="mt">
+      <h3 class="h3">Who it's for</h3>
+      <div class="grid">
+        <div class="card"><div class="tile"><svg class="icon"><use href="#i-layers"/></svg></div><h4>Sustainability &amp; ESG teams</h4><p>Own the inventory end to end without living in twenty spreadsheets that no two people can reconcile.</p></div>
+        <div class="card"><div class="tile" style="--tint:var(--s1)"><svg class="icon"><use href="#i-flame"/></svg></div><h4>Facility &amp; operations managers</h4><p>Enter fuel, electricity and refrigerant data through guided flows that need no carbon-accounting expertise.</p></div>
+        <div class="card"><div class="tile"><svg class="icon"><use href="#i-doc"/></svg></div><h4>Finance &amp; disclosure officers</h4><p>Produce CSRD, CDP and GRI figures from one inventory, so filings to different bodies cannot contradict each other.</p></div>
+        <div class="card"><div class="tile"><svg class="icon"><use href="#i-shield"/></svg></div><h4>Regulated facilities in Abu Dhabi</h4><p>Generate a filled EAD MRV workbook from data already in the system — no parallel process.</p></div>
+        <div class="card"><div class="tile"><svg class="icon"><use href="#i-check"/></svg></div><h4>Auditors &amp; verifiers</h4><p>Trace any reported tonne to its source document, factor version and approver through an immutable audit log.</p></div>
+        <div class="card"><div class="tile" style="--tint:var(--s3)"><svg class="icon"><use href="#i-users"/></svg></div><h4>Suppliers in your value chain</h4><p>Respond to Scope 3 data requests through a secure portal — no account, no password, one link.</p></div>
+      </div>
+    </div>
+
+    <div class="mt">
+      <h3 class="h3">The problem it solves</h3>
+      <div class="prose">
+        <p>Corporate carbon inventories are still assembled by hand: fuel logs emailed as PDFs, utility bills retyped, factors copied from a decade-old spreadsheet, Scope 3 estimated once and never revisited. The result is <strong>an inventory nobody can reproduce.</strong> When the factor library updates, prior years silently shift. When a supplier restates, nothing downstream recalculates. When an assurer asks for evidence, someone spends three weeks reconstructing it.</p>
+        <p>Carbon Ledger replaces that with a single system of record where the calculation is explicit, factors are versioned and locked to each record, and evidence is attached at the point of entry.</p>
+      </div>
+    </div>
+
+    <div class="band mt">
+      <div><b>15</b><span>Scope 3 categories, individually tracked and reported</span></div>
+      <div><b>3</b><span>Disclosure frameworks from one consistent inventory</span></div>
+      <div><b>2</b><span>Scope 2 methods reported in parallel, never merged</span></div>
+      <div><b>10</b><span>Workflow stages, from raw activity data to filed report</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="sec rev" id="s02">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <h2>Why Choose Carbon Ledger</h2>
+      <p>Advantages that show up in your assurance letter, not just your dashboard</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="tile"><svg class="icon"><use href="#i-lock"/></svg></div>
+        <div class="lbl">Defensibility</div>
+        <h4>Factors are versioned and locked</h4>
+        <p>Each record pins the exact factor version, dataset and validity window used at the moment of calculation. Updating the library never silently rewrites last year's inventory.</p>
+        <div class="ref">dataset_version · valid_to</div>
+      </div>
+      <div class="card">
+        <div class="tile" style="--tint:var(--s2)"><svg class="icon"><use href="#i-bolt"/></svg></div>
+        <div class="lbl">Correctness</div>
+        <h4>Scope 2 reported both ways, always</h4>
+        <p>Location-based and market-based totals travel side by side through every report, with renewable certificates tracked as first-class records — not netted off in a footnote.</p>
+        <div class="ref">ESRS E1-6 §44(b) · CDP C6.3 · GRI 305-2</div>
+      </div>
+      <div class="card">
+        <div class="tile" style="--tint:var(--s3)"><svg class="icon"><use href="#i-net"/></svg></div>
+        <div class="lbl">Coverage</div>
+        <h4>Scope 3 that is actually populated</h4>
+        <p>Four routes into the hardest scope: guided category entry, spend-based EIO factors, supplier surveys that auto-convert to records, and bulk import — instead of one estimate a year.</p>
+        <div class="ref">15 GHG Protocol categories</div>
+      </div>
+      <div class="card">
+        <div class="tile"><svg class="icon"><use href="#i-gauge"/></svg></div>
+        <div class="lbl">Data quality</div>
+        <h4>Quality is measured, not assumed</h4>
+        <p>Every record is classified primary, secondary or estimated, producing a 0–100 quality score by company, scope and supplier — so you know which numbers to improve first.</p>
+        <div class="ref">per-supplier scorecard</div>
+      </div>
+      <div class="card">
+        <div class="tile"><svg class="icon"><use href="#i-shield"/></svg></div>
+        <div class="lbl">Regulatory</div>
+        <h4>Regulator-grade MRV, no second system</h4>
+        <p>An opt-in MRV layer decomposes the same Scope 1 records into the EU-ETS formula and reconciles the two — then fills the official EAD workbook cell by cell.</p>
+        <div class="ref">Activity × NCV × EF × Oxidation × Conversion</div>
+      </div>
+      <div class="card">
+        <div class="tile"><svg class="icon"><use href="#i-layers"/></svg></div>
+        <div class="lbl">Governance</div>
+        <h4>Multi-company by architecture</h4>
+        <p>Group structures, subsidiaries and separately reporting entities are isolated at the database query level, with a company switcher for users who legitimately span several.</p>
+        <div class="ref">global tenant scope · deny-by-default</div>
+      </div>
+    </div>
+
+    <div class="quote mt">
+      <q>Before: an inventory you assembled. After: an inventory you can reproduce.</q>
+      <span>The difference an assurer notices</span>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="sec sec--white rev" id="s03">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <h2>Key Features</h2>
+      <p>Every capability described here is working software, not roadmap</p>
+    </div>
+
+    <div class="grid">
+      <div class="card t1"><div class="tile" style="--tint:var(--s1)"><svg class="icon"><use href="#i-flame"/></svg></div><div class="lbl">Scope 1</div><h4>Guided Scope 1 entry</h4><p>A three-step flow — Source, Data, Review — across stationary, mobile and fugitive sub-categories, covering natural gas, diesel, LPG, coal grades, biofuels, jet fuel, refrigerants, SF₆ and PFCs. CO₂e previews live as you type.</p></div>
+      <div class="card t2"><div class="tile" style="--tint:var(--s2)"><svg class="icon"><use href="#i-bolt"/></svg></div><div class="lbl">Scope 2</div><h4>Purchased energy, dual-reported</h4><p>Thirteen supply arrangements — grid electricity, green tariffs, PPAs and VPPAs, landlord-supplied, on-site third-party renewables, CHP, EV charging — each carrying both a location-based and market-based result.</p></div>
+      <div class="card t3"><div class="tile" style="--tint:var(--s3)"><svg class="icon"><use href="#i-net"/></svg></div><div class="lbl">Scope 3</div><h4>All fifteen categories</h4><p>Upstream categories 1–8 and downstream 9–15, each described in plain language at the point of entry, with spend-based input-output factors where activity data does not exist.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-search"/></svg></div><div class="lbl">Classification</div><h4>Scope Finder</h4><p>Describe an activity in your own words and Scope Finder returns the right scope and category, with a deterministic keyword fallback so it never leaves you without an answer.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-scan"/></svg></div><div class="lbl">Document capture</div><h4>Utility bill reading</h4><p>Upload an electricity or fuel bill as PDF or image. Consumption, date, cost and supplier are extracted through a cascading OCR chain with AI-assisted structured reading, sanity-checked before reaching your inventory.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-users"/></svg></div><div class="lbl">Value chain</div><h4>Supplier surveys, no login</h4><p>Send a one-time secure link. Suppliers answer, save partially and return later without an account. Tagged answers convert automatically into draft Scope 3 records against the right category.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-check"/></svg></div><div class="lbl">Assurance</div><h4>Review queue &amp; validation</h4><p>Records arrive as drafts. A filterable queue flags missing facility or department, shows the data source — import, manual or API — and supports bulk validate, reject or delete.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-gauge"/></svg></div><div class="lbl">Assurance</div><h4>Data quality scoring</h4><p>Primary, secondary and estimated classification produces a rolling quality score with a twelve-month trend and per-supplier scorecard, so engagement effort goes where it moves the number.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-doc"/></svg></div><div class="lbl">Disclosure</div><h4>Three frameworks, one inventory</h4><p>CSRD/ESRS E1, CDP Climate Change and GRI 305 datapoints emit from a single computed inventory — so filings are internally consistent by construction, not by cross-checking.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-shield"/></svg></div><div class="lbl">Regulatory</div><h4>EAD / EU-ETS MRV layer</h4><p>Opt in per facility and per year. Source streams, emission sources, measuring instruments and tiered uncertainty feed a filled EAD submission workbook — while ordinary users never see a tier or an NCV.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-chart"/></svg></div><div class="lbl">Analysis</div><h4>Hotspot &amp; Pareto analysis</h4><p>Rank emissions by source, facility, department or supplier with running cumulative percentages, so the few contributors driving most of your footprint surface immediately.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-clock"/></svg></div><div class="lbl">Traceability</div><h4>Audit trail on every change</h4><p>Emission records, factors, targets and all MRV entities write to an immutable audit log — who changed what, when, and from which value to which.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section class="sec rev" id="s04">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <h2>Modules</h2>
+      <p>The navigation your team actually sees, and what each part does</p>
+    </div>
+
+    <div class="ledger">
+      <table>
+        <thead><tr><th scope="col">Module</th><th scope="col">What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Dashboard</td><td>Total, Scope 1, Scope 2 and Scope 3 emissions with month-over-month change, a monthly trend against a reduction pathway, and your top ten sources.</td></tr>
+          <tr><td class="k">Analytics</td><td>Breakdown with drill-down, intensity metrics, year-over-year, waterfall, hotspots and treemap — all sharing one filter set.</td></tr>
+          <tr><td class="k">Manual Entry</td><td>Direct record creation for users who know exactly what they are entering.</td></tr>
+          <tr><td class="k">Scope 1 Entry</td><td>Guided stationary, mobile and fugitive combustion entry with a live CO₂e preview.</td></tr>
+          <tr><td class="k">Scope 2 Entry</td><td>Purchased electricity, heat, steam and cooling with location- and market-based treatment.</td></tr>
+          <tr><td class="k">Scope 3 Entry</td><td>Category-led entry across all fifteen upstream and downstream categories.</td></tr>
+          <tr><td class="k">Scope Finder</td><td>Free-text activity classification into the correct scope and category.</td></tr>
+          <tr><td class="k">Import Data</td><td>Bulk CSV and Excel import with validation before anything is committed.</td></tr>
+          <tr><td class="k">Review Data</td><td>The validation queue: pending versus validated, issue flags, and bulk actions.</td></tr>
+          <tr><td class="k">Upload Bills</td><td>Utility bill OCR and extraction into reviewable draft records.</td></tr>
+          <tr><td class="k">Import History</td><td>A full record of every import with retry, cancel and per-batch audit.</td></tr>
+          <tr><td class="k">Data Source</td><td>Provenance view across manual, imported, OCR and API-originated data.</td></tr>
+          <tr><td class="k">Reports</td><td>Executive Summary, Regulatory Compliance, Internal Analysis and Public Disclosure reports, with scheduling.</td></tr>
+          <tr><td class="k">GHG Protocol Report</td><td>The formal inventory: Scope 1 split by stationary, mobile, fugitive and process; Scope 2 dual-reported; Scope 3 by category.</td></tr>
+          <tr><td class="k">Disclosure Reports</td><td>CSRD/ESRS E1, CDP and GRI 305 datapoint packs from one inventory.</td></tr>
+          <tr><td class="k">MRV (EAD / EU-ETS)</td><td>Facility-level regulatory submission: source streams, instruments, tiers and the filled EAD workbook.</td></tr>
+          <tr><td class="k">Targets &amp; Goals</td><td>Science-based, net-zero, carbon-neutral, regulatory and internal targets tracked against a pathway.</td></tr>
+          <tr><td class="k">Suppliers</td><td>Supplier master data with emissions and data-quality scores attached.</td></tr>
+          <tr><td class="k">Supplier Surveys</td><td>Build, send, remind and track surveys that auto-convert into Scope 3 records.</td></tr>
+          <tr><td class="k">Data Quality</td><td>Primary/secondary/estimated scoring by company, scope, month and supplier.</td></tr>
+          <tr><td class="k">Settings</td><td>Facilities, departments, emission sources, factors, energy certificates, countries, companies, users, roles and the audit trail.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section class="sec sec--white rev" id="s05">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <h2>The Dashboard Experience</h2>
+      <p>The state of your inventory, in one screen</p>
+    </div>
+
+    <div class="prose">
+      <p>The dashboard opens on four headline figures — total emissions and the Scope 1, 2 and 3 split — each carrying its month-over-month change. Below, a monthly trend line plots actual emissions against a reduction pathway, and your ten largest sources are ranked by contribution.</p>
+      <p>Every widget answers to one shared filter bar: <strong>date range</strong> (last twelve months, year to date, last three months or a custom window), <strong>facility</strong>, <strong>department</strong> and <strong>category</strong>. Change a filter and the whole page follows.</p>
+    </div>
+
+    <div class="grid mt">
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-chart"/></svg></div><div class="lbl">Headline</div><h4>Total &amp; per-scope emissions</h4><p>Four figures with month-over-month movement, so a spike is visible the day it appears rather than at year end.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-target"/></svg></div><div class="lbl">Trend</div><h4>Actual against pathway</h4><p>Monthly actuals plotted against a reduction reference line — are you tracking, or telling yourself you are?</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-layers"/></svg></div><div class="lbl">Ranking</div><h4>Top ten sources</h4><p>Your largest contributors by CO₂e — the fastest route from "our footprint is large" to "this is what to do about it".</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-clock"/></svg></div><div class="lbl">Activity</div><h4>Recent records</h4><p>A paginated, filter-aware feed of what has just been entered — and by whom.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-check"/></svg></div><div class="lbl">First run</div><h4>Guided onboarding</h4><p>New companies are walked through a setup wizard rather than dropped onto an empty dashboard with nothing to interpret.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-globe"/></svg></div><div class="lbl">Context</div><h4>Company switcher</h4><p>Users with legitimate access to several entities move between them from the sidebar, with data isolation enforced underneath.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="sec sec--dark rev" id="s06">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <h2>End-to-End Workflow</h2>
+      <p>Ten stages, from a fuel receipt to a filed disclosure</p>
+    </div>
+
+    <div class="steps">
+      <div class="step"><b>01</b><h4>Set the boundary</h4><p>Onboarding establishes company, facilities, departments and the consolidation approach — operational control by default.</p></div>
+      <div class="step"><b>02</b><h4>Capture activity data</h4><p>Guided entry, bulk import, utility bill OCR or supplier survey — four routes into the same record structure.</p></div>
+      <div class="step"><b>03</b><h4>Classify the scope</h4><p>Scope Finder resolves ambiguous activities into the right scope and category before they enter the inventory.</p></div>
+      <div class="step"><b>04</b><h4>Apply and lock the factor</h4><p>The matching factor version is applied and pinned to the record with its gas breakdown and GWP set.</p></div>
+      <div class="step"><b>05</b><h4>Attach the evidence</h4><p>Source documents — bills, meter readings, invoices — are uploaded against the record at the point of entry.</p></div>
+      <div class="step"><b>06</b><h4>Review and validate</h4><p>Records sit as drafts in a queue until a reviewer validates them, individually or in bulk.</p></div>
+      <div class="step"><b>07</b><h4>Score data quality</h4><p>Each record is classified primary, secondary or estimated, rolling up to company, scope and supplier scores.</p></div>
+      <div class="step"><b>08</b><h4>Analyse and target</h4><p>Hotspots, intensity and year-over-year identify where to act; targets record what you have committed to.</p></div>
+      <div class="step"><b>09</b><h4>Report and disclose</h4><p>GHG Protocol inventory, executive reporting, and CSRD, CDP and GRI datapoints from one consistent base.</p></div>
+      <div class="step"><b>10</b><h4>File and defend</h4><p>EAD MRV workbook export where required, with the audit trail standing behind every figure submitted.</p></div>
+    </div>
+
+    <div class="mt">
+      <h3 class="h3">How teams experience it</h3>
+      <div class="prose">
+        <p>A facility manager photographs an electricity bill and uploads it; consumption, date and cost are read out and staged as a draft. An analyst reviews the queue, confirms the facility, and validates — the factor version is already locked to the record. Meanwhile a procurement lead sends survey links to forty suppliers, who respond without ever creating an account, their answers landing as draft Scope 3 records against the right categories.</p>
+        <p>At quarter end, the analyst opens Analytics, sees that three sources account for most of the movement, and drills in. At year end, the disclosure officer generates ESRS E1, CDP and GRI packs from the same inventory — and, for the regulated facility, exports the EAD workbook. <strong>Nothing was re-keyed. Nothing has to be reconciled.</strong></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="sec sec--white rev" id="s07">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <h2>Reports &amp; Analytics</h2>
+      <p>Six analytical views, four report types, three disclosure frameworks</p>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-layers"/></svg></div><h4>Breakdown with drill-down</h4><p>Split by scope, source, facility, department, site or month — then click a scope to see its sources, and a source to see its records.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-gauge"/></svg></div><h4>Intensity metrics</h4><p>Emissions per employee and per million of revenue, correctly prorated to the selected period, with a monthly trend and per-scope split.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-clock"/></svg></div><h4>Year-over-year</h4><p>The current period against the preceding equal-length window — monthly, quarterly or annual — with absolute delta, percentage and direction.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-chart"/></svg></div><h4>Waterfall</h4><p>Which sources drove the change between periods, ranked by absolute movement, so an aggregate shift becomes an explanation.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-target"/></svg></div><h4>Hotspots</h4><p>Pareto ranking by source, facility, department or supplier with running cumulative percentage.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-net"/></svg></div><h4>Treemap</h4><p>The whole inventory as one proportional picture: scope to source, colour-coded by scope.</p></div>
+    </div>
+
+    <div class="mt">
+      <h3 class="h3">Disclosure datapoints</h3>
+      <div class="ledger">
+        <table>
+          <thead><tr><th scope="col">Framework</th><th scope="col">Reference</th><th scope="col">Coverage</th></tr></thead>
+          <tbody>
+            <tr><td class="k">CSRD / ESRS E1</td><td class="code">E1-6 §44(a)–(d), §48</td><td>Gross Scope 1; Scope 2 location- and market-based; Scope 3; totals on both Scope 2 bases; biogenic CO₂ separately; GWP basis; consolidation approach.</td></tr>
+            <tr><td class="k">CDP Climate Change</td><td class="code">C5.1, C6.1–C6.10</td><td>Scope 1; Scope 2 on both bases; Scope 3 total; biogenic CO₂; CO₂, CH₄ and N₂O shares of total; global warming potentials used.</td></tr>
+            <tr><td class="k">GRI 305</td><td class="code">305-1, 305-2, 305-3</td><td>Direct, energy indirect on both bases, and other indirect emissions, with biogenic CO₂, GWP source basis and consolidation approach.</td></tr>
+            <tr><td class="k">GHG Protocol</td><td class="code">Corporate Standard</td><td>Scope 1 by stationary, mobile, fugitive and process; Scope 2 dual-reported; Scope 3 across all fifteen categories.</td></tr>
+            <tr><td class="k">EAD / EU-ETS MRV</td><td class="code">Tier 1–4</td><td>Facility source streams and emission sources, measuring instruments, tiered uncertainty and materiality, exported into the official EAD workbook.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt">
+      <h3 class="h3">Reporting &amp; distribution</h3>
+      <div class="grid">
+        <div class="card"><div class="tile"><svg class="icon"><use href="#i-doc"/></svg></div><h4>Four audiences, four report types</h4><p>Executive Summary, Regulatory Compliance, Internal Analysis and Public Disclosure — each built from templates you can adapt.</p></div>
+        <div class="card"><div class="tile"><svg class="icon"><use href="#i-layers"/></svg></div><h4>PDF, Excel and CSV</h4><p>Queued export jobs run in the background and land as downloadable files, with tenant isolation enforced on every download.</p></div>
+        <div class="card"><div class="tile"><svg class="icon"><use href="#i-clock"/></svg></div><h4>Scheduled distribution</h4><p>Daily, weekly, monthly, quarterly or yearly generation, emailed to a recipient list — with a run-now action for the meeting you forgot about.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 -->
+<section class="sec rev" id="s08">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <h2>Product Gallery</h2>
+      <p>Screenshot slots — drop your captures in, the captions are written</p>
+    </div>
+
+    <div class="gallery">
+      <figure class="shot">
+        <div class="slot"><span>Slot 01 · Dashboard<br />1600 × 900</span></div>
+        <figcaption><h4>The Emissions Dashboard</h4><p>Total, Scope 1, Scope 2 and Scope 3 emissions with month-over-month movement, the monthly trend against a reduction pathway, and the top ten sources.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>The state of the inventory in one screen, for every role.</div></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="slot"><span>Slot 02 · Analytics &amp; hotspots<br />1600 × 900</span></div>
+        <figcaption><h4>Analytics &amp; Hotspot Analysis</h4><p>Breakdown with drill-down, Pareto hotspots by source, facility, department or supplier, and the full inventory as a scope-coloured treemap.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>Reduction effort aimed at the few contributors that move the number.</div></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="slot"><span>Slot 03 · Scope 1 guided entry<br />1600 × 900</span></div>
+        <figcaption><h4>Guided Emission Entry</h4><p>Source, Data, Review. The applied emission factor is shown as it is selected, and CO₂e is calculated live as the quantity is typed.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>Facility staff enter data correctly without carbon-accounting training.</div></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="slot"><span>Slot 04 · Bill upload &amp; extraction<br />1600 × 900</span></div>
+        <figcaption><h4>Utility Bill Reading</h4><p>A PDF or photographed bill is read, and consumption, date, cost and supplier are extracted and staged for review with a confidence rating.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>Hours of retyping replaced by a review that takes seconds.</div></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="slot"><span>Slot 05 · Supplier portal<br />1600 × 900</span></div>
+        <figcaption><h4>Supplier Portal</h4><p>A one-time secure link opens the survey with no account required. Suppliers can save partially and return; tagged answers become draft Scope 3 records.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>The response rates that make Scope 3 credible.</div></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="slot"><span>Slot 06 · ESRS E1 disclosure pack<br />1600 × 900</span></div>
+        <figcaption><h4>Disclosure Reports</h4><p>CSRD/ESRS E1, CDP and GRI 305 datapoints generated from one computed inventory, each labelled with its framework reference.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>Filings that cannot contradict each other.</div></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="slot"><span>Slot 07 · MRV source streams<br />1600 × 900</span></div>
+        <figcaption><h4>EAD / EU-ETS MRV Workspace</h4><p>Per-facility source streams, emission sources, measuring instruments and tiers — pre-populated from existing Scope 1 records, exported as the official EAD workbook.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>A regulatory submission produced from data you already hold.</div></figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="slot"><span>Slot 08 · Data quality &amp; review<br />1600 × 900</span></div>
+        <figcaption><h4>Data Quality &amp; Review</h4><p>Primary, secondary and estimated classification with a twelve-month trend and per-supplier scorecard, alongside the validation queue and its issue flags.</p><div class="value"><svg class="icon" style="width:16px;height:16px"><use href="#i-tick"/></svg>You know which figures are solid before the assurer tells you.</div></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 09 -->
+<section class="sec sec--white rev" id="s09">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">09</div>
+      <h2>Business Benefits</h2>
+      <p>What changes for your organisation</p>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-check"/></svg></div><h4>An inventory you can reproduce</h4><p>Versioned factors, locked calculations and a complete audit trail mean the same inputs always give the same answer — the precondition for external assurance.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-search"/></svg></div><h4>Assurance costs less</h4><p>Evidence is attached at the point of entry and traceable from any reported figure, so verification becomes sampling rather than reconstruction.</p></div>
+      <div class="card"><div class="tile" style="--tint:var(--s3)"><svg class="icon"><use href="#i-net"/></svg></div><h4>Scope 3 stops being a guess</h4><p>Supplier surveys, spend-based factors and category-level entry replace a single annual estimate with data that improves every cycle.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-doc"/></svg></div><h4>Filings stop contradicting each other</h4><p>CSRD, CDP and GRI figures derive from one inventory, so the number in your annual report matches the one in your CDP response.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-users"/></svg></div><h4>Data entry stops being specialist work</h4><p>Guided flows, bill reading and scope classification let facility staff contribute accurate data without becoming carbon accountants.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-target"/></svg></div><h4>Reduction effort finds its target</h4><p>Hotspot and waterfall analysis point at the specific sources driving your footprint and its movement, instead of a total nobody can act on.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-shield"/></svg></div><h4>Regulatory readiness, no second system</h4><p>The MRV layer reads the records you already maintain — no parallel process, no reconciliation between your inventory and your submission.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-layers"/></svg></div><h4>Group reporting without spreadsheets</h4><p>Subsidiaries maintain their own inventories under strict isolation while the group consolidates, with cross-entity access an explicit permission.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="sec rev" id="s10">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">10</div>
+      <h2>Technical Highlights</h2>
+      <p>Architecture built around traceability and tenant isolation</p>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-lock"/></svg></div><div class="lbl">Isolation</div><h4>Tenant scoping, deny by default</h4><p>Company isolation is enforced by a global query scope on every core model. A user without a resolved company context returns nothing — the fallback is refusal, never an unscoped query.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-users"/></svg></div><div class="lbl">Access</div><h4>Granular role-based permissions</h4><p>Every action is permission-gated, with roles from Super Admin to standard User, a full roles and permissions interface, and per-user navigation restrictions.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-clock"/></svg></div><div class="lbl">Traceability</div><h4>Immutable audit trail</h4><p>Emission records, factors, targets and all MRV entities write every change to an audit log surfaced inside the application.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-layers"/></svg></div><div class="lbl">Integrity</div><h4>Factor versioning &amp; locking</h4><p>Factors carry dataset version, validity window, issuing organisation and country. Records pin the version used, so historical inventories stay stable.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-gauge"/></svg></div><div class="lbl">Correctness</div><h4>Dimensional unit conversion</h4><p>A dedicated conversion service normalises units and rejects incompatible ones, rather than trusting that whoever typed "gal" meant what you did.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-check"/></svg></div><div class="lbl">Reconciliation</div><h4>MRV decomposition that agrees</h4><p>The EU-ETS decomposition is asserted to reconcile with the combined-factor result, so regulatory and management views of a facility cannot silently diverge.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-globe"/></svg></div><div class="lbl">Interface</div><h4>Server-rendered and responsive</h4><p>A fast, conventional web interface with server-side tables that stay responsive at inventory scale, usable on a phone in a plant room.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-search"/></svg></div><div class="lbl">Assisted</div><h4>AI where it earns its place</h4><p>Bill extraction and scope classification use AI with deterministic fallbacks, sanity ceilings and recorded confidence. AI proposes, the audit trail records, a human approves.</p></div>
+    </div>
+
+    <div class="mt">
+      <h3 class="h3">Standards &amp; methodologies implemented</h3>
+      <div class="badges">
+        <span class="badge"><i class="dot"></i>GHG Protocol Corporate Standard</span>
+        <span class="badge"><i class="dot"></i>Scope 3 — 15 categories</span>
+        <span class="badge"><i class="dot"></i>Scope 2 Guidance — dual reporting</span>
+        <span class="badge"><i class="dot"></i>CSRD / ESRS E1</span>
+        <span class="badge"><i class="dot"></i>CDP Climate Change</span>
+        <span class="badge"><i class="dot"></i>GRI 305</span>
+        <span class="badge"><i class="dot"></i>EU-ETS / EU-MRV Tiers 1–4</span>
+        <span class="badge"><i class="dot"></i>EAD Abu Dhabi MRV</span>
+        <span class="badge"><i class="dot"></i>ISO 14064</span>
+        <span class="badge"><i class="dot"></i>SBTi target types</span>
+        <span class="badge"><i class="dot"></i>GLEC</span>
+        <span class="badge"><i class="dot"></i>PCAF</span>
+        <span class="badge"><i class="dot"></i>IPCC · DEFRA · EPA factor sources</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="sec sec--white rev" id="s11">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">11</div>
+      <h2>Industries Served</h2>
+      <p>Wherever emissions have to be measured, defended and disclosed</p>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="tile" style="--tint:var(--s1)"><svg class="icon"><use href="#i-flame"/></svg></div><div class="lbl" style="--tint:var(--s1)">Scope 1 intensive</div><h4>Energy, oil &amp; gas, utilities</h4><p>Stationary combustion at scale, fugitive methane, flaring and process emissions — the operations where the MRV layer and tiered uncertainty matter most.</p></div>
+      <div class="card"><div class="tile" style="--tint:var(--s1)"><svg class="icon"><use href="#i-layers"/></svg></div><div class="lbl" style="--tint:var(--s1)">Scope 1 intensive</div><h4>Manufacturing &amp; heavy industry</h4><p>Multi-facility fuel and process inventories with facility-level reporting, department attribution and per-site intensity.</p></div>
+      <div class="card"><div class="tile" style="--tint:var(--s2)"><svg class="icon"><use href="#i-bolt"/></svg></div><div class="lbl" style="--tint:var(--s2)">Scope 2 intensive</div><h4>Real estate &amp; facilities</h4><p>Portfolios of buildings with landlord-supplied and shared electricity, green tariffs and on-site renewables — where market-based reporting is the whole question.</p></div>
+      <div class="card"><div class="tile" style="--tint:var(--s3)"><svg class="icon"><use href="#i-net"/></svg></div><div class="lbl" style="--tint:var(--s3)">Scope 3 intensive</div><h4>Retail, FMCG &amp; supply chain</h4><p>Footprints dominated by purchased goods and transport, where supplier surveys and spend-based factors do the heavy lifting.</p></div>
+      <div class="card"><div class="tile" style="--tint:var(--s3)"><svg class="icon"><use href="#i-target"/></svg></div><div class="lbl" style="--tint:var(--s3)">Scope 3 intensive</div><h4>Financial services</h4><p>Modest operational emissions and a decisive category 15, with per-supplier and per-counterparty data quality made explicit.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-globe"/></svg></div><div class="lbl">Advisory</div><h4>Consultancies &amp; assurance providers</h4><p>Multiple client inventories under strict tenant isolation, with a company switcher for staff who legitimately work across several.</p></div>
+    </div>
+
+    <div class="quote mt">
+      <q>Built in the UAE, for reporters facing both international disclosure and local regulatory MRV.</q>
+      <span>EAD Abu Dhabi · CSRD · CDP · GRI</span>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="sec sec--dark rev" id="s12">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">12</div>
+      <h2>Why Our Solution</h2>
+      <p>Against spreadsheets, and against the international platforms</p>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-shield"/></svg></div><h4>Regulatory MRV the majors don't ship</h4><p>The large international carbon platforms cover disclosure well and local regulatory submission barely at all. Carbon Ledger produces a filled EAD Abu Dhabi workbook natively, from data you already hold.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-lock"/></svg></div><h4>Traceability as architecture</h4><p>Factor locking, audit trails and evidence attachment are how records are stored — not a compliance module bolted on later that covers only some of the data.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-doc"/></svg></div><h4>One inventory, every framework</h4><p>Point tools produce a CDP response and a separate ESRS figure that disagree. Here the frameworks are views onto one computed inventory, so consistency is structural.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-users"/></svg></div><h4>Scope 3 with a route to real data</h4><p>Most platforms let you estimate Scope 3. This one gives you a supplier portal, auto-conversion and a per-supplier quality score — a mechanism for the estimate to get better.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-scan"/></svg></div><h4>Entry designed for non-specialists</h4><p>Guided flows, live CO₂e preview, bill reading and scope classification mean the people closest to the data can enter it — the only way an inventory stays current.</p></div>
+      <div class="card"><div class="tile"><svg class="icon"><use href="#i-globe"/></svg></div><h4>Regional presence, direct support</h4><p>Built and supported from Dubai, in the regulatory context and time zone of the reporters using it — not a support queue eight hours behind you.</p></div>
+    </div>
+
+    <div class="quote mt">
+      <q>Measure it once. Defend it anywhere.</q>
+      <span>Every claim here corresponds to shipped functionality</span>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="contact rev" id="s13">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">13</div>
+      <h2>Contact Us</h2>
+      <p>See Carbon Ledger against your own inventory</p>
+    </div>
+
+    <div class="contact-grid">
+      <div>
+        <p style="margin:0; color:#C3D4E4; font-size:16.5px; line-height:1.6; max-width:44ch;">Bring one facility's fuel and electricity data to the demo and we will build that part of your inventory live — including what your CSRD, CDP and GRI figures would be.</p>
+        <div class="cta-row">
+          <a class="cta cta-a" href="mailto:sales@altayaboon.com?subject=Carbon%20Ledger%20demo">Book a Demo <svg class="icon" style="width:17px;height:17px"><use href="#i-arrow"/></svg></a>
+          <a class="cta cta-b" href="https://www.altayaboon.com">Request a Presentation</a>
+        </div>
+      </div>
+
+      <dl>
+        <dt>Company</dt><dd>AL Tayaboon Information Technology</dd>
+        <dt>Website</dt><dd>www.altayaboon.com</dd>
+        <dt>Email</dt><dd>sales@altayaboon.com</dd>
+        <dt>Phone</dt><dd>+971 50 835 4331</dd>
+        <dt>WhatsApp</dt><dd>+971 54 510 6262</dd>
+        <dt>Address</dt><dd>Dubai, United Arab Emirates</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <b>ALTAYABOON — CARBON LEDGER</b><br />
+    Developed by Altayaboon IT Solutions &amp; Services · Measure it once. Defend it anywhere.
+  </div>
+</footer>
+
+<script>
+  (function () {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!("IntersectionObserver" in window)) return;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("on"); io.unobserve(e.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    document.querySelectorAll(".rev").forEach(function (el) { io.observe(el); });
+  })();
+</script>
+
+<style>
+/* ---------- Standalone document reset ---------- */
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+img, svg { max-width: 100%; }
+
+/* ---------- Print / PDF ---------- */
+@media print {
+  /* Pin the light palette so the PDF is identical whatever theme the
+     rendering machine happens to be in. */
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"] {
+    --navy:    #0A1E36;
+    --navy-2:  #123253;
+    --navy-3:  #1D4570;
+    --brand:   #00B37E;
+    --brand-2: #04895F;
+    --brand-3: #7CE8C0;
+    --paper:   #F4F7F9;
+    --surface: #FFFFFF;
+    --ink:     #0A1E36;
+    --ink-2:   #46596F;
+    --ink-3:   #77899E;
+    --rule:    #DBE3EA;
+    --rule-2:  #EAF0F4;
+    --s1: #2E7D32;
+    --s2: #0277BD;
+    --s3: #F57C00;
+  }
+
+  @page { size: A4; margin: 0; }
+
+  /* Without this the navy cover, green stat bands and dark sections
+     all print as blank white. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body { font-size: 10pt; line-height: 1.5; background: #FFFFFF; }
+
+  .wrap { padding-inline: 15mm; max-width: none; }
+
+  /* Scroll-reveal must never leave a section invisible on paper --
+     IntersectionObserver does not fire during headless rendering. */
+  .rev, .rev.on { opacity: 1 !important; transform: none !important; }
+
+  /* One numbered section per page. */
+  .cover { padding-block: 30mm 0; break-after: page; }
+  .contents { break-after: page; padding-block: 18mm; }
+  .sec, .contact { break-before: page; padding-block: 15mm; }
+  .foot { break-before: avoid; padding-block: 10mm; }
+
+  /* Full-bleed dark sections need their own background printed edge to edge. */
+  .sec--dark, .contact, .cover { background-color: #0A1E36 !important; }
+
+  /* Nothing splits across a fold. */
+  .card, .step, .quote, .shot, .badge, .band > div, tr { break-inside: avoid; }
+  .sec-head, .h3 { break-after: avoid; }
+  .grid, .steps, .gallery, .ledger, .band, .contact-grid { break-inside: auto; }
+
+  /* Slightly tighter cards so more fits per page. */
+  .card { padding: 16px; gap: 8px; }
+  .card p { font-size: 12.5px; }
+  .grid { gap: 11px; }
+  .band b { font-size: 40px; }
+
+  .slot { background: #EDF2F6 !important; }
+  .toc a { background: #EDF2F6 !important; }
+  table { min-width: 0; }
+  .ledger { overflow-x: visible; }
+  .cta { border: 1px solid #00B37E; }
+}
+
+</style>
+</body>
+</html>

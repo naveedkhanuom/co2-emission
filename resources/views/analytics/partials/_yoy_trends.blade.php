@@ -13,29 +13,38 @@
     {{-- Summary Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="small text-muted fw-semibold mb-1">TOTAL CHANGE</div>
-                    <div class="h3 fw-bold mb-0" id="yoyTotalChange">-</div>
-                    <div class="small" id="yoyTotalChangePct">-</div>
+            <div class="card analytics-kpi accent-orange">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-sm icon-grad-orange"><i class="fas fa-exchange-alt"></i></div>
+                    <div>
+                        <div class="kpi-cap">Total Change</div>
+                        <div class="kpi-num mb-0" id="yoyTotalChange">-</div>
+                        <div class="small fw-semibold" id="yoyTotalChangePct">-</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="small text-muted fw-semibold mb-1">CURRENT PERIOD</div>
-                    <div class="h3 fw-bold text-dark mb-0" id="yoyCurrentTotal">-</div>
-                    <div class="small text-muted" id="yoyCurrentRange">-</div>
+            <div class="card analytics-kpi accent-green">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-sm icon-grad-green"><i class="fas fa-calendar-check"></i></div>
+                    <div>
+                        <div class="kpi-cap">Current Period</div>
+                        <div class="kpi-num grad-green" id="yoyCurrentTotal">-</div>
+                        <div class="small text-muted" id="yoyCurrentRange">-</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="small text-muted fw-semibold mb-1">PREVIOUS PERIOD</div>
-                    <div class="h3 fw-bold text-dark mb-0" id="yoyPreviousTotal">-</div>
-                    <div class="small text-muted" id="yoyPreviousRange">-</div>
+            <div class="card analytics-kpi accent-dark">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-sm icon-grad-dark"><i class="fas fa-calendar-minus"></i></div>
+                    <div>
+                        <div class="kpi-cap">Previous Period</div>
+                        <div class="kpi-num grad-dark" id="yoyPreviousTotal">-</div>
+                        <div class="small text-muted" id="yoyPreviousRange">-</div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\SupplierSurvey;
 use App\Models\Supplier;
+use App\Models\Scope3Category;
+use App\Services\SupplierSurveyEmissionConverter;
+use App\Support\Notifier;
 use Illuminate\Http\Request;
 use App\Helpers\CompanyHelper;
 use App\Mail\SupplierSurveyInvitation;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 
 class SupplierSurveyController extends Controller
 {
@@ -19,7 +23,7 @@ class SupplierSurveyController extends Controller
         $this->middleware('auth')->except(['publicShow', 'publicSubmit']);
         $this->middleware('permission:list-supplier-surveys|create-supplier-survey|edit-supplier-survey|delete-supplier-survey', ['only' => ['index', 'getData', 'show']]);
         $this->middleware('permission:create-supplier-survey', ['only' => ['store']]);
-        $this->middleware('permission:edit-supplier-survey', ['only' => ['updateResponses', 'send', 'sendReminder']]);
+        $this->middleware('permission:edit-supplier-survey', ['only' => ['updateResponses', 'send', 'sendReminder', 'resendLink']]);
         $this->middleware('permission:delete-supplier-survey', ['only' => ['destroy']]);
     }
 
@@ -28,7 +32,12 @@ class SupplierSurveyController extends Controller
      */
     public function index()
     {
-        return view('supplier_surveys.index');
+        // Categories offered when tagging a question to auto-convert into emissions.
+        $scope3Categories = Scope3Category::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'code', 'name']);
+
+        return view('supplier_surveys.index', compact('scope3Categories'));
     }
 
     /**
@@ -87,6 +96,7 @@ class SupplierSurveyController extends Controller
                 
                 if (in_array($survey->status, ['sent', 'in_progress', 'overdue'])) {
                     $actions .= '<button class="btn btn-sm btn-warning reminderBtn" data-id="' . $survey->id . '" title="Send Reminder"><i class="fas fa-bell"></i></button>';
+                    $actions .= '<button class="btn btn-sm btn-secondary resendBtn" data-id="' . $survey->id . '" title="Re-send fresh link"><i class="fas fa-link"></i></button>';
                 }
                 
                 $actions .= '<button class="btn btn-sm btn-danger deleteBtn" data-id="' . $survey->id . '" title="Delete"><i class="fas fa-trash"></i></button>';
@@ -108,6 +118,12 @@ class SupplierSurveyController extends Controller
             'survey_type' => 'required|string',
             'due_date' => 'required|date|after:today',
             'questions' => 'required|array|min:1',
+            'questions.*.question' => 'required|string',
+            'questions.*.type' => 'nullable|string',
+            'questions.*.maps_to_emissions' => 'nullable|boolean',
+            'questions.*.scope3_category_id' => 'nullable|integer|exists:scope3_categories,id',
+            'questions.*.activity_unit' => 'nullable|string|max:50',
+            'questions.*.emission_factor' => 'nullable|numeric|min:0',
         ]);
 
         $companyId = CompanyHelper::currentCompanyId();
@@ -268,6 +284,63 @@ class SupplierSurveyController extends Controller
     }
 
     /**
+     * Re-issue a fresh public link for a survey that is already out (sent /
+     * in progress / overdue, or whose link expired or was consumed). This is the
+     * supported path to give a supplier access again after the one-time link is
+     * spent — `send()` only handles drafts.
+     */
+    public function resendLink($id)
+    {
+        $survey = SupplierSurvey::findOrFail($id);
+
+        $companyId = CompanyHelper::currentCompanyId();
+        if ($survey->company_id != $companyId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if ($survey->status === 'completed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This survey is already completed.',
+            ], 400);
+        }
+
+        $survey->loadMissing(['supplier', 'company']);
+
+        $recipient = $survey->supplier?->email;
+        if (empty($recipient)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This supplier has no email address. Add one on the supplier record before re-sending.',
+            ], 422);
+        }
+
+        $survey->regeneratePublicToken();
+        $survey->update(['status' => 'sent', 'sent_at' => now()]);
+
+        try {
+            Mail::to($recipient)->send(new SupplierSurveyInvitation($survey));
+        } catch (\Throwable $e) {
+            Log::error('Supplier survey link re-send failed', [
+                'survey_id' => $survey->id,
+                'supplier_email' => $recipient,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'A new link was generated, but the email could not be delivered: ' . $e->getMessage(),
+            ], 502);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'A fresh survey link was emailed to ' . $recipient,
+            'data' => $survey,
+        ]);
+    }
+
+    /**
      * Supplier portal: show survey form by public token.
      * No auth required.
      */
@@ -312,7 +385,36 @@ class SupplierSurveyController extends Controller
             return redirect()->back()->with('error', 'This survey link has expired.');
         }
 
-        $responses = $request->input('responses', []);
+        $questions = is_array($survey->questions) ? $survey->questions : [];
+
+        // Validate the publicly-posted (unauthenticated) responses: must be an
+        // array of bounded scalar values.
+        $validator = Validator::make($request->all(), [
+            'responses' => 'required|array',
+            'responses.*' => 'nullable|string|max:5000',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withInput()
+                ->with('error', 'Please check your answers and try again.');
+        }
+
+        $posted = $validator->validated()['responses'];
+
+        // Keep only answers that map to a real question index — drop arbitrary keys.
+        $responses = [];
+        foreach (array_keys($questions) as $i) {
+            if (array_key_exists($i, $posted)) {
+                $responses[$i] = $posted[$i];
+            }
+        }
+
+        // Type-check each answer against its question's declared type.
+        $typeErrors = $this->validateResponsesAgainstQuestions($questions, $responses);
+        if (!empty($typeErrors)) {
+            return redirect()->back()->withInput()
+                ->with('error', implode(' ', $typeErrors));
+        }
 
         // Save responses via existing workflow (marks completed if all answered)
         $survey->update([
@@ -320,8 +422,8 @@ class SupplierSurveyController extends Controller
             'status' => 'in_progress',
         ]);
 
-        $allAnswered = is_array($survey->questions)
-            ? count(array_filter($responses, fn ($v) => $v !== null && $v !== '')) >= count($survey->questions)
+        $allAnswered = !empty($questions)
+            ? count(array_filter($responses, fn ($v) => $v !== null && $v !== '')) >= count($questions)
             : true;
 
         if ($allAnswered) {
@@ -329,6 +431,24 @@ class SupplierSurveyController extends Controller
 
             // Consume the one-time link so it cannot be reused after submission.
             $survey->forceFill(['public_token_expires_at' => now()])->save();
+
+            // Turn tagged answers into draft Scope 3 emission records. Never let a
+            // conversion error block the supplier's submission acknowledgement.
+            try {
+                app(SupplierSurveyEmissionConverter::class)->convert($survey);
+            } catch (\Throwable $e) {
+                Log::error('Supplier survey emission conversion failed', [
+                    'survey_id' => $survey->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Let the staff member who sent the survey know it came back.
+            Notifier::surveyCompleted(
+                $survey->created_by,
+                $survey->supplier->name ?? 'A supplier',
+                route('supplier_surveys.index')
+            );
 
             return redirect()
                 ->route('supplier_portal.survey.show', $token)
@@ -339,26 +459,94 @@ class SupplierSurveyController extends Controller
     }
 
     /**
+     * Type-check submitted answers against each question's declared type.
+     * Empty answers are allowed (partial "save and return later"). Returns a
+     * list of human-readable error messages (empty when valid).
+     */
+    private function validateResponsesAgainstQuestions(array $questions, array $responses): array
+    {
+        $errors = [];
+
+        foreach ($questions as $i => $q) {
+            $value = $responses[$i] ?? null;
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $type = is_array($q) ? ($q['type'] ?? 'text') : 'text';
+            $label = is_array($q) ? ($q['question'] ?? ('Question ' . ($i + 1))) : ('Question ' . ($i + 1));
+
+            if ($type === 'number' && !is_numeric($value)) {
+                $errors[] = "\"{$label}\" must be a number.";
+            } elseif ($type === 'date' && strtotime((string) $value) === false) {
+                $errors[] = "\"{$label}\" must be a valid date.";
+            } elseif ($type === 'yes_no' && !in_array(strtolower((string) $value), ['yes', 'no'], true)) {
+                $errors[] = "\"{$label}\" must be Yes or No.";
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
      * Update survey responses (for supplier portal).
      */
     public function updateResponses(Request $request, $id)
     {
         $survey = SupplierSurvey::findOrFail($id);
-        
+
+        // Tenant guard: findOrFail is company-scoped for normal users, but a
+        // super-admin (no company bound) bypasses the scope.
+        $companyId = CompanyHelper::currentCompanyId();
+        if ($survey->company_id != $companyId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'responses' => 'required|array',
+            'responses.*' => 'nullable|string|max:5000',
         ]);
 
+        $questions = is_array($survey->questions) ? $survey->questions : [];
+
+        // Keep only answers that map to a real question index — drop arbitrary keys.
+        $posted = $request->input('responses', []);
+        $responses = [];
+        foreach (array_keys($questions) as $i) {
+            if (array_key_exists($i, $posted)) {
+                $responses[$i] = $posted[$i];
+            }
+        }
+
+        $typeErrors = $this->validateResponsesAgainstQuestions($questions, $responses);
+        if (!empty($typeErrors)) {
+            return response()->json([
+                'success' => false,
+                'message' => implode(' ', $typeErrors),
+            ], 422);
+        }
+
         $survey->update([
-            'responses' => $request->responses,
+            'responses' => $responses,
             'status' => 'in_progress',
         ]);
 
-        // Check if all questions answered
-        $allAnswered = count($request->responses) >= count($survey->questions ?? []);
-        
+        // Complete only when every question has a non-empty answer.
+        $allAnswered = !empty($questions)
+            ? count(array_filter($responses, fn ($v) => $v !== null && $v !== '')) >= count($questions)
+            : true;
+
         if ($allAnswered) {
-            $survey->markAsCompleted($request->responses);
+            $survey->markAsCompleted($responses);
+
+            try {
+                app(SupplierSurveyEmissionConverter::class)->convert($survey);
+            } catch (\Throwable $e) {
+                Log::error('Supplier survey emission conversion failed', [
+                    'survey_id' => $survey->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return response()->json([

@@ -15,7 +15,9 @@ class AnalyticsController extends Controller
     public function __construct(EmissionAnalyticsService $analyticsService)
     {
         $this->middleware('auth');
-        $this->middleware('permission:list-dashboard', ['only' => ['index']]);
+        // All analytics endpoints — including the JSON data endpoints — require
+        // dashboard access, not just the HTML page.
+        $this->middleware('permission:list-dashboard', ['only' => ['index', 'breakdown', 'intensity', 'yearOverYear', 'hotspots']]);
         $this->analyticsService = $analyticsService;
     }
 

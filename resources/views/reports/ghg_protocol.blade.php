@@ -278,6 +278,8 @@
             
             <button type="submit" style="margin-left: 20px; padding: 5px 15px;">Generate Report</button>
             <button type="button" onclick="window.print()" style="margin-left: 10px; padding: 5px 15px;">Print / PDF</button>
+            <a href="{{ route('reports.ghg_protocol.export', ['year' => $year, 'facility' => $facility]) }}"
+               style="margin-left: 10px; padding: 5px 15px; border: 1px solid #888; background:#f3f4f6; text-decoration:none; color:#222; border-radius:3px;">Export PDF</a>
         </form>
     </div>
     
@@ -309,7 +311,7 @@
                 <th></th>
                 <th style="font-size: 8pt;">UOM | Value</th>
                 <th style="font-size: 8pt;">UOM | Value</th>
-                <th style="font-size: 8pt;">In Kg CO₂e</th>
+                <th style="font-size: 8pt;">In tCO₂e</th>
             </tr>
         </thead>
         <tbody>
@@ -361,7 +363,7 @@
                 <th></th>
                 <th style="font-size: 8pt;">UOM | Value</th>
                 <th style="font-size: 8pt;">UOM | Value</th>
-                <th style="font-size: 8pt;">In Kg CO₂e</th>
+                <th style="font-size: 8pt;">In tCO₂e</th>
             </tr>
         </thead>
         <tbody>
@@ -413,7 +415,7 @@
                 <th></th>
                 <th style="font-size: 8pt;">UOM | Value</th>
                 <th style="font-size: 8pt;">UOM | Value</th>
-                <th style="font-size: 8pt;">In Kg CO₂e</th>
+                <th style="font-size: 8pt;">In tCO₂e</th>
             </tr>
         </thead>
         <tbody>
@@ -465,7 +467,7 @@
                 <th></th>
                 <th style="font-size: 8pt;">UOM | Value</th>
                 <th style="font-size: 8pt;">UOM | Value</th>
-                <th style="font-size: 8pt;">In Kg CO₂e</th>
+                <th style="font-size: 8pt;">In tCO₂e</th>
             </tr>
         </thead>
         <tbody>
@@ -550,7 +552,38 @@
     @else
     <div class="no-data">No Scope 2 emissions data available for the selected period.</div>
     @endif
-    
+
+    <!-- SCOPE 2 DUAL REPORTING (GHG Protocol Scope 2 Guidance) -->
+    <div class="subsection-header">
+        Scope 2 — Location-Based vs Market-Based
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60%;">Method</th>
+                <th style="width: 40%;">Scope 2 Emissions (tCO₂e)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Location-based (grid-average emission factor)</td>
+                <td class="number">{{ number_format($scope2Total, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Market-based (contractual instruments / RECs / supplier-specific)</td>
+                <td class="number">{{ number_format($scope2MarketTotal, 2) }}</td>
+            </tr>
+            <tr class="total-row">
+                <td class="number"><strong>Difference avoided via market instruments</strong></td>
+                <td class="number"><strong>{{ number_format(max($scope2Total - $scope2MarketTotal, 0), 2) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="font-size: 11px; color: #666; margin: 6px 0 0;">
+        Both methods are reported per the GHG Protocol Scope 2 Guidance. Organisational totals below use the
+        location-based method; the market-based grand total is {{ number_format($grandTotalMarket, 2) }} tCO₂e.
+    </p>
+
     <!-- SCOPE 3: OTHER INDIRECT EMISSIONS -->
     <div class="section-header">
         SCOPE-3 GHG EMISSION CALCULATION
@@ -647,7 +680,7 @@
         <tbody>
             <tr class="grand-total-row">
                 <td colspan="4" class="number"><strong>Total GHG Emission (Scope-1 + Scope-2 + Scope-3)</strong></td>
-                <td class="number"><strong>{{ number_format($grandTotal, 2) }} Kg CO₂e</strong></td>
+                <td class="number"><strong>{{ number_format($grandTotal, 2) }} tCO₂e</strong></td>
             </tr>
         </tbody>
     </table>
@@ -687,7 +720,7 @@
             tooltip: {
                 y: {
                     formatter: function(val) {
-                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' Kg CO₂e';
+                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' tCO₂e';
                     }
                 }
             }
@@ -698,7 +731,7 @@
         // Scope 1 Categories Chart
         var scope1CategoriesOptions = {
             series: [{
-                name: 'Emissions (Kg CO₂e)',
+                name: 'Emissions (tCO₂e)',
                 data: [
                     {{ number_format($chartData['scope1_categories']['Stationary Combustion'], 2) }},
                     {{ number_format($chartData['scope1_categories']['Mobile Combustion'], 2) }},
@@ -730,7 +763,7 @@
             tooltip: {
                 y: {
                     formatter: function(val) {
-                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' Kg CO₂e';
+                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' tCO₂e';
                     }
                 }
             }
@@ -778,7 +811,7 @@
             tooltip: {
                 y: {
                     formatter: function(val) {
-                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' Kg CO₂e';
+                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' tCO₂e';
                     }
                 }
             },
@@ -832,7 +865,7 @@
             tooltip: {
                 y: {
                     formatter: function(val) {
-                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' Kg CO₂e';
+                        return val.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' tCO₂e';
                     }
                 }
             },

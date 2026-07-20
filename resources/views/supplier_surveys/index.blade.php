@@ -116,24 +116,7 @@
 
                         <div class="col-md-12">
                             <label class="form-label">Questions *</label>
-                            <div id="questionsContainer">
-                                <div class="question-item mb-3 p-3 border rounded">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <strong>Question 1</strong>
-                                        <button type="button" class="btn btn-sm btn-danger removeQuestion" style="display:none;">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                    <input type="text" name="questions[]" class="form-control mb-2" placeholder="Enter question text" required>
-                                    <select name="question_types[]" class="form-select">
-                                        <option value="text">Text</option>
-                                        <option value="number">Number</option>
-                                        <option value="date">Date</option>
-                                        <option value="yes_no">Yes/No</option>
-                                        <option value="multiple_choice">Multiple Choice</option>
-                                    </select>
-                                </div>
-                            </div>
+                            <div id="questionsContainer"><!-- questions rendered by JS (buildQuestionItem) --></div>
                             <button type="button" class="btn btn-sm btn-secondary" id="addQuestionBtn">
                                 <i class="fas fa-plus"></i> Add Question
                             </button>
@@ -237,29 +220,66 @@
             }
         });
 
-        // Add Question
-        let questionCount = 1;
-        $('#addQuestionBtn').on('click', function() {
-            questionCount++;
-            var questionHtml = `
+        // ---- Question builder (with optional emission mapping) ----
+        const SCOPE3_CATEGORIES = @json($scope3Categories ?? []);
+        const categoryOptionsHtml = SCOPE3_CATEGORIES
+            .map(c => `<option value="${c.id}">${c.code} — ${c.name}</option>`)
+            .join('');
+
+        function buildQuestionItem(n) {
+            return `
                 <div class="question-item mb-3 p-3 border rounded">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Question ${questionCount}</strong>
-                        <button type="button" class="btn btn-sm btn-danger removeQuestion">
+                        <strong>Question ${n}</strong>
+                        <button type="button" class="btn btn-sm btn-danger removeQuestion" ${n === 1 ? 'style="display:none;"' : ''}>
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <input type="text" name="questions[]" class="form-control mb-2" placeholder="Enter question text" required>
-                    <select name="question_types[]" class="form-select">
+                    <input type="text" name="questions[]" class="form-control mb-2 q-text" placeholder="Enter question text" required>
+                    <select name="question_types[]" class="form-select mb-2 q-type">
                         <option value="text">Text</option>
                         <option value="number">Number</option>
                         <option value="date">Date</option>
                         <option value="yes_no">Yes/No</option>
                         <option value="multiple_choice">Multiple Choice</option>
                     </select>
+                    <div class="form-check">
+                        <input class="form-check-input q-maps" type="checkbox">
+                        <label class="form-check-label">Convert this answer into a Scope 3 emission record</label>
+                    </div>
+                    <div class="emission-map row g-2 mt-2" style="display:none;">
+                        <div class="col-md-4">
+                            <select class="form-select form-select-sm q-cat">
+                                <option value="">Scope 3 category…</option>
+                                ${categoryOptionsHtml}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input class="form-control form-control-sm q-unit" placeholder="Activity unit (kWh, L, tonne-km)">
+                        </div>
+                        <div class="col-md-4">
+                            <input class="form-control form-control-sm q-factor" type="number" step="any" min="0" placeholder="Factor (tCO₂e per unit)">
+                        </div>
+                        <small class="text-muted">A positive numeric answer becomes a draft record: answer × factor = tCO₂e.</small>
+                    </div>
                 </div>
             `;
-            $('#questionsContainer').append(questionHtml);
+        }
+
+        let questionCount = 1;
+
+        // Render the first question on load.
+        $('#questionsContainer').html(buildQuestionItem(1));
+
+        // Add Question
+        $('#addQuestionBtn').on('click', function() {
+            questionCount++;
+            $('#questionsContainer').append(buildQuestionItem(questionCount));
+        });
+
+        // Toggle the emission-mapping fields for a question.
+        $(document).on('change', '.q-maps', function() {
+            $(this).closest('.question-item').find('.emission-map').toggle(this.checked);
         });
 
         // Remove Question
@@ -383,17 +403,27 @@
         $('#addForm').on('submit', function(e) {
             e.preventDefault();
             
-            // Collect questions
+            // Collect questions (with optional emission mapping)
             var questions = [];
-            $('input[name="questions[]"]').each(function(index) {
-                var questionText = $(this).val();
-                var questionType = $('select[name="question_types[]"]').eq(index).val();
-                if (questionText) {
-                    questions.push({
-                        question: questionText,
-                        type: questionType
-                    });
+            $('#questionsContainer .question-item').each(function() {
+                var $item = $(this);
+                var questionText = $item.find('.q-text').val();
+                if (!questionText) return;
+
+                var q = {
+                    question: questionText,
+                    type: $item.find('.q-type').val()
+                };
+
+                if ($item.find('.q-maps').is(':checked')) {
+                    q.maps_to_emissions = true;
+                    q.scope3_category_id = $item.find('.q-cat').val() || null;
+                    q.activity_unit = $item.find('.q-unit').val() || null;
+                    var f = parseFloat($item.find('.q-factor').val());
+                    q.emission_factor = isNaN(f) ? null : f;
                 }
+
+                questions.push(q);
             });
 
             if (questions.length === 0) {
@@ -419,24 +449,7 @@
                     if (response.success) {
                         $('#addModal').modal('hide');
                         $('#addForm')[0].reset();
-                        $('#questionsContainer').html(`
-                            <div class="question-item mb-3 p-3 border rounded">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <strong>Question 1</strong>
-                                    <button type="button" class="btn btn-sm btn-danger removeQuestion" style="display:none;">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                <input type="text" name="questions[]" class="form-control mb-2" placeholder="Enter question text" required>
-                                <select name="question_types[]" class="form-select">
-                                    <option value="text">Text</option>
-                                    <option value="number">Number</option>
-                                    <option value="date">Date</option>
-                                    <option value="yes_no">Yes/No</option>
-                                    <option value="multiple_choice">Multiple Choice</option>
-                                </select>
-                            </div>
-                        `);
+                        $('#questionsContainer').html(buildQuestionItem(1));
                         questionCount = 1;
                         table.ajax.reload();
                         $('.alert-success').remove();
@@ -454,10 +467,22 @@
             });
         });
 
+        // Escape HTML to prevent stored XSS — survey/response text can originate
+        // from the unauthenticated public supplier portal.
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // View Survey
         $(document).on('click', '.viewBtn', function() {
             var id = $(this).data('id');
-            
+
             $.ajax({
                 url: '/supplier-surveys/' + id,
                 method: 'GET',
@@ -465,24 +490,24 @@
                     if (response.success) {
                         var survey = response.survey;
                         var html = '<div class="row g-3">';
-                        html += '<div class="col-md-6"><strong>Title:</strong> ' + (survey.title || 'N/A') + '</div>';
-                        html += '<div class="col-md-6"><strong>Supplier:</strong> ' + (survey.supplier?.name || 'N/A') + '</div>';
-                        html += '<div class="col-md-6"><strong>Status:</strong> <span class="badge bg-info">' + survey.status + '</span></div>';
+                        html += '<div class="col-md-6"><strong>Title:</strong> ' + escapeHtml(survey.title || 'N/A') + '</div>';
+                        html += '<div class="col-md-6"><strong>Supplier:</strong> ' + escapeHtml(survey.supplier?.name || 'N/A') + '</div>';
+                        html += '<div class="col-md-6"><strong>Status:</strong> <span class="badge bg-info">' + escapeHtml(survey.status) + '</span></div>';
                         html += '<div class="col-md-6"><strong>Due Date:</strong> ' + (survey.due_date ? new Date(survey.due_date).toLocaleDateString() : 'N/A') + '</div>';
-                        html += '<div class="col-md-12"><strong>Description:</strong> ' + (survey.description || 'N/A') + '</div>';
-                        
+                        html += '<div class="col-md-12"><strong>Description:</strong> ' + escapeHtml(survey.description || 'N/A') + '</div>';
+
                         if (survey.questions && survey.questions.length > 0) {
                             html += '<div class="col-md-12"><strong>Questions:</strong><ul class="mt-2">';
                             survey.questions.forEach(function(q, index) {
-                                html += '<li>' + (q.question || q) + '</li>';
+                                html += '<li>' + escapeHtml(q.question || q) + '</li>';
                             });
                             html += '</ul></div>';
                         }
-                        
+
                         if (survey.responses && Object.keys(survey.responses).length > 0) {
                             html += '<div class="col-md-12"><strong>Responses:</strong><ul class="mt-2">';
                             Object.keys(survey.responses).forEach(function(key) {
-                                html += '<li><strong>' + key + ':</strong> ' + survey.responses[key] + '</li>';
+                                html += '<li><strong>' + escapeHtml(key) + ':</strong> ' + escapeHtml(survey.responses[key]) + '</li>';
                             });
                             html += '</ul></div>';
                         }
@@ -547,6 +572,35 @@
                     },
                     error: function(xhr) {
                         var errorMsg = xhr.responseJSON?.message || 'Error sending reminder';
+                        alert(errorMsg);
+                    }
+                });
+            }
+        });
+
+        // Re-send a fresh public link
+        $(document).on('click', '.resendBtn', function() {
+            var id = $(this).data('id');
+
+            if (confirm('Generate a new survey link and email it to the supplier? Any previous link will stop working.')) {
+                $.ajax({
+                    url: '/supplier-surveys/' + id + '/resend',
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            table.ajax.reload();
+                            $('.alert-success').remove();
+                            $('.supplier-surveys-app').prepend('<div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check-circle me-2"></i>' + response.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+                            setTimeout(function() {
+                                $('.alert-success').fadeOut('slow');
+                            }, 5000);
+                        }
+                    },
+                    error: function(xhr) {
+                        var errorMsg = xhr.responseJSON?.message || 'Error re-sending survey link';
                         alert(errorMsg);
                     }
                 });

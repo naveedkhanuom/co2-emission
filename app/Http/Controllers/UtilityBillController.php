@@ -67,21 +67,23 @@ class UtilityBillController extends Controller
         // Step 1: Extract text using OCR
         $text = '';
         $ocrMethod = 'unknown';
-        
+        $ocrRawResponse = null;
+
         // Try OCR.space API first if API key is configured
-        $ocrSpaceApiKey = env('OCR_SPACE_API_KEY');
+        $ocrSpaceApiKey = config('services.ocr_space.key');
         if (!empty($ocrSpaceApiKey)) {
             try {
                 $response = Http::withHeaders([
                     'apikey' => $ocrSpaceApiKey
-                ])->attach(
-                    'file', file_get_contents($file->getRealPath()), $file->getClientOriginalName()
+                ])->timeout(20)->attach(
+                    'file', file_get_contents($filePath), $file->getClientOriginalName()
                 )->post('https://api.ocr.space/parse/image', [
                     'language' => 'eng',
                     'isOverlayRequired' => 'false',
                 ]);
 
                 $result = $response->json();
+                $ocrRawResponse = $result;
 
                 if (isset($result['ParsedResults'][0]['ParsedText'])) {
                     $text = $result['ParsedResults'][0]['ParsedText'];
@@ -101,7 +103,7 @@ class UtilityBillController extends Controller
             if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
                 try {
                     // Try to get Tesseract path from config or use default
-                    $tesseractPath = env('TESSERACT_PATH', 'tesseract');
+                    $tesseractPath = config('services.tesseract.path', 'tesseract');
                     
                     $text = (new TesseractOCR($filePath))
                         ->executable($tesseractPath)
@@ -112,8 +114,9 @@ class UtilityBillController extends Controller
                 }
             } elseif ($ext === 'pdf') {
                 try {
-                    // Try to extract text directly using pdftotext (if available)
-                    $text = @shell_exec("pdftotext \"$filePath\" - 2>&1");
+                    // Try to extract text directly using pdftotext (if available).
+                    // escapeshellarg() guards the interpolated path.
+                    $text = shell_exec('pdftotext ' . escapeshellarg($filePath) . ' - 2>&1');
                     
                     if (!empty($text)) {
                         $ocrMethod = 'pdftotext';
@@ -133,16 +136,18 @@ class UtilityBillController extends Controller
                             
                             $imagePath = $tempDir . '/' . uniqid() . '.png';
                             $pdf->saveImage($imagePath);
-                            
-                            $tesseractPath = env('TESSERACT_PATH', 'tesseract');
-                            $text = (new TesseractOCR($imagePath))
-                                ->executable($tesseractPath)
-                                ->run();
-                            $ocrMethod = 'tesseract_pdf';
-                                
-                            // Clean up temp file
-                            if (file_exists($imagePath)) {
-                                unlink($imagePath);
+
+                            try {
+                                $tesseractPath = config('services.tesseract.path', 'tesseract');
+                                $text = (new TesseractOCR($imagePath))
+                                    ->executable($tesseractPath)
+                                    ->run();
+                                $ocrMethod = 'tesseract_pdf';
+                            } finally {
+                                // Always clean up the temp image, even if OCR throws.
+                                if (file_exists($imagePath)) {
+                                    unlink($imagePath);
+                                }
                             }
                         } catch (\Exception $pdfException) {
                             // If PDF processing fails, return error
@@ -187,40 +192,68 @@ class UtilityBillController extends Controller
 
         $emissionFactor = null;
         $factorValue = 0;
+        $consumptionUnit = $extractedData['consumption_unit'] ?? null;
 
         if ($emissionSource) {
             $emissionFactor = EmissionFactor::where('emission_source_id', $emissionSource->id)
-                ->where('unit', $extractedData['consumption_unit'] ?? 'kWh')
+                ->where('unit', $consumptionUnit ?? 'kWh')
                 ->first();
-            
+
             if ($emissionFactor) {
                 $factorValue = $emissionFactor->factor_value;
             }
         }
 
+        // The expected unit for the default factors below. A default factor is only
+        // valid if the extracted unit matches it — otherwise applying it produces a
+        // silently wrong CO2e (e.g. a "MWh" reading times a per-kWh factor).
+        $expectedUnit = $billType === 'electricity' ? ['kwh'] : ['l', 'liter', 'liters', 'litre', 'litres'];
+        $unitMismatch = false;
+
         // Default emission factors if not found in database
         if ($factorValue == 0) {
+            $normalizedUnit = $consumptionUnit ? strtolower(trim($consumptionUnit)) : null;
+            if ($normalizedUnit !== null && !in_array($normalizedUnit, $expectedUnit, true)) {
+                $unitMismatch = true;
+            }
+
             if ($billType === 'electricity') {
-                $factorValue = 0.527; // Default: kg CO2e per kWh (convert to tCO2e)
-                $factorValue = $factorValue / 1000; // Convert to tCO2e
+                $factorValue = 0.527 / 1000; // Default: kg CO2e per kWh → tCO2e
             } else {
                 // For fuel (diesel/gasoline) - default: 2.68 kg CO2e per liter
-                $factorValue = 2.68 / 1000; // Convert to tCO2e
+                $factorValue = 2.68 / 1000; // → tCO2e
             }
         }
 
-        // Step 6: Calculate CO2e
+        // Step 6: Calculate CO2e (skip when the unit can't be trusted with the factor)
         $co2eValue = 0;
-        if ($extractedData['consumption'] && $factorValue > 0) {
+        if ($extractedData['consumption'] && $factorValue > 0 && !$unitMismatch) {
             $co2eValue = $extractedData['consumption'] * $factorValue;
         }
 
         // Step 7: Save utility bill
         // Add OCR method to extracted data for tracking
         $extractedData['ocr_method'] = $ocrMethod;
-        
+
+        $companyId = Auth::user()->company_id ?? null;
+
+        // De-duplication: don't re-process an identical bill (same company, type,
+        // date, consumption, cost) — it would double-count emissions.
+        $duplicate = UtilityBill::where('company_id', $companyId)
+            ->where('bill_type', $billType)
+            ->where('bill_date', $extractedData['bill_date'])
+            ->where('consumption', $extractedData['consumption'])
+            ->where('cost', $extractedData['cost'])
+            ->when($extractedData['bill_date'], fn ($q) => $q, fn ($q) => $q->whereRaw('1 = 0'))
+            ->first();
+
+        if ($duplicate) {
+            return redirect()->route('utility.index')
+                ->with('warning', 'This bill looks identical to one already uploaded (same date, consumption and amount), so it was not processed again to avoid double-counting.');
+        }
+
         $bill = UtilityBill::create([
-            'company_id' => Auth::user()->company_id ?? null,
+            'company_id' => $companyId,
             'site_id' => null,
             'file_path' => $path,
             'bill_type' => $billType,
@@ -230,15 +263,19 @@ class UtilityBillController extends Controller
             'consumption_unit' => $extractedData['consumption_unit'],
             'cost' => $extractedData['cost'],
             'raw_text' => $text,
+            'raw_response' => $ocrRawResponse ? json_encode($ocrRawResponse) : null,
             'extracted_data' => $extractedData,
             'created_by' => Auth::id(),
         ]);
 
-        // Step 8: Create emission record
-        if ($extractedData['consumption'] && $extractedData['bill_date']) {
+        // Step 8: Create emission record only when we have enough trustworthy data.
+        $warnings = [];
+        $recordCreated = false;
+
+        if ($extractedData['consumption'] && $extractedData['bill_date'] && !$unitMismatch) {
             $emissionRecord = EmissionRecord::create([
                 'entry_date' => $extractedData['bill_date'],
-                'company_id' => Auth::user()->company_id ?? $bill->company_id ?? null,
+                'company_id' => $companyId ?? $bill->company_id ?? null,
                 'facility' => $facility->name,
                 'scope' => $scope,
                 'emission_source' => $emissionSourceName,
@@ -255,10 +292,26 @@ class UtilityBillController extends Controller
 
             // Link emission record to bill
             $bill->update(['emission_record_id' => $emissionRecord->id]);
+            $recordCreated = true;
+        } else {
+            if (!$extractedData['consumption']) {
+                $warnings[] = 'consumption could not be read';
+            }
+            if (!$extractedData['bill_date']) {
+                $warnings[] = 'the bill date could not be read';
+            }
+            if ($unitMismatch) {
+                $warnings[] = "the extracted unit ({$consumptionUnit}) does not match the expected unit for {$billType}";
+            }
+        }
+
+        if ($recordCreated) {
+            return redirect()->route('utility.index')
+                ->with('success', 'Bill uploaded and processed successfully! ' .
+                      ($extractedData['consumption'] ? "Consumption: {$extractedData['consumption']} {$extractedData['consumption_unit']}, CO2e: " . number_format($co2eValue, 4) . " tCO₂e" : 'Please review extracted data.'));
         }
 
         return redirect()->route('utility.index')
-            ->with('success', 'Bill uploaded and processed successfully! ' . 
-                  ($extractedData['consumption'] ? "Consumption: {$extractedData['consumption']} {$extractedData['consumption_unit']}, CO2e: " . number_format($co2eValue, 4) . " tCO₂e" : 'Please review extracted data.'));
+            ->with('warning', 'Bill uploaded, but no emission record was created because ' . implode(' and ', $warnings) . '. Please review the bill and add the emission record manually.');
     }
 }

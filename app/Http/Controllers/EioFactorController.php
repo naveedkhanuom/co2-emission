@@ -36,7 +36,7 @@ class EioFactorController extends Controller
             $factors->where('country', $request->country);
         }
 
-        if ($request->has('active_only')) {
+        if ($request->boolean('active_only')) {
             $factors->where('is_active', true);
         }
 
@@ -126,8 +126,8 @@ class EioFactorController extends Controller
             'success' => true,
             'spend_amount' => $request->spend_amount,
             'currency' => $request->currency ?? 'USD',
-            'emissions_kg_co2e' => $emissions,
-            'emissions_t_co2e' => $emissions / 1000,
+            'emissions_kg_co2e' => $emissions * 1000,
+            'emissions_t_co2e' => $emissions,
         ]);
     }
 
@@ -136,7 +136,9 @@ class EioFactorController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $this->abortUnlessSuperAdmin();
+
+        $validated = $request->validate([
             'sector_code' => 'required|string|max:50',
             'sector_name' => 'required|string|max:255',
             'country' => 'required|string|size:3',
@@ -146,7 +148,7 @@ class EioFactorController extends Controller
             'year' => 'nullable|integer|min:2000|max:2100',
         ]);
 
-        $factor = EioFactor::create($request->all());
+        $factor = EioFactor::create($validated);
 
         return response()->json([
             'success' => true,
@@ -160,9 +162,11 @@ class EioFactorController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $this->abortUnlessSuperAdmin();
+
         $factor = EioFactor::findOrFail($id);
 
-        $request->validate([
+        $validated = $request->validate([
             'sector_code' => 'required|string|max:50',
             'sector_name' => 'required|string|max:255',
             'country' => 'required|string|size:3',
@@ -172,7 +176,7 @@ class EioFactorController extends Controller
             'year' => 'nullable|integer|min:2000|max:2100',
         ]);
 
-        $factor->update($request->all());
+        $factor->update($validated);
 
         return response()->json([
             'success' => true,
@@ -186,6 +190,8 @@ class EioFactorController extends Controller
      */
     public function destroy($id)
     {
+        $this->abortUnlessSuperAdmin();
+
         $factor = EioFactor::findOrFail($id);
         $factor->delete();
 
@@ -193,5 +199,16 @@ class EioFactorController extends Controller
             'success' => true,
             'message' => 'EIO factor deleted successfully'
         ]);
+    }
+
+    /**
+     * EIO factors are global reference data shared by every tenant, so a single
+     * tenant must not be able to mutate them. Only super-admins may write.
+     */
+    private function abortUnlessSuperAdmin(): void
+    {
+        if (!(auth()->user()->is_super_admin ?? false)) {
+            abort(403, 'EIO factors are shared reference data and can only be modified by a super administrator.');
+        }
     }
 }
