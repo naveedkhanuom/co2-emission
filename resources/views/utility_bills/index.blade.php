@@ -117,7 +117,7 @@
                                     </td>
                                     <td>{{ $bill->cost ? number_format($bill->cost, 2) : '—' }}</td>
                                     <td>
-                                        <a href="{{ asset('storage/'.$bill->file_path) }}" target="_blank" class="btn-view">
+                                        <a href="{{ route('utility.download', $bill) }}" target="_blank" class="btn-view">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                     </td>

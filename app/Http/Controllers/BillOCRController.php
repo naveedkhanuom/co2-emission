@@ -38,9 +38,11 @@ class BillOCRController extends Controller
         $file = $request->file('bill_file');
         $billType = $request->bill_type;
         
-        // Store the uploaded file
-        $path = $file->store('utility_bills', 'public');
-        $filePath = storage_path('app/public/' . $path);
+        // Store the uploaded file on the private disk — bills contain sensitive
+        // consumption/cost data and must not be web-accessible. Served later via
+        // the authorized utility.download route.
+        $path = $file->store('utility_bills', 'local');
+        $filePath = Storage::disk('local')->path($path);
         $ext = strtolower($file->getClientOriginalExtension());
 
         // Step 1: Extract text using OCR
@@ -165,7 +167,7 @@ class BillOCRController extends Controller
         $extractedData['ocr_method'] = $ocrMethod;
         
         $bill = UtilityBill::create([
-            'company_id' => Auth::user()->company_id ?? null,
+            'company_id' => current_company_id() ?? Auth::user()?->company_id,
             'site_id' => null,
             'file_path' => $path,
             'bill_type' => $billType,

@@ -45,6 +45,34 @@ class UtilityBillController extends Controller
         return view('utility_bills.index', compact('bills'));
     }
 
+    /**
+     * Stream a bill file to authorized users only. Bills live on the private
+     * disk (not web-accessible); this is the only way to view one. Route-model
+     * binding is company-scoped via HasCompanyScope, so a user cannot bind
+     * another company's bill; the explicit check guards super-admins too.
+     * Falls back to the legacy public disk for files uploaded before the move.
+     */
+    public function download(UtilityBill $utilityBill)
+    {
+        $user = Auth::user();
+        if (! ($user && $user->is_super_admin) && $utilityBill->company_id != current_company_id()) {
+            abort(403, 'You do not have access to this file.');
+        }
+
+        $path = $utilityBill->file_path;
+        if (! $path) {
+            abort(404);
+        }
+
+        foreach (['local', 'public'] as $disk) {
+            if (Storage::disk($disk)->exists($path)) {
+                return Storage::disk($disk)->download($path);
+            }
+        }
+
+        abort(404, 'File not found.');
+    }
+
     // Upload and process utility bill
     public function upload(Request $request)
     {
@@ -59,9 +87,11 @@ class UtilityBillController extends Controller
         $file = $request->file('bill_file');
         $billType = $request->bill_type;
         
-        // Store the uploaded file
-        $path = $file->store('utility_bills', 'public');
-        $filePath = storage_path('app/public/' . $path);
+        // Store the uploaded file on the private disk — bills contain sensitive
+        // consumption/cost data and must not be web-accessible. Served later via
+        // the authorized utility.download route.
+        $path = $file->store('utility_bills', 'local');
+        $filePath = Storage::disk('local')->path($path);
         $ext = strtolower($file->getClientOriginalExtension());
 
         // Step 1: Extract text using OCR
@@ -235,7 +265,7 @@ class UtilityBillController extends Controller
         // Add OCR method to extracted data for tracking
         $extractedData['ocr_method'] = $ocrMethod;
 
-        $companyId = Auth::user()->company_id ?? null;
+        $companyId = current_company_id() ?? Auth::user()?->company_id;
 
         // De-duplication: don't re-process an identical bill (same company, type,
         // date, consumption, cost) — it would double-count emissions.

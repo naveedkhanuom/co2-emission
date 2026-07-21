@@ -93,8 +93,9 @@ class EmissionImportController extends Controller
             $skippedCount = $importClass->getSkippedCount();
             $successfulCount = $processedCount - $skippedCount;
             
-            $processingTime = Carbon::now()->diffInSeconds($importHistory->started_at);
-            
+            // Carbon 3 diffs are signed: measure start -> now so elapsed time is positive.
+            $processingTime = $importHistory->started_at->diffInSeconds(Carbon::now());
+
             // Update import history with success status
             $importHistory->update([
                 'status' => $skippedCount > 0 && $successfulCount > 0 ? 'partial' : 'completed',
@@ -124,7 +125,7 @@ class EmissionImportController extends Controller
             ]);
         } catch (\Throwable $e) {
             // Update import history with failure status
-            $processingTime = Carbon::now()->diffInSeconds($importHistory->started_at);
+            $processingTime = $importHistory->started_at->diffInSeconds(Carbon::now());
             $importHistory->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),

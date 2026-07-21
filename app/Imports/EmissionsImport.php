@@ -17,6 +17,12 @@ class EmissionsImport implements ToModel, WithHeadingRow
     protected int $skippedCount = 0;
     protected ?int $importHistoryId = null;
 
+    // Per-import memoisation of resolved facilities/departments so a spreadsheet
+    // with many rows sharing the same facility/department doesn't re-query (and
+    // firstOrCreate) once per row — the main N+1 in large imports.
+    protected array $facilityCache = [];
+    protected array $departmentCache = [];
+
     public function __construct(bool $overwrite = false, array $mapping = [])
     {
         $this->overwrite = $overwrite;
@@ -36,6 +42,59 @@ class EmissionsImport implements ToModel, WithHeadingRow
     public function getSkippedCount(): int
     {
         return $this->skippedCount;
+    }
+
+    /**
+     * Resolve (and auto-create) a facility by id/name, memoised for the import.
+     */
+    protected function resolveFacility($facilityName, $companyId): Facilities
+    {
+        $key = mb_strtolower(trim((string) $facilityName));
+        if (isset($this->facilityCache[$key])) {
+            return $this->facilityCache[$key];
+        }
+
+        if (is_numeric($facilityName)) {
+            $facility = Facilities::find((int) $facilityName);
+        } else {
+            $facility = Facilities::where('name', $facilityName)->first();
+        }
+
+        if (! $facility) {
+            $facility = Facilities::firstOrCreate(
+                ['company_id' => $companyId, 'name' => $facilityName],
+                ['company_id' => $companyId, 'name' => $facilityName]
+            );
+        }
+
+        return $this->facilityCache[$key] = $facility;
+    }
+
+    /**
+     * Resolve (and auto-create) a department by id/name under a facility,
+     * memoised for the import.
+     */
+    protected function resolveDepartment($departmentName, Facilities $facility, $companyId): Department
+    {
+        $key = $facility->id . '|' . mb_strtolower(trim((string) $departmentName));
+        if (isset($this->departmentCache[$key])) {
+            return $this->departmentCache[$key];
+        }
+
+        if (is_numeric($departmentName)) {
+            $department = Department::find((int) $departmentName);
+        } else {
+            $department = Department::where('name', $departmentName)->first();
+        }
+
+        if (! $department) {
+            $department = Department::firstOrCreate(
+                ['company_id' => $companyId, 'facility_id' => $facility->id, 'name' => $departmentName],
+                ['company_id' => $companyId, 'facility_id' => $facility->id, 'name' => $departmentName]
+            );
+        }
+
+        return $this->departmentCache[$key] = $department;
     }
 
     /**
@@ -96,34 +155,9 @@ class EmissionsImport implements ToModel, WithHeadingRow
             return null;
         }
 
-        // Resolve facility and department (scoped by company via HasCompanyScope)
-        if (is_numeric($facilityName)) {
-            $facility = Facilities::find((int) $facilityName);
-        } else {
-            $facility = Facilities::where('name', $facilityName)->first();
-        }
-
-        if (is_numeric($departmentName)) {
-            $department = Department::find((int) $departmentName);
-        } else {
-            $department = Department::where('name', $departmentName)->first();
-        }
-
-        // Auto-create facility if not found (for easier import experience)
-        if (!$facility) {
-            $facility = Facilities::firstOrCreate(
-                ['company_id' => $companyId, 'name' => $facilityName],
-                ['company_id' => $companyId, 'name' => $facilityName]
-            );
-        }
-
-        // Auto-create department if not found (linked to facility)
-        if (!$department) {
-            $department = Department::firstOrCreate(
-                ['company_id' => $companyId, 'facility_id' => $facility->id, 'name' => $departmentName],
-                ['company_id' => $companyId, 'facility_id' => $facility->id, 'name' => $departmentName]
-            );
-        }
+        // Resolve facility and department (memoised per import — see caches above).
+        $facility = $this->resolveFacility($facilityName, $companyId);
+        $department = $this->resolveDepartment($departmentName, $facility, $companyId);
 
         try {
             $parsedDate = \Carbon\Carbon::parse($dateValue)->format('Y-m-d');
