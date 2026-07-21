@@ -14,6 +14,13 @@ return [
     // specifies one.
     'default' => 'ar6',
 
+    // The GWP basis the bundled emission-factor / source tables
+    // (config/scope1_sources.php, scope2_sources.php, seeded factors) were
+    // actually built on. Every record is stamped with THIS so its stated GWP set
+    // matches the math that produced its co2e_value. Bump to 'ar6' only after the
+    // factor tables (incl. refrigerant GWPs) are re-based to AR6.
+    'factor_basis' => 'ar5',
+
     'labels' => [
         'ar4' => 'IPCC AR4 (2007)',
         'ar5' => 'IPCC AR5 (2013)',

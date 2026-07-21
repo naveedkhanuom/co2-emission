@@ -135,6 +135,7 @@
             <p>Electricity, heat, steam &amp; cooling from third parties</p>
             <button type="button" class="btn-add" id="scope2BtnAdd"><i class="fas fa-plus me-1"></i> Add Entry</button>
         </div>
+        @include('partials.quick_start', ['scope' => 2, 'manualTrigger' => 'scope2BtnAdd'])
         <div class="stats">
             <div class="sc"><div class="si a">&#9889;</div><div><div class="sv" id="scope2StatTotal">0</div><div class="sl">Total Entries</div></div></div>
             <div class="sc"><div class="si b">&#9889;</div><div><div class="sv" id="scope2StatElectricity">0</div><div class="sl">Electricity</div></div></div>
@@ -189,6 +190,23 @@
                             <input type="checkbox" id="scope2ChkEfOvr" style="accent-color:var(--primary-blue)"> Override with custom EF (kgCO2e/kWh)
                         </label>
                         <input class="fi" type="number" id="scope2FefOvr" placeholder="e.g. 0.250" step="any" min="0" style="margin-top:4px;display:none;font-size:11px">
+                    </div>
+                </div>
+                <div class="ef-box" id="scope2MktBox" style="display:none">
+                    <div class="ef-title">&#9889; Market-based method <span style="font-weight:400;color:var(--gray-600)">(GHG Protocol dual reporting)</span></div>
+                    <div class="fg" style="margin:0">
+                        <label style="font-size:11px;font-weight:600">Contractual instrument</label>
+                        <select class="fsl" id="scope2Fmkt">
+                            <option value="grid">Same as grid — no specific contract</option>
+                            <option value="recs">Covered by RECs / GOs / I-RECs (zero)</option>
+                            <option value="supplier">Supplier-specific / PPA / green-tariff factor</option>
+                        </select>
+                        <div style="font-size:9px;color:var(--gray-600);margin-top:2px">Location-based (grid) is always recorded. This captures the market-based figure alongside it.</div>
+                    </div>
+                    <div class="fg" id="scope2FgMktEf" style="margin:8px 0 0;display:none">
+                        <label style="font-size:11px;font-weight:600">Market-based EF (kgCO2e/kWh) <span class="rq">*</span></label>
+                        <input class="fi" type="number" id="scope2FmktEf" placeholder="e.g. 0.000" step="any" min="0" style="margin-top:3px">
+                        <div style="font-size:9px;color:var(--gray-600);margin-top:2px">From your PPA / green-tariff supplier or residual-mix registry.</div>
                     </div>
                 </div>
                 <div class="fr"><div class="fg" id="scope2FgQty"><label>Quantity <span class="rq">*</span></label><input class="fi" type="number" id="scope2Fqty" placeholder="e.g. 5000" step="any" min="0"><div class="fem">Enter quantity</div></div><div class="fg" id="scope2FgUnit"><label>Unit <span class="rq">*</span></label><select class="fsl" id="scope2Funit"><option value="">Select...</option></select><div class="fem">Select unit</div></div></div>
