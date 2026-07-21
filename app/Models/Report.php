@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\HasCompanyScope;
 
 class Report extends Model
 {
-    use HasFactory;
+    use HasFactory, HasCompanyScope;
 
     protected $fillable = [
+        'company_id',
         'facility_id',
         'department_id',
         'report_name',
@@ -26,6 +28,10 @@ class Report extends Model
         'generated_at' => 'date',
         'last_viewed_at' => 'datetime',
     ];
+
+    public function company() {
+        return $this->belongsTo(Company::class);
+    }
 
     public function facility() {
         return $this->belongsTo(Facilities::class);

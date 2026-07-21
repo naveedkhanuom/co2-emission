@@ -66,6 +66,19 @@ class EmissionFactorController extends Controller
             'unit' => 'required|string|max:255',
             'factor_value' => 'required|numeric',
             'region' => 'nullable|string|max:255',
+            // Versioning / provenance
+            'dataset_name' => 'nullable|string|max:255',
+            'dataset_version' => 'nullable|string|max:50',
+            'valid_from' => 'nullable|date',
+            'valid_to' => 'nullable|date|after_or_equal:valid_from',
+            'is_active' => 'nullable|boolean',
+            'gwp_version' => 'nullable|in:ar4,ar5,ar6',
+            'source_reference' => 'nullable|string|max:255',
+            // Per-gas factors (kg of gas per activity unit)
+            'co2_factor' => 'nullable|numeric|min:0',
+            'ch4_factor' => 'nullable|numeric|min:0',
+            'n2o_factor' => 'nullable|numeric|min:0',
+            'biogenic_co2_factor' => 'nullable|numeric|min:0',
         ];
         if ($countrySpecificOrgId && (int) $request->organization_id === (int) $countrySpecificOrgId) {
             $rules['country_id'] = 'required|integer|exists:countries,id';
@@ -74,9 +87,13 @@ class EmissionFactorController extends Controller
 
         $id = $request->filled('id') ? (int) $request->id : null;
 
+        $payload = collect($validated)->except('id')->all();
+        // Checkboxes are absent when unticked — resolve explicitly.
+        $payload['is_active'] = $request->boolean('is_active', true);
+
         EmissionFactor::updateOrCreate(
             ['id' => $id],
-            collect($validated)->except('id')->all()
+            $payload
         );
 
         return response()->json(['message' => $id ? 'Emission Factor updated!' : 'Emission Factor added!']);

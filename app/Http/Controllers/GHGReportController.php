@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmissionRecord;
+use App\Services\ReportGenerationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +13,26 @@ class GHGReportController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:list-reports|create-report|edit-report|delete-report', ['only' => ['index']]);
+        $this->middleware('permission:list-reports|create-report|edit-report|delete-report', ['only' => ['index', 'export']]);
+    }
+
+    /**
+     * Export the GHG report for the selected year/facility as a PDF summary
+     * (scope totals + by-source breakdown), reusing ReportGenerationService.
+     */
+    public function export(Request $request, ReportGenerationService $service)
+    {
+        $year = $request->get('year', date('Y'));
+        $facility = $request->get('facility', '');
+        $companyId = current_company_id() ?? (auth()->user()->company_id ?? null);
+
+        $summary = $service->summaryFromFilters((int) $companyId, [
+            'facility' => $facility ?: null,
+            'year'     => $year,
+            'period'   => (string) $year,
+        ], 'GHG Protocol Report ' . $year);
+
+        return $service->pdfFromSummary($summary)->download('ghg-protocol-' . $year . '.pdf');
     }
     
     public function index(Request $request)
@@ -42,11 +62,16 @@ class GHGReportController extends Controller
         $scope2Data = $this->organizeScope2Data($records->where('scope', 2));
         $scope3Data = $this->organizeScope3Data($records->where('scope', 3));
         
-        // Calculate totals
+        // Calculate totals. Scope 2 is dual-reported per GHG Protocol: the
+        // location-based figure is co2e_value; the market-based figure uses
+        // market_based_co2e where present (else falls back to location-based).
         $scope1Total = $records->where('scope', 1)->sum('co2e_value');
-        $scope2Total = $records->where('scope', 2)->sum('co2e_value');
+        $scope2Total = $records->where('scope', 2)->sum('co2e_value'); // location-based
+        $scope2MarketTotal = $records->where('scope', 2)
+            ->reduce(fn ($carry, $r) => $carry + $r->marketBasedCo2e(), 0.0);
         $scope3Total = $records->where('scope', 3)->sum('co2e_value');
-        $grandTotal = $scope1Total + $scope2Total + $scope3Total;
+        $grandTotal = $scope1Total + $scope2Total + $scope3Total;            // with location-based Scope 2
+        $grandTotalMarket = $scope1Total + $scope2MarketTotal + $scope3Total; // with market-based Scope 2
         
         // Get facilities for filter
         // Automatically scoped to current company via HasCompanyScope trait
@@ -65,8 +90,10 @@ class GHGReportController extends Controller
             'scope3Data',
             'scope1Total',
             'scope2Total',
+            'scope2MarketTotal',
             'scope3Total',
             'grandTotal',
+            'grandTotalMarket',
             'year',
             'facility',
             'startDate',
@@ -190,13 +217,36 @@ class GHGReportController extends Controller
             'investments' => [],               // Category 15
         ];
         
+        // Resolve the structured scope3_category_id FK to the report's category
+        // keys via the category's sort_order (1-15, GHG Protocol order). This is
+        // authoritative; the legacy strpos heuristic is only a fallback for old
+        // records that were saved before categorisation carried the FK.
+        $orderToKey = [
+            1 => 'purchased_goods',  2 => 'capital_goods',      3 => 'fuel_energy',
+            4 => 'upstream_transport', 5 => 'waste_operations',  6 => 'business_travel',
+            7 => 'employee_commute', 8 => 'upstream_leased',     9 => 'downstream_transport',
+            10 => 'processing_sold', 11 => 'use_sold',           12 => 'end_life_sold',
+            13 => 'downstream_leased', 14 => 'franchises',       15 => 'investments',
+        ];
+
+        $categoryIds = $records->pluck('scope3_category_id')->filter()->unique();
+        $idToOrder = $categoryIds->isNotEmpty()
+            ? \App\Models\Scope3Category::whereIn('id', $categoryIds)->pluck('sort_order', 'id')
+            : collect();
+
         foreach ($records as $record) {
-            $source = strtolower($record->emission_source);
             $facility = $record->facility;
-            
-            // Categorize Scope 3 based on source name or value
-            $category = $this->categorizeScope3Source($source, $record->emission_source);
-            
+
+            // Prefer the FK; fall back to the source-name heuristic only when the
+            // record has no scope3_category_id (or it maps to an unknown order).
+            $category = null;
+            if ($record->scope3_category_id && isset($idToOrder[$record->scope3_category_id])) {
+                $category = $orderToKey[$idToOrder[$record->scope3_category_id]] ?? null;
+            }
+            if ($category === null) {
+                $category = $this->categorizeScope3Source(strtolower($record->emission_source), $record->emission_source);
+            }
+
             $key = $facility . '|' . $record->emission_source;
             
             if (!isset($organized[$category][$key])) {
@@ -231,9 +281,9 @@ class GHGReportController extends Controller
     private function categorizeScope3Source($source, $originalSource)
     {
         // Check for explicit category indicators in source name
-        if (strpos($source, 'capital goods') !== false || 
+        if (strpos($source, 'capital goods') !== false ||
             strpos($source, 'capital-goods') !== false ||
-            strpos($source, 'equipment') !== false && strpos($source, 'purchased') === false) {
+            (strpos($source, 'equipment') !== false && strpos($source, 'purchased') === false)) {
             return 'capital_goods';
         }
         

@@ -63,6 +63,7 @@ class EmissionImportController extends Controller
 
         // Create import history record
         $importHistory = ImportHistory::create([
+            'company_id' => $companyId,
             'import_id' => ImportHistory::generateImportId(),
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),

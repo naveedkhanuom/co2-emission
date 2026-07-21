@@ -1,11 +1,10 @@
-@extends('layouts.app')
+@extends('layouts.portal')
 
 @section('title', 'Supplier Survey')
-@section('page-title', 'Supplier Survey')
 
 @section('content')
 <div id="content">
-    <div class="container mt-5" style="max-width: 900px;">
+    <div class="container my-5" style="max-width: 900px;">
         <div class="card shadow-sm">
             <div class="card-header bg-white">
                 <h4 class="mb-1">{{ $survey->title ?? 'Supplier Survey' }}</h4>
@@ -48,7 +47,7 @@
                         @php
                             $qText = is_array($q) ? ($q['question'] ?? ('Question ' . ($index + 1))) : $q;
                             $qType = is_array($q) ? ($q['type'] ?? 'text') : 'text';
-                            $value = $responses[$index] ?? '';
+                            $value = old("responses.$index", $responses[$index] ?? '');
                         @endphp
 
                         <div class="mb-4">

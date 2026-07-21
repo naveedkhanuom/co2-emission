@@ -17,15 +17,32 @@ class Facilities extends Model
         'city',
         'state',
         'country',
+        // MRV layer — opt-in regulated facility (EAD / EU-ETS).
+        'mrv_enabled',
+        'economic_licence_number',
+        'environmental_permit_no',
+        'parent_entity',
+        'coordinates',
+        'primary_sector',
+        'primary_activity',
     ];
-    
+
+    protected $casts = [
+        'mrv_enabled' => 'boolean',
+    ];
+
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
-    
+
     public function departments()
     {
         return $this->hasMany(Department::class, 'facility_id');
+    }
+
+    public function mrvReports()
+    {
+        return $this->hasMany(MrvFacilityReport::class, 'facility_id');
     }
 }

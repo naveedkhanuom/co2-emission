@@ -29,11 +29,19 @@ use App\Http\Controllers\ScopeClassifierController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierSurveyController;
 use App\Http\Controllers\EioFactorController;
+use App\Http\Controllers\EnergyAttributeCertificateController;
+use App\Http\Controllers\DisclosureReportController;
+use App\Http\Controllers\MrvReportController;
 use App\Http\Controllers\DataQualityController;
 use App\Http\Controllers\CountryController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\NotificationController;
 
 
-Auth::routes();
+// Public self-registration is disabled: this is a multi-tenant B2B app and a
+// self-registered user would have no company (see HasCompanyScope). Provision
+// users via the admin User management screens instead.
+Auth::routes(['register' => false]);
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -41,6 +49,29 @@ Route::get('/', function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+    // First-run company setup wizard (plain-language onboarding for non-experts)
+    Route::prefix('onboarding')->name('onboarding.')->group(function () {
+        Route::get('/', [App\Http\Controllers\OnboardingController::class, 'index'])->name('index');
+        Route::post('/save', [App\Http\Controllers\OnboardingController::class, 'save'])->name('save');
+        Route::post('/skip', [App\Http\Controllers\OnboardingController::class, 'skip'])->name('skip');
+    });
+
+    // Audit trail (read-only change history)
+    Route::get('/audit-logs', [App\Http\Controllers\AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    // Unit conversion helper (used by entry forms to normalise activity units)
+    Route::get('/units', [App\Http\Controllers\UnitConversionController::class, 'units'])->name('units.list');
+    Route::post('/units/convert', [App\Http\Controllers\UnitConversionController::class, 'convert'])->name('units.convert');
+
+    // Analytics & Insights
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+        Route::get('/breakdown', [AnalyticsController::class, 'breakdown'])->name('breakdown');
+        Route::get('/intensity', [AnalyticsController::class, 'intensity'])->name('intensity');
+        Route::get('/year-over-year', [AnalyticsController::class, 'yearOverYear'])->name('yoy');
+        Route::get('/hotspots', [AnalyticsController::class, 'hotspots'])->name('hotspots');
+    });
 
     // Roles & Permissions (Spatie)
     Route::resource('roles', RoleController::class);
@@ -122,6 +153,7 @@ Route::prefix('countries')->name('countries.')->middleware('auth')->group(functi
 Route::prefix('emission-records')->middleware('auth')->group(function() {
     Route::get('/', [EmissionRecordController::class,'index'])->name('emission_records.index');
     Route::get('/scope-entry', [EmissionRecordController::class,'scopeEntry'])->name('emission_records.scope_entry');
+    Route::post('/quick-add', [EmissionRecordController::class,'quickAdd'])->name('emission_records.quick_add');
     Route::get('/data', [EmissionRecordController::class,'getData'])->name('emission_records.data');
     Route::post('/store', [EmissionRecordController::class,'store'])->name('emission-records.store');
     Route::post('/store-or-update', [EmissionRecordController::class,'storeOrUpdate'])->name('emission_records.storeOrUpdate');
@@ -207,6 +239,7 @@ Route::prefix('scope3')->name('scope3.')->middleware('auth')->group(function () 
 // Scope Finder — helps users who don't know which scope an activity belongs to
 Route::middleware(['auth'])->group(function () {
     Route::get('/scope-finder', [ScopeClassifierController::class, 'index'])->name('scope_classifier.index');
+    Route::post('/scope-finder/classify', [ScopeClassifierController::class, 'classify'])->name('scope_classifier.classify');
 });
 
 // Supplier Routes
@@ -229,12 +262,14 @@ Route::prefix('supplier-surveys')->name('supplier_surveys.')->middleware('auth')
     Route::get('/{id}', [SupplierSurveyController::class, 'show'])->name('show');
     Route::put('/{id}/responses', [SupplierSurveyController::class, 'updateResponses'])->name('update_responses');
     Route::post('/{id}/send', [SupplierSurveyController::class, 'send'])->name('send');
+    Route::post('/{id}/resend', [SupplierSurveyController::class, 'resendLink'])->name('resend');
     Route::post('/{id}/reminder', [SupplierSurveyController::class, 'sendReminder'])->name('reminder');
     Route::delete('/{id}', [SupplierSurveyController::class, 'destroy'])->name('destroy');
 });
 
-// Supplier Portal (public, token-based)
-Route::prefix('supplier-portal')->name('supplier_portal.')->group(function () {
+// Supplier Portal (public, token-based). Rate-limited: these are unauthenticated
+// and resolve a survey purely by its token.
+Route::prefix('supplier-portal')->name('supplier_portal.')->middleware('throttle:30,1')->group(function () {
     Route::get('/survey/{token}', [SupplierSurveyController::class, 'publicShow'])->name('survey.show');
     Route::post('/survey/{token}', [SupplierSurveyController::class, 'publicSubmit'])->name('survey.submit');
 });
@@ -248,6 +283,32 @@ Route::prefix('eio-factors')->name('eio_factors.')->middleware('auth')->group(fu
     Route::post('/', [EioFactorController::class, 'store'])->name('store');
     Route::put('/{id}', [EioFactorController::class, 'update'])->name('update');
     Route::delete('/{id}', [EioFactorController::class, 'destroy'])->name('destroy');
+});
+
+// Energy Attribute Certificates (market-based Scope 2 instruments)
+Route::prefix('energy-certificates')->name('energy_certificates.')->middleware('auth')->group(function () {
+    Route::get('/', [EnergyAttributeCertificateController::class, 'index'])->name('index');
+    Route::get('/data', [EnergyAttributeCertificateController::class, 'getData'])->name('data');
+    Route::get('/list', [EnergyAttributeCertificateController::class, 'list'])->name('list');
+    Route::post('/store-or-update', [EnergyAttributeCertificateController::class, 'storeOrUpdate'])->name('storeOrUpdate');
+    Route::get('/{id}', [EnergyAttributeCertificateController::class, 'show']);
+    Route::delete('/{id}', [EnergyAttributeCertificateController::class, 'destroy']);
+});
+
+// Disclosure Reports (CSRD/ESRS E1, CDP, GRI 305)
+Route::prefix('disclosure-reports')->name('disclosure.')->middleware('auth')->group(function () {
+    Route::get('/', [DisclosureReportController::class, 'index'])->name('index');
+    Route::get('/export', [DisclosureReportController::class, 'export'])->name('export');
+});
+
+// Regulated MRV workspace (EAD UAE / EU-ETS) — opt-in, facility-level
+Route::prefix('mrv')->name('mrv.')->middleware('auth')->group(function () {
+    Route::get('/', [MrvReportController::class, 'index'])->name('index');
+    Route::post('/enable-facility', [MrvReportController::class, 'enableFacility'])->name('enableFacility');
+    Route::post('/prefill', [MrvReportController::class, 'prefill'])->name('prefill');
+    Route::get('/export', [MrvReportController::class, 'export'])->name('export');
+    Route::post('/stream', [MrvReportController::class, 'saveStream'])->name('saveStream');
+    Route::delete('/stream/{id}', [MrvReportController::class, 'deleteStream'])->name('deleteStream');
 });
 
 // Data Quality Routes
@@ -266,6 +327,7 @@ Route::prefix('reports')->middleware('auth')->group(function() {
     
     // GHG Protocol Report (must come before /{id} route)
     Route::get('/ghg-protocol', [App\Http\Controllers\GHGReportController::class, 'index'])->name('reports.ghg_protocol');
+    Route::get('/ghg-protocol/export', [App\Http\Controllers\GHGReportController::class, 'export'])->name('reports.ghg_protocol.export');
     
     // Templates
     Route::get('/templates/list', [App\Http\Controllers\ReportController::class, 'getTemplates'])->name('reports.templates.list');
@@ -274,12 +336,15 @@ Route::prefix('reports')->middleware('auth')->group(function() {
     // Scheduled Reports
     Route::get('/scheduled/list', [App\Http\Controllers\ReportController::class, 'getScheduledReports'])->name('reports.scheduled.list');
     Route::post('/scheduled/store', [App\Http\Controllers\ReportController::class, 'storeScheduledReport'])->name('reports.scheduled.store');
+    Route::post('/scheduled/{id}/run', [App\Http\Controllers\ReportController::class, 'runScheduledNow'])->name('reports.scheduled.run');
     
     // Export Jobs
     Route::get('/exports/list', [App\Http\Controllers\ReportController::class, 'getExportJobs'])->name('reports.exports.list');
     Route::post('/exports/store', [App\Http\Controllers\ReportController::class, 'storeExportJob'])->name('reports.exports.store');
+    Route::get('/exports/{id}/download', [App\Http\Controllers\ReportController::class, 'downloadExportJob'])->name('reports.exports.download');
     
     // Dynamic routes (must come last)
+    Route::get('/{id}/download/{format}', [App\Http\Controllers\ReportController::class, 'download'])->name('reports.download');
     Route::get('/{id}', [App\Http\Controllers\ReportController::class, 'show']);
     Route::delete('/{id}', [App\Http\Controllers\ReportController::class, 'destroy']);
     Route::post('/{id}/track-view', [App\Http\Controllers\ReportController::class, 'trackView'])->name('reports.trackView');
@@ -301,6 +366,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/data-source', function () {
         return view('data_source.coming_soon');
     })->name('data_source.index');
+
+    // Ask Your Data — AI assistant over the company's emissions inventory
+    Route::get('/ask', [App\Http\Controllers\AskController::class, 'index'])->name('assistant.index');
+    Route::post('/ask', [App\Http\Controllers\AskController::class, 'ask'])->name('assistant.ask');
+
+    // In-app notifications (personal to the signed-in user)
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('/feed', [NotificationController::class, 'feed'])->name('feed');
+        Route::post('/read-all', [NotificationController::class, 'markAllRead'])->name('readAll');
+        Route::post('/{id}/read', [NotificationController::class, 'markRead'])->name('read');
+        Route::get('/{id}/open', [NotificationController::class, 'open'])->name('open');
+        Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
+    });
 });
 
 

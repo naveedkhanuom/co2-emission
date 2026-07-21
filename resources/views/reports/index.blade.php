@@ -186,6 +186,11 @@
                     <h5>GHG Protocol Report</h5>
                     <p>Generate GHG Protocol compliance report</p>
                 </a>
+                <a href="{{ route('disclosure.index') }}" class="qa-card qa-card-link">
+                    <div class="qa-icon b"><i class="fas fa-clipboard-check"></i></div>
+                    <h5>Disclosure Reports</h5>
+                    <p>CSRD/ESRS E1, CDP &amp; GRI 305 datapoint exports</p>
+                </a>
             </div>
 
             <!-- Reports Tabs -->
@@ -1086,9 +1091,10 @@
             });
 
         // Report actions
-        function downloadReport(reportId) {
+        function downloadReport(reportId, format) {
+            format = format || 'pdf';
             showToast(`Downloading report ${reportId}...`, 'info');
-            window.location.href = `/reports/${reportId}/download`;
+            window.location.href = `/reports/${reportId}/download/${format}`;
         }
         
         async function editReport(reportId) {
@@ -1373,26 +1379,58 @@
         }
         
         function saveAsDraft() {
-            showToast('Report saved as draft', 'success');
+            // The visual builder isn't persisted; guide the user to the working flow.
+            showToast('The visual builder is a preview. Use "Generate Report" to produce a real export.', 'info');
         }
-        
+
+        // Currently selected export format for the builder (Excel is active by default).
+        let selectedExportFormat = 'excel';
+        // Only these formats have a working backend (ProcessExportJob).
+        const SUPPORTED_EXPORT_FORMATS = ['pdf', 'excel', 'csv'];
+
+        function normalizeFormat(format) {
+            return SUPPORTED_EXPORT_FORMATS.includes(format) ? format : 'pdf';
+        }
+
         function selectExportFormat(format) {
             document.querySelectorAll('.export-option').forEach(option => {
                 option.classList.remove('active');
             });
             event.target.closest('.export-option').classList.add('active');
-            showToast(`${format.toUpperCase()} format selected`, 'info');
+            selectedExportFormat = format;
+            if (!SUPPORTED_EXPORT_FORMATS.includes(format)) {
+                showToast(`${format.toUpperCase()} isn't supported yet — PDF will be used.`, 'info');
+            } else {
+                showToast(`${format.toUpperCase()} format selected`, 'info');
+            }
         }
-        
+
+        // Create a real export job (queued server-side) and return the jqXHR.
+        function createExportJob(name, format) {
+            return $.ajax({
+                url: "{{ route('reports.exports.store') }}",
+                method: 'POST',
+                data: { name: name, format: normalizeFormat(format) }
+            });
+        }
+
         function generateReport() {
+            const title = (document.getElementById('reportTitle')?.value || 'Custom Report').trim();
             const modal = new bootstrap.Modal(document.getElementById('generateModal'));
             modal.show();
-            
-            setTimeout(() => {
-                modal.hide();
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-            }, 3000);
+
+            createExportJob(title, selectedExportFormat)
+                .done(function() {
+                    modal.hide();
+                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                    // Refresh so the new job appears in the Exports tab.
+                    setTimeout(() => location.reload(), 2500);
+                })
+                .fail(function(xhr) {
+                    modal.hide();
+                    showToast(xhr.responseJSON?.message || 'Failed to generate report', 'error');
+                });
         }
         
         // Template functions
@@ -1413,43 +1451,102 @@
             });
         }
         
+        function mapSectionToComponent(section) {
+            const s = String(section).toLowerCase();
+            if (s.includes('chart') || s.includes('trend') || s.includes('graph')) return 'chart-line';
+            if (s.includes('bar') || s.includes('scope') || s.includes('breakdown')) return 'chart-bar';
+            if (s.includes('table') || s.includes('summary') || s.includes('detail') || s.includes('data')) return 'table-summary';
+            return 'text-header';
+        }
+
+        function addDefaultComponents() {
+            addComponentToReport('text-header');
+            addComponentToReport('chart-line');
+            addComponentToReport('chart-bar');
+            addComponentToReport('table-summary');
+        }
+
         function useTemplate(templateId) {
             const builderTab = document.getElementById('builder-tab');
             builderTab.click();
-            
+
             clearReport();
-            
-            setTimeout(() => {
-                addComponentToReport('text-header');
-                addComponentToReport('chart-line');
-                addComponentToReport('chart-bar');
-                addComponentToReport('table-summary');
-                
-                // You can load template-specific data here if needed
-                showToast(`Template loaded`, 'success');
-            }, 500);
+
+            // Honor the template's configured sections instead of always adding
+            // the same four placeholders.
+            $.get("{{ route('reports.templates.list') }}")
+                .done(function(res) {
+                    const tpl = (res.data || []).find(t => String(t.id) === String(templateId));
+                    const sections = tpl && Array.isArray(tpl.sections) ? tpl.sections : [];
+                    setTimeout(() => {
+                        if (tpl && tpl.name) {
+                            const titleInput = document.getElementById('reportTitle');
+                            if (titleInput) {
+                                titleInput.value = tpl.name;
+                                const preview = document.getElementById('previewTitle');
+                                if (preview) preview.textContent = tpl.name;
+                            }
+                        }
+                        if (sections.length) {
+                            sections.forEach(s => addComponentToReport(mapSectionToComponent(s)));
+                        } else {
+                            addDefaultComponents();
+                        }
+                        showToast(tpl ? `Loaded template: ${tpl.name}` : 'Template loaded', 'success');
+                    }, 400);
+                })
+                .fail(function() {
+                    setTimeout(() => {
+                        addDefaultComponents();
+                        showToast('Template loaded', 'success');
+                    }, 400);
+                });
         }
         
         // Schedule functions
         function runScheduleNow(scheduleId) {
-            showToast(`Running ${scheduleId} now...`, 'info');
+            if (!confirm('Run this scheduled report now and email its recipients?')) return;
+            showToast('Running scheduled report…', 'info');
+            $.ajax({ url: `/reports/scheduled/${scheduleId}/run`, method: 'POST' })
+                .done(function(res) {
+                    showToast(res.message || 'Scheduled report ran successfully', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                })
+                .fail(function(xhr) {
+                    showToast(xhr.responseJSON?.message || 'Failed to run scheduled report', 'error');
+                });
         }
-        
+
         function editSchedule(scheduleId) {
-            showToast(`Editing ${scheduleId}`, 'info');
+            // Editing an existing schedule isn't wired to a backend yet; be honest
+            // rather than implying it saved.
+            showToast('Editing a saved schedule isn\'t available yet. Delete and recreate it for now.', 'info');
         }
-        
+
         // Export functions
         function createNewExport() {
-            showToast('Creating new export job', 'info');
+            const name = prompt('Name this export:', 'Emissions Export');
+            if (!name) return;
+            const active = document.querySelector('#exports .export-option.active, .export-option.active');
+            const format = active ? (active.getAttribute('data-format') || selectedExportFormat) : selectedExportFormat;
+            showToast('Queuing export…', 'info');
+            createExportJob(name, format)
+                .done(function(res) {
+                    showToast(res.message || 'Export queued', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                })
+                .fail(function(xhr) {
+                    showToast(xhr.responseJSON?.message || 'Failed to create export', 'error');
+                });
         }
-        
+
         function downloadExport(exportId) {
-            showToast(`Downloading ${exportId}...`, 'info');
+            window.location.href = `/reports/exports/${exportId}/download`;
         }
-        
+
         function saveExportSettings() {
-            showToast('Export settings saved', 'success');
+            // No server-side export-settings store exists; avoid a misleading "saved".
+            showToast('Export preferences are applied per export; there are no global settings to save yet.', 'info');
         }
         
         // Filter functionality

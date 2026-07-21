@@ -48,13 +48,13 @@ class BillOCRController extends Controller
         $ocrMethod = 'unknown';
         
         // Try OCR.space API first if API key is configured
-        $ocrSpaceApiKey = env('OCR_SPACE_API_KEY');
+        $ocrSpaceApiKey = config('services.ocr_space.key');
         if (!empty($ocrSpaceApiKey)) {
             try {
                 $response = Http::withHeaders([
                     'apikey' => $ocrSpaceApiKey
-                ])->attach(
-                    'file', file_get_contents($file->getRealPath()), $file->getClientOriginalName()
+                ])->timeout(20)->attach(
+                    'file', file_get_contents($filePath), $file->getClientOriginalName()
                 )->post('https://api.ocr.space/parse/image', [
                     'language' => 'eng',
                     'isOverlayRequired' => 'false',
@@ -77,7 +77,7 @@ class BillOCRController extends Controller
         if (empty($text)) {
             if (in_array($ext, ['jpg', 'jpeg', 'png'])) {
                 try {
-                    $tesseractPath = env('TESSERACT_PATH', 'tesseract');
+                    $tesseractPath = config('services.tesseract.path', 'tesseract');
                     
                     $text = (new TesseractOCR($filePath))
                         ->executable($tesseractPath)
@@ -88,8 +88,9 @@ class BillOCRController extends Controller
                 }
             } elseif ($ext === 'pdf') {
                 try {
-                    // Try to extract text directly using pdftotext (if available)
-                    $text = @shell_exec("pdftotext \"$filePath\" - 2>&1");
+                    // Try to extract text directly using pdftotext (if available).
+                    // escapeshellarg() guards the interpolated path.
+                    $text = shell_exec('pdftotext ' . escapeshellarg($filePath) . ' - 2>&1');
                     
                     if (!empty($text)) {
                         $ocrMethod = 'pdftotext';
@@ -108,15 +109,18 @@ class BillOCRController extends Controller
                             
                             $imagePath = $tempDir . '/' . uniqid() . '.png';
                             $pdf->saveImage($imagePath);
-                            
-                            $tesseractPath = env('TESSERACT_PATH', 'tesseract');
-                            $text = (new TesseractOCR($imagePath))
-                                ->executable($tesseractPath)
-                                ->run();
-                            $ocrMethod = 'tesseract_pdf';
-                                
-                            if (file_exists($imagePath)) {
-                                unlink($imagePath);
+
+                            try {
+                                $tesseractPath = config('services.tesseract.path', 'tesseract');
+                                $text = (new TesseractOCR($imagePath))
+                                    ->executable($tesseractPath)
+                                    ->run();
+                                $ocrMethod = 'tesseract_pdf';
+                            } finally {
+                                // Always clean up the temp image, even if OCR throws.
+                                if (file_exists($imagePath)) {
+                                    unlink($imagePath);
+                                }
                             }
                         } catch (\Exception $pdfException) {
                             return back()->withInput()->with('error', 'PDF processing failed. Please convert PDF to image (JPG/PNG) or install pdftotext utility.');

@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\HasCompanyScope;
+use App\Auditable;
 
 class Target extends Model
 {
-    use HasFactory, HasCompanyScope;
+    use HasFactory, HasCompanyScope, Auditable;
 
     protected $fillable = [
         'company_id',

@@ -1,11 +1,10 @@
-@extends('layouts.app')
+@extends('layouts.portal')
 
 @section('title', 'Survey Link Expired')
-@section('page-title', 'Survey Link Expired')
 
 @section('content')
 <div id="content">
-    <div class="container mt-5" style="max-width: 700px;">
+    <div class="container my-5" style="max-width: 700px;">
         <div class="card shadow-sm">
             <div class="card-body text-center">
                 <div class="mb-3">

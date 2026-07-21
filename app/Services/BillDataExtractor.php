@@ -2,14 +2,126 @@
 
 namespace App\Services;
 
+use App\Services\AI\ClaudeService;
 use Carbon\Carbon;
 
 class BillDataExtractor
 {
+    protected ClaudeService $claude;
+
+    public function __construct(ClaudeService $claude)
+    {
+        $this->claude = $claude;
+    }
+
     /**
-     * Extract data from OCR text for electricity bills
+     * Extract data from OCR text for electricity bills.
+     *
+     * Strategy: build a regex baseline, then (if Claude is configured) overlay
+     * Claude's structured extraction on top. Claude is far more robust to
+     * arbitrary bill layouts; regex remains the always-available fallback.
      */
     public function extractElectricityData(string $text): array
+    {
+        $regex = $this->extractElectricityDataViaRegex($text);
+
+        return $this->overlayWithClaude($text, 'electricity', $regex);
+    }
+
+    /**
+     * Extract data from OCR text for fuel bills (Claude-first, regex fallback).
+     */
+    public function extractFuelData(string $text): array
+    {
+        $regex = $this->extractFuelDataViaRegex($text);
+
+        return $this->overlayWithClaude($text, 'fuel', $regex);
+    }
+
+    /**
+     * Ask Claude to extract the bill fields and overlay any non-null values on
+     * top of the regex baseline. Returns the regex baseline unchanged if Claude
+     * is disabled or fails, so callers always get a usable result.
+     */
+    protected function overlayWithClaude(string $text, string $billType, array $regex): array
+    {
+        if (!$this->claude->enabled() || trim($text) === '') {
+            $regex['extraction_method'] = 'regex';
+            return $regex;
+        }
+
+        $unit = $billType === 'fuel' ? 'L (litres; convert gallons to litres at 3.78541)' : 'kWh';
+
+        $system = 'You extract structured data from noisy OCR text of utility/fuel bills. '
+            . 'Values may be misaligned or contain OCR errors; infer carefully and never fabricate.';
+
+        $prompt = "Bill type: {$billType}.\n"
+            . "Extract these fields from the OCR text below and return JSON with exactly these keys:\n"
+            . "- bill_date: the bill/invoice/purchase date as \"YYYY-MM-DD\", or null\n"
+            . "- consumption: total {$billType} consumed as a number ({$unit}), or null\n"
+            . "- consumption_unit: \"" . ($billType === 'fuel' ? 'L' : 'kWh') . "\"\n"
+            . "- cost: total amount due as a number (digits only, no currency symbol), or null\n"
+            . "- supplier_name: the utility/supplier/station name, or null\n"
+            . "- confidence: \"low\", \"medium\", or \"high\" reflecting how certain you are\n\n"
+            . "OCR TEXT:\n\"\"\"\n{$text}\n\"\"\"";
+
+        $result = $this->claude->json($prompt, $system, ['temperature' => 0]);
+
+        if (!is_array($result)) {
+            $regex['extraction_method'] = 'regex';
+            return $regex;
+        }
+
+        $merged = $regex;
+
+        // Same sanity ceilings the regex baseline uses, so a hallucinated/huge
+        // Claude number can't override a reasonable regex value.
+        $maxConsumption = $billType === 'fuel' ? 100000 : 1000000;
+        $maxCost = $billType === 'fuel' ? 100000 : 1000000;
+
+        // Overlay each field only when Claude returned a usable value.
+        if (!empty($result['bill_date'])) {
+            $parsed = $this->parseDate((string) $result['bill_date']);
+            if ($parsed) {
+                $merged['bill_date'] = $parsed;
+            }
+        }
+
+        if (isset($result['consumption']) && is_numeric($result['consumption'])) {
+            $consumption = (float) $result['consumption'];
+            if ($consumption > 0 && $consumption < $maxConsumption) {
+                $merged['consumption'] = $consumption;
+            }
+        }
+
+        if (!empty($result['consumption_unit'])) {
+            $merged['consumption_unit'] = (string) $result['consumption_unit'];
+        }
+
+        if (isset($result['cost']) && is_numeric($result['cost'])) {
+            $cost = (float) $result['cost'];
+            if ($cost > 0 && $cost < $maxCost) {
+                $merged['cost'] = $cost;
+            }
+        }
+
+        if (!empty($result['supplier_name'])) {
+            $merged['supplier_name'] = trim((string) $result['supplier_name']);
+        }
+
+        if (!empty($result['confidence']) && in_array($result['confidence'], ['low', 'medium', 'high'], true)) {
+            $merged['confidence'] = $result['confidence'];
+        }
+
+        $merged['extraction_method'] = 'claude';
+
+        return $merged;
+    }
+
+    /**
+     * Extract data from OCR text for electricity bills (regex baseline).
+     */
+    public function extractElectricityDataViaRegex(string $text): array
     {
         $data = [
             'bill_date' => null,
@@ -102,9 +214,9 @@ class BillDataExtractor
     }
 
     /**
-     * Extract data from OCR text for fuel bills
+     * Extract data from OCR text for fuel bills (regex baseline).
      */
-    public function extractFuelData(string $text): array
+    public function extractFuelDataViaRegex(string $text): array
     {
         $data = [
             'bill_date' => null,

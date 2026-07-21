@@ -127,6 +127,61 @@
                             <label class="form-label">Region</label>
                             <input type="text" class="form-control" name="region" id="region" maxlength="255" placeholder="optional (e.g., UAE, EU, default)">
                         </div>
+
+                        <div class="col-12"><hr class="my-2"><h6 class="text-muted mb-0"><i class="fas fa-history me-1"></i> Provenance &amp; Versioning</h6><small class="text-muted">Required for audit and disclosure (CSRD/CDP/ISO 14064).</small></div>
+                        <div class="col-md-4">
+                            <label class="form-label">Dataset</label>
+                            <input type="text" class="form-control" name="dataset_name" id="dataset_name" maxlength="255" placeholder="e.g., DEFRA, EPA, IEA">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Version</label>
+                            <input type="text" class="form-control" name="dataset_version" id="dataset_version" maxlength="50" placeholder="2024">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">GWP Set</label>
+                            <select class="form-select" name="gwp_version" id="gwp_version">
+                                <option value="">—</option>
+                                @foreach(\App\Support\Gwp::options() as $val => $label)
+                                    <option value="{{ $val }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" checked>
+                                <label class="form-check-label" for="is_active">Active (in use)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Valid From</label>
+                            <input type="date" class="form-control" name="valid_from" id="valid_from">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Valid To</label>
+                            <input type="date" class="form-control" name="valid_to" id="valid_to">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Source Reference</label>
+                            <input type="text" class="form-control" name="source_reference" id="source_reference" maxlength="255" placeholder="URL or document citation">
+                        </div>
+
+                        <div class="col-12"><hr class="my-2"><h6 class="text-muted mb-0"><i class="fas fa-atom me-1"></i> Gas-Level Breakdown <span class="fw-normal">(optional — kg of gas per unit)</span></h6><small class="text-muted">When provided, records split CO₂e into CO₂ / CH₄ / N₂O for disclosure.</small></div>
+                        <div class="col-md-3">
+                            <label class="form-label">CO₂ factor</label>
+                            <input type="number" class="form-control" name="co2_factor" id="co2_factor" step="0.00000001" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">CH₄ factor</label>
+                            <input type="number" class="form-control" name="ch4_factor" id="ch4_factor" step="0.00000001" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">N₂O factor</label>
+                            <input type="number" class="form-control" name="n2o_factor" id="n2o_factor" step="0.00000001" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Biogenic CO₂ factor</label>
+                            <input type="number" class="form-control" name="biogenic_co2_factor" id="biogenic_co2_factor" step="0.00000001" min="0">
+                        </div>
                     </div>
                 </form>
 
@@ -286,11 +341,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('unit').value = data.unit || '';
                 document.getElementById('factor_value').value = data.factor_value || '';
                 document.getElementById('region').value = data.region || '';
+                ['dataset_name','dataset_version','gwp_version','valid_from','valid_to','source_reference','co2_factor','ch4_factor','n2o_factor','biogenic_co2_factor'].forEach(f => {
+                    const el = document.getElementById(f);
+                    if (el) el.value = data[f] ?? '';
+                });
+                document.getElementById('is_active').checked = (data.is_active === undefined) ? true : !!Number(data.is_active);
 
                 onFactorOrganizationChange();
 
                 const isView = this.classList.contains('viewBtn');
-                ['emission_source_id','organization_id','country_id','unit','factor_value','region'].forEach(id => {
+                ['emission_source_id','organization_id','country_id','unit','factor_value','region','dataset_name','dataset_version','gwp_version','is_active','valid_from','valid_to','source_reference','co2_factor','ch4_factor','n2o_factor','biogenic_co2_factor'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.disabled = isView;
                 });
@@ -339,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     modalEl.addEventListener('hidden.bs.modal', () => {
-        ['emission_source_id','organization_id','country_id','unit','factor_value','region'].forEach(id => {
+        ['emission_source_id','organization_id','country_id','unit','factor_value','region','dataset_name','dataset_version','gwp_version','is_active','valid_from','valid_to','source_reference','co2_factor','ch4_factor','n2o_factor','biogenic_co2_factor'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.disabled = false;
         });

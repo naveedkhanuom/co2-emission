@@ -264,6 +264,81 @@
   .scope-finder-page .confirm-actions .btn-confirm { padding: 16px 24px; width: 100%; justify-content: center; }
   .scope-finder-page .confirm-actions .btn-cancel { width: 100%; justify-content: center; }
 }
+
+/* AI Classifier card */
+.scope-finder-page .ai-classify{
+  background: linear-gradient(135deg, rgba(46,125,50,.06) 0%, rgba(2,119,189,.06) 100%);
+  border: 1px solid var(--gray-200);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.05);
+}
+.scope-finder-page .ai-head{ display:flex; align-items:center; gap: 12px; margin-bottom: 14px; }
+.scope-finder-page .ai-badge{
+  width: 40px; height: 40px; border-radius: 12px; flex: 0 0 auto;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-size: 16px;
+  background: linear-gradient(145deg, #2e7d32 0%, #0277bd 100%);
+  box-shadow: 0 4px 12px rgba(2,119,189,.25);
+}
+.scope-finder-page .ai-title{ font-weight: 800; font-size: 15px; color: var(--gray-800); }
+.scope-finder-page .ai-sub{ font-size: 12px; color: var(--gray-600); line-height: 1.45; }
+.scope-finder-page .ai-mode{ margin-left:auto; font-size: 11px; font-weight: 700; color: var(--gray-600); background:#fff; border:1px solid var(--gray-200); padding: 4px 10px; border-radius: 999px; }
+.scope-finder-page .ai-input-row{ display:flex; gap: 10px; align-items:stretch; flex-wrap: wrap; }
+.scope-finder-page .ai-input-row textarea{
+  flex: 1; min-width: 240px; resize: vertical;
+  padding: 12px 14px; font-family: inherit; font-size: 14px; color: var(--gray-800);
+  border: 1px solid var(--gray-200); border-radius: 12px; background:#fff; outline: none;
+  transition: border .2s, box-shadow .2s;
+}
+.scope-finder-page .ai-input-row textarea:focus{ border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(46,125,50,.1); }
+.scope-finder-page .ai-go{
+  flex: 0 0 auto; align-self: flex-start;
+  border:none; cursor:pointer; color:#fff; font-weight: 800; font-size: 14px;
+  padding: 12px 20px; border-radius: 12px; display:inline-flex; align-items:center; gap: 8px;
+  background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
+  box-shadow: 0 4px 14px rgba(46,125,50,.25); transition: transform .2s, box-shadow .2s, opacity .2s;
+}
+.scope-finder-page .ai-go:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(46,125,50,.35); }
+.scope-finder-page .ai-go:disabled{ opacity:.6; cursor: not-allowed; transform:none; }
+.scope-finder-page .ai-error{ color: var(--danger-red, #d32f2f); font-size: 12px; margin-top: 8px; display:none; }
+.scope-finder-page .ai-error.show{ display:block; }
+.scope-finder-page .ai-result{ margin-top: 14px; background:#fff; border:1px solid var(--gray-200); border-radius: 14px; padding: 16px; }
+.scope-finder-page .ai-result-top{ display:flex; align-items:center; gap: 14px; }
+.scope-finder-page .ai-scope-badge{
+  width: 46px; height: 46px; border-radius: 12px; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-weight: 800; font-size: 20px;
+  background: linear-gradient(145deg, #2e7d32 0%, #1b5e20 100%);
+}
+.scope-finder-page .ai-scope-badge[data-scope="2"]{ background: linear-gradient(145deg, #0277bd 0%, #01579b 100%); }
+.scope-finder-page .ai-scope-badge[data-scope="3"]{ background: linear-gradient(145deg, #1b5e20 0%, #0d3d0d 100%); }
+.scope-finder-page .ai-result-main{ flex:1; min-width:0; }
+.scope-finder-page .ai-result-scope{ font-weight: 800; font-size: 16px; color: var(--gray-800); }
+.scope-finder-page .ai-result-cat{ font-size: 13px; color: var(--gray-600); }
+.scope-finder-page .ai-conf{ flex: 0 0 auto; width: 120px; text-align: right; }
+.scope-finder-page .ai-conf-label{ font-size: 11px; color: var(--gray-600); margin-bottom: 4px; font-weight: 700; }
+.scope-finder-page .ai-conf-bar{ height: 6px; border-radius: 999px; background: var(--gray-200); overflow: hidden; }
+.scope-finder-page .ai-conf-fill{ height:100%; width:0%; border-radius:999px; background: linear-gradient(90deg, #f57c00, #2e7d32); transition: width .4s; }
+.scope-finder-page .ai-why{ margin-top: 12px; font-size: 13px; line-height: 1.55; color: var(--gray-700); background: var(--gray-50); border-radius: 10px; padding: 10px 12px; }
+.scope-finder-page .ai-suggest{ margin-top: 12px; display:flex; align-items:center; gap: 8px; flex-wrap: wrap; }
+.scope-finder-page .ai-suggest-label{ font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); }
+.scope-finder-page .ai-chip{ font-size: 12px; font-weight: 600; color: var(--gray-800); background:#fff; border:1px solid var(--gray-200); padding: 6px 12px; border-radius: 999px; }
+.scope-finder-page .ai-chip-method{ background: var(--gray-50); color: var(--gray-600); }
+.scope-finder-page .ai-clarify{ margin-top: 12px; font-size: 13px; color: #8a6d00; background: #fff8e1; border: 1px solid #ffe8a3; border-radius: 10px; padding: 10px 12px; }
+.scope-finder-page .ai-actions{ margin-top: 14px; display:flex; align-items:center; gap: 14px; flex-wrap: wrap; }
+.scope-finder-page .ai-action-go{
+  text-decoration:none; color:#fff; font-weight: 800; font-size: 14px;
+  padding: 11px 20px; border-radius: 12px; display:inline-flex; align-items:center; gap: 8px;
+  background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%); box-shadow: 0 4px 14px rgba(46,125,50,.25);
+  transition: transform .2s, box-shadow .2s;
+}
+.scope-finder-page .ai-action-go:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(46,125,50,.35); color:#fff; }
+.scope-finder-page .ai-action-go .btn-arrow{ transition: transform .2s; }
+.scope-finder-page .ai-action-go:hover .btn-arrow{ transform: translateX(3px); }
+.scope-finder-page .ai-disclaimer{ font-size: 11px; color: var(--gray-500); }
+.scope-finder-page .ai-or{ text-align:center; position:relative; margin: 6px 0 18px; }
+.scope-finder-page .ai-or span{ font-size: 12px; color: var(--gray-500); background: transparent; padding: 0 12px; font-weight: 600; }
+.scope-finder-page .ai-or::before{ content:""; position:absolute; left:0; right:0; top:50%; height:1px; background: var(--gray-200); z-index:-1; }
 </style>
 @endpush
 
@@ -298,6 +373,52 @@
                     </div>
                 </div>
             </div>
+
+            <!-- AI Classifier -->
+            <div class="ai-classify" id="aiClassify">
+                <div class="ai-head">
+                    <div class="ai-badge"><i class="fas fa-wand-magic-sparkles"></i></div>
+                    <div>
+                        <div class="ai-title">Describe your activity — AI finds the scope</div>
+                        <div class="ai-sub">e.g. “200 litres of diesel for our backup generator”, “staff flights to Dubai”, “electricity from DEWA”.</div>
+                    </div>
+                    @unless($aiEnabled)
+                        <span class="ai-mode" title="AI provider not configured — using keyword matching">Keyword mode</span>
+                    @endunless
+                </div>
+                <div class="ai-input-row">
+                    <textarea id="aiInput" rows="2" maxlength="500" placeholder="Type what you did or bought…"></textarea>
+                    <button type="button" class="ai-go" id="aiGo"><i class="fas fa-bolt"></i> <span>Classify</span></button>
+                </div>
+                <div class="ai-error" id="aiError"></div>
+
+                <div class="ai-result" id="aiResult" hidden>
+                    <div class="ai-result-top">
+                        <span class="ai-scope-badge" id="aiScopeBadge">1</span>
+                        <div class="ai-result-main">
+                            <div class="ai-result-scope" id="aiResultScope">Scope 1</div>
+                            <div class="ai-result-cat" id="aiResultCat"></div>
+                        </div>
+                        <div class="ai-conf" id="aiConfWrap" title="Model confidence">
+                            <div class="ai-conf-label"><span id="aiConfPct">0%</span> confidence</div>
+                            <div class="ai-conf-bar"><div class="ai-conf-fill" id="aiConfFill"></div></div>
+                        </div>
+                    </div>
+                    <div class="ai-why" id="aiWhy"></div>
+                    <div class="ai-suggest" id="aiSuggestWrap" hidden>
+                        <span class="ai-suggest-label">Suggested source</span>
+                        <span class="ai-chip" id="aiSuggest"></span>
+                        <span class="ai-chip ai-chip-method" id="aiMethod"></span>
+                    </div>
+                    <div class="ai-clarify" id="aiClarify" hidden></div>
+                    <div class="ai-actions">
+                        <a class="ai-action-go" id="aiEntryBtn" href="#"><span id="aiEntryText">Go to entry</span> <span class="btn-arrow">→</span></a>
+                        <span class="ai-disclaimer">AI suggestion — review before saving.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-or"><span>or browse categories manually</span></div>
 
             <div class="scope-tabs" id="scopeTabs">
                 <div class="scope-tab" data-scope="1" id="tab1">
@@ -584,6 +705,99 @@
   document.getElementById("tab1").addEventListener("click", function() { handleTabClick(1, this); });
   document.getElementById("tab2").addEventListener("click", function() { handleTabClick(2, this); });
   document.getElementById("tab3").addEventListener("click", function() { handleTabClick(3, this); });
+})();
+</script>
+
+<script>
+// AI Scope Classifier
+(function(){
+  var classifyUrl = "{{ route('scope_classifier.classify') }}";
+  var csrf = document.querySelector('meta[name="csrf-token"]');
+  csrf = csrf ? csrf.getAttribute('content') : '';
+
+  var input   = document.getElementById('aiInput');
+  var goBtn   = document.getElementById('aiGo');
+  var errBox  = document.getElementById('aiError');
+  var result  = document.getElementById('aiResult');
+
+  function setLoading(on){
+    goBtn.disabled = on;
+    goBtn.querySelector('span').textContent = on ? 'Thinking…' : 'Classify';
+  }
+  function showError(msg){
+    errBox.textContent = msg;
+    errBox.classList.add('show');
+  }
+  function clearError(){ errBox.classList.remove('show'); errBox.textContent = ''; }
+
+  function render(d){
+    result.hidden = false;
+
+    var badge = document.getElementById('aiScopeBadge');
+    badge.textContent = d.scope;
+    badge.setAttribute('data-scope', d.scope);
+
+    document.getElementById('aiResultScope').textContent =
+      d.scope === 1 ? 'Scope 1 — Direct Emissions' :
+      d.scope === 2 ? 'Scope 2 — Purchased Energy' : 'Scope 3 — Value Chain';
+
+    var catEl = document.getElementById('aiResultCat');
+    if (d.scope === 3 && d.scope3_category_name) {
+      catEl.textContent = 'Category ' + (d.scope3_category_number || '?') + ': ' + d.scope3_category_name;
+      catEl.hidden = false;
+    } else { catEl.textContent = ''; }
+
+    var pct = Math.round((d.confidence || 0) * 100);
+    document.getElementById('aiConfPct').textContent = pct + '%';
+    document.getElementById('aiConfFill').style.width = pct + '%';
+
+    document.getElementById('aiWhy').textContent = d.reasoning || '';
+
+    var sw = document.getElementById('aiSuggestWrap');
+    if (d.suggested_source) {
+      document.getElementById('aiSuggest').textContent = d.suggested_source;
+      document.getElementById('aiMethod').textContent =
+        d.calculation_method === 'spend-based' ? 'Spend-based' : 'Activity-based';
+      sw.hidden = false;
+    } else { sw.hidden = true; }
+
+    var clar = document.getElementById('aiClarify');
+    if (d.needs_clarification && d.clarification) {
+      clar.textContent = '💡 ' + d.clarification;
+      clar.hidden = false;
+    } else { clar.hidden = true; }
+
+    var entry = document.getElementById('aiEntryBtn');
+    entry.href = d.entry_url || '#';
+    document.getElementById('aiEntryText').textContent = 'Go to Scope ' + d.scope + ' entry';
+
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function classify(){
+    var text = (input.value || '').trim();
+    clearError();
+    if (text.length < 3) { showError('Please describe the activity in a few words.'); return; }
+
+    setLoading(true);
+    fetch(classifyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+      body: JSON.stringify({ description: text })
+    })
+    .then(async function(r){ var j = await r.json(); if (!r.ok) throw j; return j; })
+    .then(function(j){ if (j && j.data) render(j.data); else showError('Could not classify that activity.'); })
+    .catch(function(e){
+      var msg = (e && e.errors && e.errors.description) ? e.errors.description[0] : 'Classification failed. Please try again.';
+      showError(msg);
+    })
+    .finally(function(){ setLoading(false); });
+  }
+
+  if (goBtn) goBtn.addEventListener('click', classify);
+  if (input) input.addEventListener('keydown', function(e){
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); classify(); }
+  });
 })();
 </script>
 @endpush

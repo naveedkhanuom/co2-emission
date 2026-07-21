@@ -297,6 +297,28 @@
                 </div>
                 
                 <div class="form-section-body">
+                    <!-- Quick Add (AI): plain-language entry that pre-fills this form -->
+                    <div id="quickAddCard" style="border:1px solid #d7e3dc;border-radius:14px;padding:16px;margin-bottom:18px;background:linear-gradient(135deg,rgba(46,125,50,.06),rgba(2,119,189,.06));">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <span style="width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(145deg,#2e7d32,#0277bd);"><i class="fas fa-wand-magic-sparkles"></i></span>
+                            <div>
+                                <div style="font-weight:700;color:#374151;">Quick Add with AI</div>
+                                <div style="font-size:12px;color:#6b7280;">Describe it in plain words — e.g. “Today I used 200 litres of diesel in a company car” — and we’ll pre-fill the form below.</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;">
+                            <textarea id="quickAddInput" rows="2" maxlength="500" class="form-control" style="flex:1;min-width:240px;" placeholder="Type what you used, burned, or bought…"></textarea>
+                            <button type="button" id="quickAddBtn" class="btn btn-success" style="white-space:nowrap;"><i class="fas fa-bolt me-1"></i><span>Generate</span></button>
+                        </div>
+                        <div id="quickAddError" class="text-danger small mt-2" style="display:none;"></div>
+                        <div id="quickAddResult" class="mt-2" style="display:none;font-size:13px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;">
+                            <div id="quickAddSummary" style="font-weight:600;color:#1b5e20;"></div>
+                            <div id="quickAddReason" class="text-muted mt-1"></div>
+                            <div id="quickAddClarify" class="mt-2" style="display:none;color:#8a6d00;background:#fff8e1;border:1px solid #ffe8a3;border-radius:8px;padding:8px 10px;"></div>
+                            <div class="mt-2" style="font-size:11px;color:#9ca3af;"><i class="fas fa-circle-info me-1"></i>AI suggestion (factor estimated at runtime). Review every field below, then Save.</div>
+                        </div>
+                    </div>
+
                     <div class="calculation-mode-selector">
                         <div class="calc-option" onclick="setCalculationMode('direct')">
                             <div class="calc-option-icon">
@@ -2295,4 +2317,91 @@ function addQuickEntryRow() {
             document.getElementById('content').classList.toggle('active');
         });
     </script>
+@endpush
+
+@push('scripts')
+<script>
+// Quick Add (AI) — plain-language entry that pre-fills the manual form as a draft.
+(function(){
+  var url = "{{ route('emission_records.quick_add') }}";
+  var csrfEl = document.querySelector('meta[name="csrf-token"]');
+  var csrf = csrfEl ? csrfEl.getAttribute('content') : '';
+  var input = document.getElementById('quickAddInput');
+  var btn   = document.getElementById('quickAddBtn');
+  var errEl = document.getElementById('quickAddError');
+  var resEl = document.getElementById('quickAddResult');
+  if (!btn || !input) return;
+
+  function setEl(id, val, fireInput){
+    var el = document.getElementById(id);
+    if (!el || val === null || val === undefined || val === '') return el;
+    el.value = val;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    if (fireInput) el.dispatchEvent(new Event('input', { bubbles: true }));
+    return el;
+  }
+  function ensureUnitOption(unit){
+    var sel = document.getElementById('activityUnitSelect');
+    if (!sel || !unit) return;
+    var found = Array.prototype.some.call(sel.options, function(o){ return o.value === unit; });
+    if (!found){ var o = document.createElement('option'); o.value = unit; o.textContent = unit; sel.appendChild(o); }
+  }
+  function setSource(name){
+    var sel = document.getElementById('emissionSourceSelect');
+    if (!sel || !name) return;
+    var match = Array.prototype.find.call(sel.options, function(o){ return o.value.toLowerCase() === name.toLowerCase(); });
+    if (match){ sel.value = match.value; }
+    else {
+      var hasOther = Array.prototype.some.call(sel.options, function(o){ return o.value === '__other__'; });
+      if (hasOther) sel.value = '__other__';
+      var ot = document.getElementById('emission_source_other');
+      if (ot) ot.value = name;
+    }
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function fill(d){
+    setEl('entryDate', d.date);
+    setEl('scopeSelect', d.scope);
+    if (typeof setCalculationMode === 'function') { try { setCalculationMode('activity'); } catch(e){} }
+    setSource(d.emission_source);
+    if (d.scope === 3 && d.scope3_category_id) { setEl('scope3_category_id', d.scope3_category_id); setEl('scope3CategorySelect', d.scope3_category_id); }
+    setEl('calculationMethod', d.calculation_method);
+    if (d.unit) { ensureUnitOption(d.unit); setEl('activityUnitSelect', d.unit); }
+    if (d.activity_data != null) setEl('activityData', d.activity_data, true);
+    if (d.emission_factor != null) setEl('emissionFactor', d.emission_factor, true);
+    if (typeof updateCalculation === 'function') { try { updateCalculation(); } catch(e){} }
+    else if (d.co2e_value != null) { setEl('co2eValue', d.co2e_value); setEl('co2eValueHidden', d.co2e_value); }
+    setEl('confidenceLevel', d.confidence_level);
+
+    var parts = ['Scope ' + d.scope];
+    if (d.scope === 3 && d.scope3_category_name) parts.push('Cat ' + (d.scope3_category_number || '?') + ': ' + d.scope3_category_name);
+    if (d.emission_source) parts.push(d.emission_source);
+    if (d.activity_data != null) parts.push(d.activity_data + ' ' + (d.unit || ''));
+    if (d.factor_kg_per_unit != null) parts.push(d.factor_kg_per_unit + ' kgCO₂e/' + (d.unit || 'unit') + (d.factor_note ? ' (' + d.factor_note + ')' : ''));
+    if (d.co2e_value != null) parts.push('≈ ' + d.co2e_value + ' tCO₂e');
+    document.getElementById('quickAddSummary').textContent = parts.join('  ·  ');
+    document.getElementById('quickAddReason').textContent = d.reasoning || '';
+    var clar = document.getElementById('quickAddClarify');
+    if (d.needs_clarification && d.clarification) { clar.textContent = '💡 ' + d.clarification; clar.style.display = 'block'; }
+    else { clar.style.display = 'none'; }
+    resEl.style.display = 'block';
+    resEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function run(){
+    var t = (input.value || '').trim();
+    errEl.style.display = 'none';
+    if (t.length < 3) { errEl.textContent = 'Please describe the activity.'; errEl.style.display = 'block'; return; }
+    btn.disabled = true; btn.querySelector('span').textContent = 'Thinking…';
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ description: t }) })
+      .then(async function(r){ var j = await r.json(); if (!r.ok) throw j; return j; })
+      .then(function(j){ if (j && j.data) fill(j.data); else { errEl.textContent = 'Could not parse that.'; errEl.style.display = 'block'; } })
+      .catch(function(e){ var m = (e && e.errors && e.errors.description) ? e.errors.description[0] : 'Failed. Please try again.'; errEl.textContent = m; errEl.style.display = 'block'; })
+      .finally(function(){ btn.disabled = false; btn.querySelector('span').textContent = 'Generate'; });
+  }
+  btn.addEventListener('click', run);
+  input.addEventListener('keydown', function(e){ if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } });
+})();
+</script>
 @endpush

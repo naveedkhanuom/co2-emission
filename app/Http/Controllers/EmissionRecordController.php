@@ -240,6 +240,23 @@ class EmissionRecordController extends Controller
     }
 
 
+    /**
+     * Quick Add (AI): parse a plain-language activity into a pre-filled draft
+     * (scope, source, quantity/unit, runtime-estimated factor, CO2e). The result
+     * pre-fills the entry form for the user to confirm — nothing is saved here.
+     */
+    public function quickAdd(Request $request, \App\Services\AI\NaturalLanguageEntryService $service)
+    {
+        $validated = $request->validate([
+            'description' => 'required|string|min:3|max:500',
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'data'   => $service->parse($validated['description']),
+        ]);
+    }
+
     public function store(Request $request)
     {
         // Get current company ID
@@ -346,7 +363,14 @@ class EmissionRecordController extends Controller
                     $entryData['spend_amount'] = $data['spend_amount'] ?? null;
                     $entryData['spend_currency'] = $data['spend_currency'] ?? 'USD';
                 }
-                
+
+                $entryData = app(\App\Services\EmissionEnrichmentService::class)->enrich($entryData, [
+                    'emission_factor_id'              => $data['emission_factor_id'] ?? null,
+                    'energy_attribute_certificate_id' => $data['energy_attribute_certificate_id'] ?? null,
+                    'market_based_co2e'               => $data['market_based_co2e'] ?? null,
+                    'scope2_method'                   => $data['scope2_method'] ?? null,
+                ]);
+
                 EmissionRecord::create($entryData);
             }
 
@@ -381,6 +405,11 @@ class EmissionRecordController extends Controller
             'spend_currency'        => 'nullable|string|size:3',
             'sector_code'           => 'nullable|string|max:50',
             'country'               => 'nullable|string|max:3',
+            // Factor locking + Scope 2 dual reporting
+            'emission_factor_id'             => 'nullable|integer|exists:emission_factors,id',
+            'energy_attribute_certificate_id'=> 'nullable|integer|exists:energy_attribute_certificates,id',
+            'market_based_co2e'              => 'nullable|numeric|min:0',
+            'scope2_method'                  => 'nullable|in:location_based,market_based',
             // Supporting documents
             'supporting_documents'      => 'nullable|array',
             'supporting_documents.*'    => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
@@ -447,20 +476,18 @@ class EmissionRecordController extends Controller
             $data['spend_amount'] = $request->spend_amount ?? null;
             $data['spend_currency'] = $request->spend_currency ?? 'USD';
             
-            // If spend-based, calculate emissions if not provided
-            if ($data['calculation_method'] === 'spend-based' && $data['spend_amount'] && !$request->co2eValue) {
-                // Try to get EIO factor and calculate
-                if ($request->sector_code) {
-                    $emissions = \App\Models\EioFactor::calculateFromSpend(
-                        $data['spend_amount'],
-                        $request->sector_code,
-                        $request->country ?? 'USA',
-                        $data['spend_currency']
-                    );
-                    if ($emissions) {
-                        // Convert from kg to tonnes if needed (EIO factors typically return kg)
-                        $data['co2e_value'] = $emissions / 1000; // Convert kg to tonnes
-                    }
+            // Spend-based: compute the EIO estimate server-side and treat it as
+            // authoritative. calculateFromSpend already returns tonnes, normalised
+            // for the factor's unit and currency.
+            if ($data['calculation_method'] === 'spend-based' && $data['spend_amount'] && $request->sector_code) {
+                $emissions = \App\Models\EioFactor::calculateFromSpend(
+                    $data['spend_amount'],
+                    $request->sector_code,
+                    $request->country ?? 'USA',
+                    $data['spend_currency']
+                );
+                if ($emissions !== null) {
+                    $data['co2e_value'] = $emissions;
                 }
             }
         }
@@ -481,6 +508,14 @@ class EmissionRecordController extends Controller
         if (!empty($storedDocs)) {
             $data['supporting_documents'] = $storedDocs;
         }
+
+        // Enrich with factor lock, gas split, GWP snapshot and Scope 2 market-based figure.
+        $data = app(\App\Services\EmissionEnrichmentService::class)->enrich($data, [
+            'emission_factor_id'              => $request->emission_factor_id,
+            'energy_attribute_certificate_id' => $request->energy_attribute_certificate_id,
+            'market_based_co2e'               => $request->market_based_co2e,
+            'scope2_method'                   => $request->scope2_method,
+        ]);
 
         // Save single entry
         EmissionRecord::create($data);
@@ -540,6 +575,11 @@ class EmissionRecordController extends Controller
             'spend_currency'        => 'nullable|string|size:3',
             'sector_code'           => 'nullable|string|max:50',
             'country'               => 'nullable|string|max:3',
+            // Factor locking + Scope 2 dual reporting
+            'emission_factor_id'             => 'nullable|integer|exists:emission_factors,id',
+            'energy_attribute_certificate_id'=> 'nullable|integer|exists:energy_attribute_certificates,id',
+            'market_based_co2e'              => 'nullable|numeric|min:0',
+            'scope2_method'                  => 'nullable|in:location_based,market_based',
             // Supporting documents
             'supporting_documents'      => 'nullable|array',
             'supporting_documents.*'    => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
@@ -577,21 +617,19 @@ class EmissionRecordController extends Controller
             $data['data_quality'] = $request->data_quality ?? 'estimated';
             $data['spend_amount'] = $request->spend_amount ?? null;
             $data['spend_currency'] = $request->spend_currency ?? 'USD';
-            
-            // If spend-based, calculate emissions if not provided
-            if ($data['calculation_method'] === 'spend-based' && $data['spend_amount'] && !$request->co2eValue) {
-                // Try to get EIO factor and calculate
-                if ($request->sector_code) {
-                    $emissions = \App\Models\EioFactor::calculateFromSpend(
-                        $data['spend_amount'],
-                        $request->sector_code,
-                        $request->country ?? 'USA',
-                        $data['spend_currency']
-                    );
-                    if ($emissions) {
-                        // EIO factors typically return kg CO2e, convert to tonnes
-                        $data['co2e_value'] = $emissions / 1000;
-                    }
+
+            // Spend-based: compute the EIO estimate server-side and treat it as
+            // authoritative. calculateFromSpend already returns tonnes, normalised
+            // for the factor's unit and currency.
+            if ($data['calculation_method'] === 'spend-based' && $data['spend_amount'] && $request->sector_code) {
+                $emissions = \App\Models\EioFactor::calculateFromSpend(
+                    $data['spend_amount'],
+                    $request->sector_code,
+                    $request->country ?? 'USA',
+                    $data['spend_currency']
+                );
+                if ($emissions !== null) {
+                    $data['co2e_value'] = $emissions;
                 }
             }
         }
@@ -609,7 +647,7 @@ class EmissionRecordController extends Controller
                 ], 422);
             }
         }
-        
+
         // Validate supplier belongs to current company if provided
         if ($request->supplier_id) {
             $supplier = \App\Models\Supplier::find($request->supplier_id);
@@ -620,6 +658,15 @@ class EmissionRecordController extends Controller
                 ], 422);
             }
         }
+
+        // Enrich with factor lock, gas split, GWP snapshot and Scope 2 market-based figure.
+        $data['company_id'] = $companyId;
+        $data = app(\App\Services\EmissionEnrichmentService::class)->enrich($data, [
+            'emission_factor_id'              => $request->emission_factor_id,
+            'energy_attribute_certificate_id' => $request->energy_attribute_certificate_id,
+            'market_based_co2e'               => $request->market_based_co2e,
+            'scope2_method'                   => $request->scope2_method,
+        ]);
 
         if ($request->has('id') && $request->id) {
             // Update existing record
@@ -694,6 +741,11 @@ class EmissionRecordController extends Controller
             'data_quality'          => 'nullable|in:primary,secondary,estimated',
             'spend_amount'          => 'nullable|numeric|min:0',
             'spend_currency'        => 'nullable|string|size:3',
+            // Factor locking + Scope 2 dual reporting
+            'emission_factor_id'             => 'nullable|integer|exists:emission_factors,id',
+            'energy_attribute_certificate_id'=> 'nullable|integer|exists:energy_attribute_certificates,id',
+            'market_based_co2e'              => 'nullable|numeric|min:0',
+            'scope2_method'                  => 'nullable|in:location_based,market_based',
             // Supporting documents
             'supporting_documents'      => 'nullable|array',
             'supporting_documents.*'    => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
@@ -754,6 +806,16 @@ class EmissionRecordController extends Controller
             $data['spend_amount'] = null;
             $data['spend_currency'] = 'USD';
         }
+
+        // Enrich with factor lock, gas split, GWP snapshot and Scope 2 market-based figure.
+        $data['company_id'] = $emissionRecord->company_id;
+        $data = app(\App\Services\EmissionEnrichmentService::class)->enrich($data, [
+            'emission_factor_id'              => $request->emission_factor_id,
+            'energy_attribute_certificate_id' => $request->energy_attribute_certificate_id,
+            'market_based_co2e'               => $request->market_based_co2e,
+            'scope2_method'                   => $request->scope2_method,
+        ]);
+        unset($data['company_id']); // never reassign tenant on update
 
         // Store new documents (append)
         $companyId = $this->getCurrentCompanyId();

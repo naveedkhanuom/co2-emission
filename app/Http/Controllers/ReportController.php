@@ -8,7 +8,12 @@ use App\Models\ScheduledReport;
 use App\Models\ExportJob;
 use App\Models\Facilities;
 use App\Models\Department;
+use App\Exports\EmissionsSummaryExport;
+use App\Jobs\ProcessExportJob;
+use App\Services\ReportGenerationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class ReportController extends Controller
@@ -16,8 +21,8 @@ class ReportController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:list-reports|create-report|edit-report|delete-report', ['only' => ['index', 'statistics', 'getData', 'getReportsJson', 'getTemplates', 'getScheduledReports', 'getExportJobs', 'show', 'trackView']]);
-        $this->middleware('permission:create-report|edit-report', ['only' => ['storeOrUpdate', 'storeTemplate', 'storeScheduledReport', 'storeExportJob']]);
+        $this->middleware('permission:list-reports|create-report|edit-report|delete-report', ['only' => ['index', 'statistics', 'getData', 'getReportsJson', 'getTemplates', 'getScheduledReports', 'getExportJobs', 'show', 'trackView', 'download', 'downloadExportJob']]);
+        $this->middleware('permission:create-report|edit-report', ['only' => ['storeOrUpdate', 'storeTemplate', 'storeScheduledReport', 'storeExportJob', 'runScheduledNow']]);
         $this->middleware('permission:delete-report', ['only' => ['destroy']]);
     }
 
@@ -136,10 +141,18 @@ class ReportController extends Controller
                 return $types[$row->type] ?? '<span class="badge bg-secondary">Unknown</span>';
             })
             ->addColumn('actions', function ($row) {
+                $pdfUrl = route('reports.download', [$row->id, 'pdf']);
+                $xlsxUrl = route('reports.download', [$row->id, 'excel']);
                 return '<div class="btn-group">
                     <button class="btn btn-sm btn-info viewBtn" data-id="'.$row->id.'" title="View">
                         <i class="fas fa-eye"></i>
                     </button>
+                    <a class="btn btn-sm btn-secondary" href="'.$pdfUrl.'" title="Download PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                    <a class="btn btn-sm btn-success" href="'.$xlsxUrl.'" title="Download Excel">
+                        <i class="fas fa-file-excel"></i>
+                    </a>
                     <button class="btn btn-sm btn-primary editBtn" data-id="'.$row->id.'" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -180,6 +193,9 @@ class ReportController extends Controller
             $data['created_by'] = auth()->id();
         }
 
+        // Scope to the current company so reports stay tenant-isolated
+        $data['company_id'] = current_company_id() ?? (auth()->user()->company_id ?? null);
+
         $report = Report::updateOrCreate(
             ['id' => $request->id ?? null],
             $data
@@ -194,6 +210,49 @@ class ReportController extends Controller
 
     public function show($id) {
         return Report::with(['facility','department','user'])->findOrFail($id);
+    }
+
+    /**
+     * Download a saved report as a generated PDF or Excel file.
+     * findOrFail is company-scoped (HasCompanyScope), so a cross-tenant id 404s.
+     */
+    public function download($id, $format, ReportGenerationService $service) {
+        $report = Report::with(['facility', 'department'])->findOrFail($id);
+
+        $format = strtolower($format);
+
+        if ($format === 'pdf') {
+            return $service->pdf($report)->download($service->filename($report, 'pdf'));
+        }
+
+        if (in_array($format, ['excel', 'xlsx'], true)) {
+            return Excel::download(new EmissionsSummaryExport($service->summary($report)), $service->filename($report, 'xlsx'));
+        }
+
+        abort(404);
+    }
+
+    /**
+     * Download a completed export job's generated file.
+     */
+    public function downloadExportJob($id) {
+        $companyId = current_company_id() ?? (auth()->user()->company_id ?? null);
+
+        // findOrFail is company-scoped via HasCompanyScope. Keep an explicit
+        // tenant check as defense in depth: deny cross-tenant and null-company
+        // rows for anyone who isn't a super-admin (a super-admin may have no
+        // single company bound and is allowed the cross-company view).
+        $job = ExportJob::findOrFail($id);
+
+        if (!(auth()->user()->is_super_admin ?? false) && (int) $job->company_id !== (int) $companyId) {
+            abort(403);
+        }
+
+        if ($job->status !== 'completed' || !$job->file_path || !Storage::exists($job->file_path)) {
+            abort(404, 'Export file is not available.');
+        }
+
+        return Storage::download($job->file_path, basename($job->file_path));
     }
 
     public function destroy($id) {
@@ -249,15 +308,19 @@ class ReportController extends Controller
             'frequency' => 'required|in:daily,weekly,monthly,quarterly,yearly',
             'schedule_time' => 'required|date_format:H:i',
             'recipients' => 'nullable|array',
+            'recipients.*' => 'email',
             'formats' => 'nullable|array',
+            'formats.*' => 'in:pdf,excel,xlsx',
         ]);
 
-        // Calculate next_run_date based on frequency
-        $nextRunDate = $this->calculateNextRunDate($validated['frequency']);
-        $validated['next_run_date'] = $nextRunDate;
         $validated['created_by'] = auth()->id();
+        $validated['company_id'] = current_company_id() ?? (auth()->user()->company_id ?? null);
 
-        $scheduled = ScheduledReport::create($validated);
+        // Seed next_run_date from the model's own cadence logic (single source of
+        // truth — the scheduler reuses computeNextRunDate() to advance it).
+        $scheduled = new ScheduledReport($validated);
+        $scheduled->next_run_date = $scheduled->computeNextRunDate();
+        $scheduled->save();
 
         return response()->json([
             'success' => true,
@@ -266,22 +329,26 @@ class ReportController extends Controller
         ]);
     }
 
-    private function calculateNextRunDate($frequency) {
-        $now = now();
-        switch ($frequency) {
-            case 'daily':
-                return $now->addDay()->toDateString();
-            case 'weekly':
-                return $now->addWeek()->toDateString();
-            case 'monthly':
-                return $now->addMonth()->toDateString();
-            case 'quarterly':
-                return $now->addMonths(3)->toDateString();
-            case 'yearly':
-                return $now->addYear()->toDateString();
-            default:
-                return $now->addMonth()->toDateString();
+    // Run a single scheduled report immediately (on-demand), reusing the exact
+    // path the scheduler uses.
+    public function runScheduledNow($id, ReportGenerationService $service) {
+        // ScheduledReport is company-scoped, so findOrFail won't cross tenants.
+        $report = ScheduledReport::findOrFail($id);
+
+        try {
+            $service->emailScheduledReport($report);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to run scheduled report: ' . $e->getMessage(),
+            ], 500);
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Scheduled report generated and emailed to its recipients.',
+            'data' => $report->fresh(),
+        ]);
     }
 
     // Export Jobs
@@ -294,16 +361,23 @@ class ReportController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'format' => 'required|in:pdf,excel,csv,pptx,png',
+            // pptx/png are not implemented by ProcessExportJob yet — don't accept
+            // formats that would always fail.
+            'format' => 'required|in:pdf,excel,csv',
             'filters' => 'nullable|array',
         ]);
 
         $validated['created_by'] = auth()->id();
+        $validated['company_id'] = current_company_id() ?? (auth()->user()->company_id ?? null);
+        $validated['status'] = 'pending';
         $job = ExportJob::create($validated);
+
+        // Generate the file asynchronously (requires a running queue worker).
+        ProcessExportJob::dispatch($job->id);
 
         return response()->json([
             'success' => true,
-            'message' => 'Export job created successfully',
+            'message' => 'Export job queued. The file will be available once processing completes.',
             'data' => $job,
         ]);
     }

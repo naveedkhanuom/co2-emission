@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\HasCompanyScope;
 
 class ImportHistory extends Model
 {
-    use HasFactory;
+    use HasFactory, HasCompanyScope;
 
     protected $table = 'import_history';
 
     protected $fillable = [
+        'company_id',
         'import_id',
         'file_name',
         'file_path',
@@ -51,6 +53,11 @@ class ImportHistory extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
     // Scopes
     public function scopeCompleted($query)
     {
@@ -67,10 +74,11 @@ class ImportHistory extends Model
         return $query->where('status', 'processing');
     }
 
-    // Helper method to generate import ID
+    // Helper method to generate import ID.
+    // Generated globally (ignoring the company scope) so import_id stays unique across all tenants.
     public static function generateImportId(): string
     {
-        $lastImport = self::latest('id')->first();
+        $lastImport = self::withoutGlobalScope('company')->latest('id')->first();
         $number = $lastImport ? ((int) str_replace('IMP-', '', $lastImport->import_id)) + 1 : 1;
         return 'IMP-' . str_pad($number, 4, '0', STR_PAD_LEFT);
     }
