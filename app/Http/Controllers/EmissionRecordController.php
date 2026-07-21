@@ -354,12 +354,17 @@ class EmissionRecordController extends Controller
                     'status'            => $status,
                 ];
                 
+                // Data quality applies to every scope. Scope 1/2 activity data
+                // is metered/invoiced (primary) by default; Scope 3 is typically
+                // estimated. Honour an explicit value when provided.
+                $entryData['data_quality'] = $data['data_quality']
+                    ?? (($data['scopeSelect'] ?? null) == 3 ? 'estimated' : 'primary');
+
                 // Add Scope 3 fields if scope is 3
                 if ($data['scopeSelect'] == 3) {
                     $entryData['scope3_category_id'] = $data['scope3_category_id'] ?? null;
                     $entryData['supplier_id'] = $data['supplier_id'] ?? null;
                     $entryData['calculation_method'] = $data['calculation_method'] ?? 'activity-based';
-                    $entryData['data_quality'] = $data['data_quality'] ?? 'estimated';
                     $entryData['spend_amount'] = $data['spend_amount'] ?? null;
                     $entryData['spend_currency'] = $data['spend_currency'] ?? 'USD';
                 }
@@ -466,13 +471,18 @@ class EmissionRecordController extends Controller
             'created_by'        => auth()->id(),
             'status'            => $status,
         ];
-        
+
+        // Data quality applies to every scope. Scope 1/2 activity data is
+        // metered/invoiced (primary) by default; Scope 3 is typically estimated.
+        // Honour an explicit value when provided.
+        $data['data_quality'] = $request->data_quality
+            ?? ($request->scopeSelect == 3 ? 'estimated' : 'primary');
+
         // Add Scope 3 fields if scope is 3
         if ($request->scopeSelect == 3) {
             $data['scope3_category_id'] = $request->scope3_category_id ?? null;
             $data['supplier_id'] = $request->supplier_id ?? null;
             $data['calculation_method'] = $request->calculation_method ?? 'activity-based';
-            $data['data_quality'] = $request->data_quality ?? 'estimated';
             $data['spend_amount'] = $request->spend_amount ?? null;
             $data['spend_currency'] = $request->spend_currency ?? 'USD';
             
@@ -609,12 +619,17 @@ class EmissionRecordController extends Controller
             'status'            => $request->status ?? 'active',
         ];
 
+        // Data quality applies to every scope. Scope 1/2 activity data is
+        // metered/invoiced (primary) by default; Scope 3 is typically estimated.
+        // Honour an explicit value when provided.
+        $data['data_quality'] = $request->data_quality
+            ?? ($request->scopeSelect == 3 ? 'estimated' : 'primary');
+
         // Add Scope 3 fields if scope is 3
         if ($request->scopeSelect == 3) {
             $data['scope3_category_id'] = $request->scope3_category_id ?? null;
             $data['supplier_id'] = $request->supplier_id ?? null;
             $data['calculation_method'] = $request->calculation_method ?? 'activity-based';
-            $data['data_quality'] = $request->data_quality ?? 'estimated';
             $data['spend_amount'] = $request->spend_amount ?? null;
             $data['spend_currency'] = $request->spend_currency ?? 'USD';
 
@@ -788,13 +803,18 @@ class EmissionRecordController extends Controller
             'notes'             => $request->entryNotes,
             'status'            => $request->status ?? $emissionRecord->status,
         ];
-        
+
+        // Data quality applies to every scope. Scope 1/2 activity data is
+        // metered/invoiced (primary) by default; Scope 3 is typically estimated.
+        // Honour an explicit value when provided.
+        $data['data_quality'] = $request->data_quality
+            ?? ($request->scopeSelect == 3 ? 'estimated' : 'primary');
+
         // Add Scope 3 fields if scope is 3
         if ($request->scopeSelect == 3) {
             $data['scope3_category_id'] = $request->scope3_category_id ?? null;
             $data['supplier_id'] = $request->supplier_id ?? null;
             $data['calculation_method'] = $request->calculation_method ?? 'activity-based';
-            $data['data_quality'] = $request->data_quality ?? 'estimated';
             $data['spend_amount'] = $request->spend_amount ?? null;
             $data['spend_currency'] = $request->spend_currency ?? 'USD';
         } else {
