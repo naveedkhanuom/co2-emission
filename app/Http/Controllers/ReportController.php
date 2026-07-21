@@ -10,6 +10,7 @@ use App\Models\Facilities;
 use App\Models\Department;
 use App\Exports\EmissionsSummaryExport;
 use App\Jobs\ProcessExportJob;
+use App\Jobs\SendScheduledReportJob;
 use App\Services\ReportGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -331,22 +332,17 @@ class ReportController extends Controller
 
     // Run a single scheduled report immediately (on-demand), reusing the exact
     // path the scheduler uses.
-    public function runScheduledNow($id, ReportGenerationService $service) {
+    public function runScheduledNow($id) {
         // ScheduledReport is company-scoped, so findOrFail won't cross tenants.
         $report = ScheduledReport::findOrFail($id);
 
-        try {
-            $service->emailScheduledReport($report);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to run scheduled report: ' . $e->getMessage(),
-            ], 500);
-        }
+        // Generating the PDF/Excel and emailing is heavy — run it on the queue so
+        // the request returns immediately instead of risking a timeout.
+        SendScheduledReportJob::dispatch($report->id);
 
         return response()->json([
             'success' => true,
-            'message' => 'Scheduled report generated and emailed to its recipients.',
+            'message' => 'Scheduled report queued — recipients will receive it shortly.',
             'data' => $report->fresh(),
         ]);
     }

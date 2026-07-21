@@ -78,8 +78,10 @@ class EmissionImportController extends Controller
             'started_at' => Carbon::now(),
         ]);
         
-        // Store file for later download if needed
-        $filePath = $file->store('imports', 'public');
+        // Store file on the private disk for later re-import/download — it holds
+        // the tenant's raw data and must not be web-accessible. Served only via
+        // the authorized import_history.download route.
+        $filePath = $file->store('imports', 'local');
         $importHistory->update(['file_path' => $filePath]);
 
         try {

@@ -31,7 +31,11 @@ class DisclosureReportService
      */
     public function build(int $companyId, int $year, ?string $gwpVersion = null): array
     {
-        $gwpVersion = Gwp::normalize($gwpVersion ?: Gwp::versionForCompany($companyId));
+        // Figures are computed on the bundled factor basis (config gwp.factor_basis),
+        // so the disclosure must state THAT GWP set — the stated set has to match
+        // the math. The company's preferred version is future-facing until the
+        // factor tables are re-based. (Param kept for signature compatibility.)
+        $gwpVersion = Gwp::factorBasis();
 
         $records = EmissionRecord::withoutGlobalScope('company')
             ->where('company_id', $companyId)
