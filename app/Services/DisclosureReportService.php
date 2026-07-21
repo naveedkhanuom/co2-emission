@@ -62,6 +62,13 @@ class DisclosureReportService
 
         $company = Company::find($companyId);
 
+        // Organizational boundary chosen during onboarding (falls back to the
+        // GHG Protocol default when a company predates the setting).
+        $boundaryKey = $company?->getSetting('consolidation_approach', config('boundary.default'))
+            ?? config('boundary.default');
+        $consolidation = config("boundary.labels.$boundaryKey")
+            ?? config('boundary.labels.' . config('boundary.default'));
+
         return [
             'meta' => [
                 'company'      => $company?->name ?? 'Company',
@@ -71,7 +78,7 @@ class DisclosureReportService
                 'gwp_label'    => Gwp::label($gwpVersion),
                 'generated_on' => now()->format('Y-m-d H:i'),
                 'record_count' => $records->count(),
-                'consolidation'=> 'Operational control', // GHG Protocol default boundary
+                'consolidation'=> $consolidation,
             ],
             'totals' => [
                 'scope1'         => round($scope1, 2),

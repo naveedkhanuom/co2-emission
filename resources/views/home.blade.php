@@ -690,7 +690,7 @@
                 <h5><i class="fas fa-table me-2"></i>Recent Emissions Data</h5>
                 <div class="input-group" style="width: 300px;">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" class="form-control" placeholder="Search emissions data...">
+                    <input type="text" id="dashboardTableSearch" class="form-control" placeholder="Search shown records...">
                 </div>
             </div>
             
@@ -1330,6 +1330,18 @@
             };
             toggleCustomRange();
             dateRangeFilterEl.addEventListener('change', toggleCustomRange);
+
+            // Quick client-side filter for the "Recent Emissions Data" preview rows.
+            const tableSearch = document.getElementById('dashboardTableSearch');
+            if (tableSearch) {
+                tableSearch.addEventListener('input', function () {
+                    const q = this.value.toLowerCase().trim();
+                    document.querySelectorAll('.data-table-section tbody tr').forEach(function (row) {
+                        if (row.querySelector('td[colspan]')) return; // skip the empty-state row
+                        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+                    });
+                });
+            }
         });
     </script>
 @endsection

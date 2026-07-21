@@ -106,8 +106,8 @@
                     </label>
                     <select class="form-select" name="bill_type" id="bill_type" required>
                         <option value="">Select Bill Type</option>
-                        <option value="electricity" {{ old('bill_type') == 'electricity' ? 'selected' : '' }}>Electricity Bill</option>
-                        <option value="fuel" {{ old('bill_type') == 'fuel' ? 'selected' : '' }}>Fuel Bill (Diesel/Gasoline)</option>
+                        <option value="electricity" {{ old('bill_type', request('type')) == 'electricity' ? 'selected' : '' }}>Electricity Bill</option>
+                        <option value="fuel" {{ old('bill_type', request('type')) == 'fuel' ? 'selected' : '' }}>Fuel Bill (Diesel/Gasoline)</option>
                     </select>
                     <div class="form-text">Select whether you're uploading an electricity or fuel bill</div>
                 </div>

@@ -266,6 +266,7 @@
             <p>Fuel combustion, company vehicles, fugitive gas leaks</p>
             <button type="button" class="btn-add" id="scope1BtnAdd"><i class="fas fa-plus me-1"></i> Add Entry</button>
         </div>
+        @include('partials.quick_start', ['scope' => 1, 'manualTrigger' => 'scope1BtnAdd'])
         <div class="stats">
             <div class="sc"><div class="si r">&#128293;</div><div><div class="sv" id="scope1StatTotal">0</div><div class="sl">Total Entries</div></div></div>
             <div class="sc"><div class="si g">&#9981;</div><div><div class="sv" id="scope1StatStationary">0</div><div class="sl">Stationary</div></div></div>

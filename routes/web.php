@@ -50,6 +50,9 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+    // Data Health — completeness / "what to do next" overview
+    Route::get('/data-health', [App\Http\Controllers\DataHealthController::class, 'index'])->name('data_health.index');
+
     // First-run company setup wizard (plain-language onboarding for non-experts)
     Route::prefix('onboarding')->name('onboarding.')->group(function () {
         Route::get('/', [App\Http\Controllers\OnboardingController::class, 'index'])->name('index');

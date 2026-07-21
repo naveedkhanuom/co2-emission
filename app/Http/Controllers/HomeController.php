@@ -18,7 +18,7 @@ class HomeController extends Controller
         $this->middleware('permission:list-dashboard', ['only' => ['index']]);
     }
 
-    public function index(Request $request, $companyId = 1)
+    public function index(Request $request)
     {
         // First-run experience: send brand-new companies through the plain-language
         // setup wizard instead of dropping them onto an empty dashboard. Existing

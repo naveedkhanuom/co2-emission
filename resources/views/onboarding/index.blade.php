@@ -48,7 +48,9 @@
         .act .ic{position:absolute;left:14px;top:15px;color:var(--gray-500);font-size:1rem;transition:.15s}
         .act b{display:block;font-size:.9rem;font-weight:600}
         .act small{color:var(--gray-500);font-size:.78rem;line-height:1.3;display:block;margin-top:2px}
-        .act.selected{border-color:var(--primary-green);background:rgba(76,175,80,.07)}
+        .act.selected,.act:has(input:checked){border-color:var(--primary-green);background:rgba(76,175,80,.07)}
+        .act:has(input:checked) .ic{color:var(--primary-green)}
+        .act:has(input:checked) .check{background:var(--primary-green)}
         .act.selected .ic{color:var(--primary-green)}
         .act .check{position:absolute;right:12px;top:12px;width:20px;height:20px;border-radius:50%;background:var(--gray-200);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.6rem;transition:.15s}
         .act.selected .check{background:var(--primary-green)}
@@ -82,6 +84,7 @@
         <div class="dot" data-dot="3"></div>
         <div class="dot" data-dot="4"></div>
         <div class="dot" data-dot="5"></div>
+        <div class="dot" data-dot="6"></div>
     </div>
 
     <form id="wizForm" class="card-wiz" autocomplete="off">
@@ -107,7 +110,7 @@
 
         <!-- ============ STEP 2 — BUSINESS ============ -->
         <section class="body step" data-step="2" hidden>
-            <div class="step-eyebrow">Step 2 of 5</div>
+            <div class="step-eyebrow">Step 2 of 6</div>
             <h2 class="step-title">Tell us about your business</h2>
             <p class="step-sub">This helps us pre-load the right starting figures for your industry.</p>
 
@@ -141,9 +144,47 @@
             <div class="invalid-msg" id="err2">Please fill in your company name and industry.</div>
         </section>
 
-        <!-- ============ STEP 3 — SITES ============ -->
+        <!-- ============ STEP 3 — REPORTING BASIS ============ -->
         <section class="body step" data-step="3" hidden>
-            <div class="step-eyebrow">Step 3 of 5</div>
+            <div class="step-eyebrow">Step 3 of 6</div>
+            <h2 class="step-title">How should we report your footprint?</h2>
+            <p class="step-sub">Just three quick choices. We've picked the most common answer for each — if you're not sure, the defaults are fine and you can change them later.</p>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Which year do you want to measure first?</label>
+                    <input type="number" name="base_year" class="form-control" min="2000" max="{{ $currentYear + 1 }}" value="{{ $defaultBaseYear }}">
+                    <div class="hint mt-1">Your “base year” — the baseline we compare future progress against.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Which standard for greenhouse-gas values?</label>
+                    <select name="gwp_version" class="form-select">
+                        @foreach($gwpOptions as $val => $label)
+                            <option value="{{ $val }}" @selected($defaultGwp === $val)>{{ $label }}@if($loop->first) — recommended @endif</option>
+                        @endforeach
+                    </select>
+                    <div class="hint mt-1">The IPCC values used to convert gases to CO₂e. The latest is best unless a regulator requires otherwise.</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Which operations should we count?</label>
+                    <div class="mt-1">
+                        @foreach($boundaries as $val => $label)
+                            <label class="act" style="padding:12px 14px 12px 44px;margin-bottom:8px;display:block">
+                                <input type="radio" name="consolidation_approach" value="{{ $val }}" @checked($defaultBoundary === $val)>
+                                <i class="fas fa-sitemap ic" style="top:13px"></i>
+                                <span class="check"><i class="fas fa-check"></i></span>
+                                <b>{{ $label }}@if($loop->first) <span class="hint">(recommended)</span>@endif</b>
+                                <small>{{ config("boundary.help.$val") }}</small>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ STEP 4 — SITES ============ -->
+        <section class="body step" data-step="4" hidden>
+            <div class="step-eyebrow">Step 4 of 6</div>
             <h2 class="step-title">Where do you operate?</h2>
             <p class="step-sub">Add your offices, factories, stores or sites. You can add more later — one is enough to start.</p>
 
@@ -158,9 +199,9 @@
             <div class="invalid-msg" id="err3">Please give each location a name.</div>
         </section>
 
-        <!-- ============ STEP 4 — ACTIVITIES ============ -->
-        <section class="body step" data-step="4" hidden>
-            <div class="step-eyebrow">Step 4 of 5</div>
+        <!-- ============ STEP 5 — ACTIVITIES ============ -->
+        <section class="body step" data-step="5" hidden>
+            <div class="step-eyebrow">Step 5 of 6</div>
             <h2 class="step-title">What does your business do?</h2>
             <p class="step-sub">Tick everything that applies. We'll use this to set up the right categories — you don't need to worry about which "scope" anything is.</p>
 
@@ -178,9 +219,9 @@
             <div class="invalid-msg" id="err4">Please pick at least one.</div>
         </section>
 
-        <!-- ============ STEP 5 — DONE ============ -->
-        <section class="body step" data-step="5" hidden>
-            <div class="step-eyebrow">Step 5 of 5</div>
+        <!-- ============ STEP 6 — DONE ============ -->
+        <section class="body step" data-step="6" hidden>
+            <div class="step-eyebrow">Step 6 of 6</div>
             <h2 class="step-title">You're all set! 🎉</h2>
             <p class="step-sub">Your account is ready. Here's a simple checklist to build your first carbon footprint — tackle them in any order:</p>
 
@@ -205,7 +246,7 @@
 
 <script>
 (function(){
-    const TOTAL = 5;
+    const TOTAL = 6;
     let step = 1;
     const ACTIVITY_SCOPES = @json(collect($activities)->map(fn($a,$k)=>$a['label'])->toArray());
 
@@ -269,10 +310,10 @@
             const name=form.name.value.trim(), ind=form.industry_type.value;
             if(!name || !ind){ document.getElementById('err2').style.display='block'; return false; }
         }
-        if(n===3){
+        if(n===4){
             if(collectSites().length===0){ document.getElementById('err3').style.display='block'; return false; }
         }
-        if(n===4){
+        if(n===5){
             if(selectedActivities().length===0){ document.getElementById('err4').style.display='block'; return false; }
         }
         return true;
@@ -293,7 +334,7 @@
     nextBtn.addEventListener('click', async ()=>{
         if(step < TOTAL){
             if(!validate(step)) return;
-            if(step===4) buildChecklist();
+            if(step===5) buildChecklist();
             show(step+1);
             return;
         }
@@ -316,6 +357,9 @@
             country: form.country.value.trim(),
             employee_count: form.employee_count.value || null,
             fiscal_year_start: form.fiscal_year_start.value.trim() || null,
+            base_year: form.base_year.value || null,
+            gwp_version: form.gwp_version.value || null,
+            consolidation_approach: (form.querySelector('input[name=consolidation_approach]:checked') || {}).value || null,
             sites: collectSites(),
             activities: selectedActivities()
         };
