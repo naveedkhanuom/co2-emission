@@ -42,13 +42,34 @@ class RoleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    /**
+     * The permission names to sync onto a role, restricted so a non-super-admin
+     * can only grant permissions they themselves hold (prevents privilege
+     * escalation via role management). Existing permissions the actor can't
+     * manage are preserved rather than stripped.
+     */
+    private function restrictedPermissionNames(?Role $role, $requestedIds): array
+    {
+        $requested = Permission::whereIn('id', (array) $requestedIds)->pluck('name')->toArray();
+
+        $actor = auth()->user();
+        if ($actor->is_super_admin ?? false) {
+            return $requested;
+        }
+
+        $held = $actor->getAllPermissions()->pluck('name')->toArray();
+        $addable = array_intersect($requested, $held);
+        $existing = $role ? $role->permissions->pluck('name')->toArray() : [];
+        $preserved = array_diff($existing, $held);
+
+        return array_values(array_unique(array_merge($preserved, $addable)));
+    }
+
     public function store(StoreRoleRequest $request): RedirectResponse
     {
         $role = Role::create(['name' => $request->name]);
 
-        $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
-        
-        $role->syncPermissions($permissions);
+        $role->syncPermissions($this->restrictedPermissionNames($role, $request->permissions));
 
         return redirect()->route('roles.index')
                 ->withSuccess('New role is added successfully.');
@@ -79,10 +100,8 @@ class RoleController extends Controller
 
         $role->update($input);
 
-        $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
+        $role->syncPermissions($this->restrictedPermissionNames($role, $request->permissions));
 
-        $role->syncPermissions($permissions);    
-        
         return redirect()->route('roles.index')
                 ->withSuccess('Role is updated successfully.');
     }

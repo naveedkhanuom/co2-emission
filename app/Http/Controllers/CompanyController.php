@@ -18,16 +18,19 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
+        // Only list companies the user can access (super-admins see all).
+        $accessible = auth()->user()->accessibleCompanies();
+
         // If JSON request, return companies as JSON
         if ($request->wantsJson() || $request->expectsJson()) {
-            $companies = Company::select('id', 'name', 'code', 'industry_type', 'size', 'country', 'is_active')
+            $companies = $accessible->select('id', 'name', 'code', 'industry_type', 'size', 'country', 'is_active')
                 ->orderBy('id', 'desc')
                 ->get();
             return response()->json($companies);
         }
-        
+
         // Otherwise return view
-        $companies = Company::all();
+        $companies = $accessible->orderBy('name')->get();
         return view('companies.index', compact('companies'));
     }
 
@@ -92,6 +95,7 @@ class CompanyController extends Controller
 
     public function update(Request $request, $id)
     {
+        abort_unless(auth()->user()->canAccessCompany($id), 403, 'You do not have access to this company.');
         $company = Company::findOrFail($id);
 
         $validated = $request->validate([
@@ -146,18 +150,21 @@ class CompanyController extends Controller
 
     public function show($id)
     {
+        abort_unless(auth()->user()->canAccessCompany($id), 403, 'You do not have access to this company.');
         $company = Company::findOrFail($id);
         return response()->json($company);
     }
 
     public function edit($id)
     {
+        abort_unless(auth()->user()->canAccessCompany($id), 403, 'You do not have access to this company.');
         $company = Company::findOrFail($id);
         return response()->json($company);
     }
 
     public function destroy($id)
     {
+        abort_unless(auth()->user()->canAccessCompany($id), 403, 'You do not have access to this company.');
         $company = Company::findOrFail($id);
         $company->delete();
 
