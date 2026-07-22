@@ -143,7 +143,8 @@ class ImportHistoryController extends Controller
                 }
                 
                 if ($row->processing_time) {
-                    return '<div class="fw-bold">' . number_format($row->processing_time, 1) . 's</div>
+                    // abs() guards against legacy rows stored with a negative diff.
+                    return '<div class="fw-bold">' . number_format(abs($row->processing_time), 1) . 's</div>
                             <div class="text-muted small">Processing time</div>';
                 }
                 
@@ -196,13 +197,6 @@ class ImportHistoryController extends Controller
                     </button>';
                 }
                 
-                // Run now button (for queued)
-                if ($row->status === 'queued') {
-                    $actions .= '<button class="action-btn" onclick="runNowImport(' . $row->id . ')" title="Run Now">
-                        <i class="fas fa-play"></i>
-                    </button>';
-                }
-                
                 // Delete button
                 $actions .= '<button class="action-btn delete-btn" onclick="deleteImport(' . $row->id . ')" title="Delete">
                     <i class="fas fa-trash"></i>
@@ -235,9 +229,10 @@ class ImportHistoryController extends Controller
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('successful_records');
         
-        // Average processing time
+        // Average processing time. abs() guards against legacy rows stored with a
+        // negative (signed) diff so the average can't come out negative.
         $avgProcessingTime = ImportHistory::whereNotNull('processing_time')
-            ->avg('processing_time');
+            ->avg(DB::raw('ABS(processing_time)'));
         
         // Last month total for comparison
         $lastMonthTotal = ImportHistory::whereMonth('created_at', Carbon::now()->subMonth()->month)

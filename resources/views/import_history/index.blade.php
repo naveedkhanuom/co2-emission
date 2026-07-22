@@ -726,10 +726,6 @@ function cancelImport(id) {
     });
 }
 
-function runNowImport(id) {
-    showToast('Run now is available for scheduled imports only.', 'info');
-}
-
 function showBulkActions() {
     new bootstrap.Modal(document.getElementById('bulkActionsModal')).show();
 }

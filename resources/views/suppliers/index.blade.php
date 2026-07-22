@@ -146,7 +146,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Supplier</button>
+                    <button type="submit" class="btn btn-brand">Save Supplier</button>
                 </div>
             </div>
         </form>
@@ -230,7 +230,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Update Supplier</button>
+                    <button type="submit" class="btn btn-brand">Update Supplier</button>
                 </div>
             </div>
         </form>
@@ -269,6 +269,16 @@
 .suppliers-app .topbar p { color: var(--gray-600); font-size: 0.875rem; flex: 1; min-width: 180px; margin: 0; line-height: 1.4; }
 .suppliers-app .btn-add { margin-left: auto; padding: 10px 20px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); color: #fff; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 .suppliers-app .btn-add:hover { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,125,50,.35); }
+/* Brand primary button (modals) — keep submit actions on the app green, not Bootstrap blue/green. Defined unscoped so it reaches the modals rendered outside .suppliers-app. */
+.btn-brand { background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%); border: none; color: #fff; }
+.btn-brand:hover, .btn-brand:focus { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); color: #fff; }
+/* Table row action buttons — keep View/Edit/Delete on the app palette (not Bootstrap cyan/blue). */
+.suppliers-app .viewBtn { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.suppliers-app .viewBtn:hover { background: #01579b; border-color: #01579b; color: #fff; }
+.suppliers-app .editBtn { background: var(--primary-green); border-color: var(--primary-green); color: #fff; }
+.suppliers-app .editBtn:hover { background: var(--dark-green); border-color: var(--dark-green); color: #fff; }
+.suppliers-app .deleteBtn { background: var(--danger-red); border-color: var(--danger-red); color: #fff; }
+.suppliers-app .deleteBtn:hover { filter: brightness(0.92); color: #fff; }
 /* Alerts */
 .suppliers-app .alert { border-radius: 12px; border: 1px solid transparent; }
 .suppliers-app .alert-success { background: rgba(76,175,80,0.1); border-color: rgba(76,175,50,0.25); color: var(--dark-green); }
@@ -386,7 +396,7 @@
                 $('#totalCount').text(info.recordsDisplay);
             },
             language: {
-                processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+                processing: '<div class="spinner-border" style="color: var(--primary-green)" role="status"><span class="visually-hidden">Loading...</span></div>',
                 emptyTable: 'No suppliers found',
                 zeroRecords: 'No matching suppliers found',
                 info: 'Showing _START_ to _END_ of _TOTAL_ suppliers',

@@ -77,26 +77,26 @@
     }
     
     .kpi-icon.icon-total {
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
     }
     
     .kpi-icon.icon-scope1 {
-        background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+        background: linear-gradient(135deg, var(--light-green) 0%, #81c784 100%);
     }
     
     .kpi-icon.icon-scope2 {
-        background: linear-gradient(135deg, #0277bd 0%, #03a9f4 100%);
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--light-blue) 100%);
     }
     
     .kpi-icon.icon-scope3 {
-        background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);
+        background: linear-gradient(135deg, var(--warning-orange) 0%, #ff9800 100%);
     }
     
     .kpi-value {
         font-size: 2.25rem;
         font-weight: 700;
         margin: 12px 0 8px 0;
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -104,25 +104,25 @@
     }
     
     .kpi-card.card-scope1 .kpi-value {
-        background: linear-gradient(135deg, #4caf50 0%, #81c784 100%);
+        background: linear-gradient(135deg, var(--light-green) 0%, #81c784 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     
     .kpi-card.card-scope2 .kpi-value {
-        background: linear-gradient(135deg, #0277bd 0%, #03a9f4 100%);
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--light-blue) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     
     .kpi-card.card-scope3 .kpi-value {
-        background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);
+        background: linear-gradient(135deg, var(--warning-orange) 0%, #ff9800 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     
     .kpi-label {
-        color: #6c757d;
+        color: #5f6368;
         font-size: 0.875rem;
         font-weight: 600;
         letter-spacing: 0.5px;
@@ -170,20 +170,20 @@
         content: '';
         width: 4px;
         height: 24px;
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
         border-radius: 2px;
     }
     
     .filter-label {
         font-weight: 600;
         margin-bottom: 10px;
-        color: #495057;
+        color: #3c4043;
         font-size: 0.875rem;
     }
     
     .form-select {
         border-radius: 10px;
-        border: 1px solid #dee2e6;
+        border: 1px solid #e8eaed;
         padding: 10px 15px;
         transition: all 0.3s;
         font-size: 0.9rem;
@@ -209,7 +209,7 @@
     }
     
     .btn-success {
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
         border: none;
     }
     
@@ -249,7 +249,7 @@
         content: '';
         width: 4px;
         height: 24px;
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
         border-radius: 2px;
     }
     
@@ -263,20 +263,20 @@
     }
     
     #trendChart .apexcharts-gridline {
-        stroke: #e0e0e0;
+        stroke: #dadce0;
         stroke-width: 1;
         stroke-dasharray: 3;
     }
     
     #trendChart .apexcharts-xaxis-tick,
     #trendChart .apexcharts-yaxis-tick {
-        stroke: #dee2e6;
+        stroke: #e8eaed;
     }
     
     #trendChart .apexcharts-tooltip {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         border-radius: 8px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #dadce0;
     }
     
     #trendChart .apexcharts-legend {
@@ -295,12 +295,12 @@
     }
     
     #trendChart .apexcharts-line-series[data:realIndex="0"] path {
-        stroke: #00C853 !important;
+        stroke: #2e7d32 !important;
         stroke-width: 5 !important;
     }
     
     #trendChart .apexcharts-line-series[data:realIndex="1"] path {
-        stroke: #FF5722 !important;
+        stroke: #f57c00 !important;
         stroke-width: 4 !important;
     }
     
@@ -325,7 +325,7 @@
     }
     
     .input-group-text {
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
         color: white;
         border: none;
         border-radius: 10px 0 0 10px;
@@ -333,7 +333,7 @@
     
     .form-control {
         border-radius: 0 10px 10px 0;
-        border: 1px solid #dee2e6;
+        border: 1px solid #e8eaed;
         transition: all 0.3s;
     }
     
@@ -349,13 +349,13 @@
     .table thead th {
         border-top: none;
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        color: #495057;
+        color: #3c4043;
         font-weight: 700;
         font-size: 0.875rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         padding: 16px;
-        border-bottom: 2px solid #dee2e6;
+        border-bottom: 2px solid #e8eaed;
     }
     
     .table tbody tr {
@@ -411,20 +411,20 @@
     .pagination .page-link {
         border-radius: 8px;
         margin: 0 4px;
-        border: 1px solid #dee2e6;
-        color: #495057;
+        border: 1px solid #e8eaed;
+        color: #3c4043;
         transition: all 0.3s;
     }
     
     .pagination .page-link:hover {
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
         color: white;
         border-color: #2e7d32;
         transform: translateY(-2px);
     }
     
     .pagination .page-item.active .page-link {
-        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%);
         border-color: #2e7d32;
         box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
     }
@@ -433,7 +433,7 @@
     .footer {
         text-align: center;
         padding: 32px 20px;
-        color: #6c757d;
+        color: #5f6368;
         font-size: 0.9rem;
         margin-top: 40px;
         background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
@@ -504,7 +504,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <div class="kpi-label">TOTAL EMISSIONS</div>
-                                <div class="kpi-value">{{ number_format($totalEmissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #6c757d;">tCO₂e</span></div>
+                                <div class="kpi-value">{{ number_format($totalEmissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #5f6368;">tCO₂e</span></div>
                                 <div class="kpi-change {{ $percentageChange >= 0 ? 'change-positive' : 'change-negative' }}">
                                     <i class="fas fa-arrow-{{ $percentageChange >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($percentageChange), 1) }}% from last month
                                 </div>
@@ -523,7 +523,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <div class="kpi-label">SCOPE 1 EMISSIONS</div>
-                                <div class="kpi-value">{{ number_format($scope1Emissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #6c757d;">tCO₂e</span></div>
+                                <div class="kpi-value">{{ number_format($scope1Emissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #5f6368;">tCO₂e</span></div>
                                 <div class="kpi-change {{ $scope1Change >= 0 ? 'change-positive' : 'change-negative' }}">
                                     <i class="fas fa-arrow-{{ $scope1Change >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($scope1Change), 1) }}% from last month
                                 </div>
@@ -542,7 +542,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <div class="kpi-label">SCOPE 2 EMISSIONS</div>
-                                <div class="kpi-value">{{ number_format($scope2Emissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #6c757d;">tCO₂e</span></div>
+                                <div class="kpi-value">{{ number_format($scope2Emissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #5f6368;">tCO₂e</span></div>
                                 <div class="kpi-change {{ $scope2Change >= 0 ? 'change-positive' : 'change-negative' }}">
                                     <i class="fas fa-arrow-{{ $scope2Change >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($scope2Change), 1) }}% from last month
                                 </div>
@@ -561,7 +561,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <div class="kpi-label">SCOPE 3 EMISSIONS</div>
-                                <div class="kpi-value">{{ number_format($scope3Emissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #6c757d;">tCO₂e</span></div>
+                                <div class="kpi-value">{{ number_format($scope3Emissions, 2) }} <span class="fs-6" style="-webkit-text-fill-color: #5f6368;">tCO₂e</span></div>
                                 <div class="kpi-change {{ $scope3Change >= 0 ? 'change-positive' : 'change-negative' }}">
                                     <i class="fas fa-arrow-{{ $scope3Change >= 0 ? 'up' : 'down' }} me-1"></i> {{ number_format(abs($scope3Change), 1) }}% from last month
                                 </div>
@@ -756,7 +756,7 @@
                 <strong>GHG Emissions Monitoring System v2.1</strong> • Data last updated: {{ now()->format('F d, Y') }}
             </p>
             <p class="small">
-                © {{ date('Y') }} Sustainability Analytics. All emissions data is measured in metric tons of CO₂ equivalent (tCO₂e).
+                © {{ date('Y') }} Green Crescent Environmental Engineering Consultants. All emissions data is measured in metric tons of CO₂ equivalent (tCO₂e).
             </p>
             <p class="small" style="margin-top: 12px;">
                 Powered by <a href="https://altayaboon.com/" target="_blank" rel="noopener noreferrer" style="color: #2e7d32; text-decoration: none; font-weight: 600;">AL-TAYABOON INFORMATION TECHNOLOGY</a>
@@ -800,7 +800,7 @@
                     fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
                     background: 'transparent'
                 },
-                colors: ['#00C853', '#FF5722'],
+                colors: ['#2e7d32', '#f57c00'],
                 dataLabels: {
                     enabled: true,
                     style: {
@@ -815,7 +815,7 @@
                         padding: 5,
                         borderRadius: 6,
                         borderWidth: 2,
-                        borderColor: ['#00C853', '#FF5722'],
+                        borderColor: ['#2e7d32', '#f57c00'],
                         opacity: 0.95,
                         dropShadow: {
                             enabled: true,
@@ -840,7 +840,7 @@
                     size: [8, 7],
                     strokeWidth: [3, 3],
                     strokeColors: ['#fff', '#fff'],
-                    fillColors: ['#00C853', '#FF5722'],
+                    fillColors: ['#2e7d32', '#f57c00'],
                     hover: {
                         size: [10, 9],
                         sizeOffset: 2
@@ -853,7 +853,7 @@
                         shade: 'light',
                         type: 'vertical',
                         shadeIntensity: 0.5,
-                        gradientToColors: ['#4CAF50', '#FF7043'],
+                        gradientToColors: ['#4caf50', '#ff9800'],
                         inverseColors: false,
                         opacityFrom: 0.6,
                         opacityTo: 0.2,
@@ -865,7 +865,7 @@
                     align: 'left'
                 },
                 grid: {
-                    borderColor: '#e0e0e0',
+                    borderColor: '#dadce0',
                     strokeDashArray: 3,
                     xaxis: {
                         lines: {
@@ -897,7 +897,7 @@
                     title: {
                         text: 'Month',
                         style: {
-                            color: '#495057',
+                            color: '#3c4043',
                             fontSize: '13px',
                             fontWeight: 700,
                             fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
@@ -906,7 +906,7 @@
                     },
                     labels: {
                         style: {
-                            colors: '#6c757d',
+                            colors: '#5f6368',
                             fontSize: '12px',
                             fontWeight: 600,
                             fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
@@ -916,20 +916,20 @@
                     },
                     axisBorder: {
                         show: true,
-                        color: '#dee2e6',
+                        color: '#e8eaed',
                         offsetX: 0,
                         offsetY: 0
                     },
                     axisTicks: {
                         show: true,
-                        color: '#dee2e6'
+                        color: '#e8eaed'
                     }
                 },
                 yaxis: {
                     title: {
                         text: 'Emissions (tCO₂e)',
                         style: {
-                            color: '#495057',
+                            color: '#3c4043',
                             fontSize: '13px',
                             fontWeight: 700,
                             fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
@@ -938,7 +938,7 @@
                     },
                     labels: {
                         style: {
-                            colors: '#6c757d',
+                            colors: '#5f6368',
                             fontSize: '12px',
                             fontWeight: 600,
                             fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
@@ -949,13 +949,13 @@
                     },
                     axisBorder: {
                         show: true,
-                        color: '#dee2e6',
+                        color: '#e8eaed',
                         offsetX: 0,
                         offsetY: 0
                     },
                     axisTicks: {
                         show: true,
-                        color: '#dee2e6'
+                        color: '#e8eaed'
                     }
                     @if(count($monthlyTrend) > 0)
                     ,min: {{ max(0, floor(min($monthlyTrend) * 0.85)) }}
@@ -983,7 +983,7 @@
                         vertical: 8
                     },
                     labels: {
-                        colors: '#495057',
+                        colors: '#3c4043',
                         useSeriesColors: false
                     }
                 },
@@ -1011,7 +1011,7 @@
                 annotations: {
                     yaxis: [{
                         y: {{ array_sum($monthlyTarget) / count($monthlyTarget) }},
-                        borderColor: '#FF5722',
+                        borderColor: '#f57c00',
                         borderWidth: 3,
                         borderDashArray: 8,
                         opacity: 0.7,
@@ -1019,7 +1019,7 @@
                             text: 'Avg Target',
                             style: {
                                 color: '#fff',
-                                background: '#FF5722',
+                                background: '#f57c00',
                                 fontSize: '10px',
                                 fontWeight: 700,
                                 padding: {
@@ -1068,7 +1068,7 @@
                                     show: true,
                                     showAlways: true,
                                     label: 'Total Emissions',
-                                    color: '#6c757d',
+                                    color: '#5f6368',
                                     fontSize: '14px',
                                     fontWeight: 600,
                                     formatter: function() {
@@ -1087,7 +1087,7 @@
                                     show: true,
                                     fontSize: '12px',
                                     fontWeight: 600,
-                                    color: '#6c757d',
+                                    color: '#5f6368',
                                     offsetY: -10
                                 }
                             }
@@ -1217,14 +1217,14 @@
                     title: {
                         text: 'tCO₂e',
                         style: {
-                            color: '#6c757d',
+                            color: '#5f6368',
                             fontSize: '12px',
                             fontWeight: 600
                         }
                     },
                     labels: {
                         style: {
-                            colors: '#6c757d',
+                            colors: '#5f6368',
                             fontSize: '11px'
                         }
                     }
@@ -1234,12 +1234,12 @@
                         style: {
                             fontSize: '12px',
                             fontWeight: 600,
-                            colors: '#6c757d'
+                            colors: '#5f6368'
                         }
                     }
                 },
                 grid: {
-                    borderColor: '#e7e7e7',
+                    borderColor: '#e8eaed',
                     strokeDashArray: 3,
                     xaxis: {
                         lines: {

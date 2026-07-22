@@ -1041,13 +1041,13 @@
                         </div>
                         
                         <div class="report-actions">
-                            <a href="#" class="action-btn download-btn" onclick="downloadReport(${report.id})">
+                            <a href="#" class="action-btn download-btn" onclick="downloadReport(${report.id}); return false;">
                                 <i class="fas fa-download"></i> Download
                             </a>
-                            <a href="#" class="action-btn edit-btn" onclick="editReport(${report.id})">
+                            <a href="#" class="action-btn edit-btn" onclick="editReport(${report.id}); return false;">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
-                            <a href="#" class="action-btn delete-btn" onclick="deleteReport(${report.id})">
+                            <a href="#" class="action-btn delete-btn" onclick="deleteReport(${report.id}); return false;">
                                 <i class="fas fa-trash"></i> Delete
                             </a>
                         </div>
