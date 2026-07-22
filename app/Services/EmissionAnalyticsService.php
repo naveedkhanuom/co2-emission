@@ -346,19 +346,17 @@ class EmissionAnalyticsService
             default => "DATE_FORMAT(entry_date, '%b %Y')",
         };
 
-        $orderSql = match ($period) {
-            'quarterly' => "CONCAT(YEAR(entry_date), QUARTER(entry_date))",
-            'annual' => "YEAR(entry_date)",
-            default => "DATE_FORMAT(entry_date, '%Y-%m')",
-        };
-
         return $query
             ->select(
                 DB::raw("{$groupSql} as label"),
                 DB::raw('SUM(co2e_value) as value')
             )
             ->groupBy(DB::raw($groupSql))
-            ->orderBy(DB::raw($orderSql))
+            // Order by an aggregate (earliest date in each group) so the sort is
+            // chronological AND valid under MySQL's ONLY_FULL_GROUP_BY (which is
+            // on by default on the server): ordering by a non-grouped date
+            // expression like DATE_FORMAT(entry_date,'%Y-%m') is rejected there.
+            ->orderBy(DB::raw('MIN(entry_date)'))
             ->get()
             ->map(fn($item) => [
                 'label' => (string) $item->label,
