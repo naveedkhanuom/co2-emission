@@ -161,8 +161,16 @@ class ReviewDataController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
+        // Constrain to the two real states — without this any arbitrary string
+        // could be persisted, and a draft could be flipped straight to active
+        // outside the intended review flow.
+        $validated = $request->validate([
+            'status' => 'required|in:active,draft',
+        ]);
+
+        // findOrFail is company-scoped via HasCompanyScope (cross-tenant ids 404).
         $record = EmissionRecord::findOrFail($id);
-        $record->status = $request->status;
+        $record->status = $validated['status'];
         $record->save();
 
         return response()->json([
@@ -175,6 +183,7 @@ class ReviewDataController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
+            'ids.*' => 'integer',
             'action' => 'required|in:validate,reject,delete'
         ]);
 

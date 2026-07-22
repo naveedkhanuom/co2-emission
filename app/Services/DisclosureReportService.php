@@ -31,7 +31,11 @@ class DisclosureReportService
      */
     public function build(int $companyId, int $year, ?string $gwpVersion = null): array
     {
-        $gwpVersion = Gwp::normalize($gwpVersion ?: Gwp::versionForCompany($companyId));
+        // Figures are computed on the bundled factor basis (config gwp.factor_basis),
+        // so the disclosure must state THAT GWP set — the stated set has to match
+        // the math. The company's preferred version is future-facing until the
+        // factor tables are re-based. (Param kept for signature compatibility.)
+        $gwpVersion = Gwp::factorBasis();
 
         $records = EmissionRecord::withoutGlobalScope('company')
             ->where('company_id', $companyId)
@@ -62,6 +66,13 @@ class DisclosureReportService
 
         $company = Company::find($companyId);
 
+        // Organizational boundary chosen during onboarding (falls back to the
+        // GHG Protocol default when a company predates the setting).
+        $boundaryKey = $company?->getSetting('consolidation_approach', config('boundary.default'))
+            ?? config('boundary.default');
+        $consolidation = config("boundary.labels.$boundaryKey")
+            ?? config('boundary.labels.' . config('boundary.default'));
+
         return [
             'meta' => [
                 'company'      => $company?->name ?? 'Company',
@@ -71,7 +82,7 @@ class DisclosureReportService
                 'gwp_label'    => Gwp::label($gwpVersion),
                 'generated_on' => now()->format('Y-m-d H:i'),
                 'record_count' => $records->count(),
-                'consolidation'=> 'Operational control', // GHG Protocol default boundary
+                'consolidation'=> $consolidation,
             ],
             'totals' => [
                 'scope1'         => round($scope1, 2),

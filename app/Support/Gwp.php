@@ -18,6 +18,16 @@ class Gwp
      * The GWP version a company reports under. Falls back to the global config
      * default ('ar6') when the company has not chosen one.
      */
+    /**
+     * The GWP set the bundled emission-factor / source tables were built on.
+     * Records are stamped with this so their stated GWP set matches the math
+     * that produced them (the client-side factor tables are currently AR5).
+     */
+    public static function factorBasis(): string
+    {
+        return self::normalize(config('gwp.factor_basis', 'ar5'));
+    }
+
     public static function versionForCompany(?int $companyId): string
     {
         $default = config('gwp.default', 'ar6');

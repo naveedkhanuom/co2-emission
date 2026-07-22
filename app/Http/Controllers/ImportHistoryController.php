@@ -136,13 +136,15 @@ class ImportHistoryController extends Controller
             })
             ->editColumn('processing_time', function ($row) {
                 if ($row->status === 'processing') {
-                    $time = $row->started_at ? Carbon::now()->diffInSeconds($row->started_at) : 0;
+                    // Carbon 3 diffs are signed: measure start -> now for positive elapsed.
+                    $time = $row->started_at ? $row->started_at->diffInSeconds(Carbon::now()) : 0;
                     return '<div class="fw-bold">' . number_format($time, 1) . 's</div>
                             <div class="text-muted small">In progress</div>';
                 }
                 
                 if ($row->processing_time) {
-                    return '<div class="fw-bold">' . number_format($row->processing_time, 1) . 's</div>
+                    // abs() guards against legacy rows stored with a negative diff.
+                    return '<div class="fw-bold">' . number_format(abs($row->processing_time), 1) . 's</div>
                             <div class="text-muted small">Processing time</div>';
                 }
                 
@@ -195,13 +197,6 @@ class ImportHistoryController extends Controller
                     </button>';
                 }
                 
-                // Run now button (for queued)
-                if ($row->status === 'queued') {
-                    $actions .= '<button class="action-btn" onclick="runNowImport(' . $row->id . ')" title="Run Now">
-                        <i class="fas fa-play"></i>
-                    </button>';
-                }
-                
                 // Delete button
                 $actions .= '<button class="action-btn delete-btn" onclick="deleteImport(' . $row->id . ')" title="Delete">
                     <i class="fas fa-trash"></i>
@@ -234,9 +229,10 @@ class ImportHistoryController extends Controller
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('successful_records');
         
-        // Average processing time
+        // Average processing time. abs() guards against legacy rows stored with a
+        // negative (signed) diff so the average can't come out negative.
         $avgProcessingTime = ImportHistory::whereNotNull('processing_time')
-            ->avg('processing_time');
+            ->avg(DB::raw('ABS(processing_time)'));
         
         // Last month total for comparison
         $lastMonthTotal = ImportHistory::whereMonth('created_at', Carbon::now()->subMonth()->month)
@@ -328,13 +324,31 @@ class ImportHistoryController extends Controller
         ]);
     }
 
+    /**
+     * Which disk holds an import file. New uploads live on the private local
+     * disk; older ones may still be on the legacy public disk.
+     */
+    protected function importFileDisk(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+        foreach (['local', 'public'] as $disk) {
+            if (Storage::disk($disk)->exists($path)) {
+                return $disk;
+            }
+        }
+        return null;
+    }
+
     public function downloadFile($id)
     {
         $import = ImportHistory::findOrFail($id);
-        if (!$import->file_path || !Storage::disk('public')->exists($import->file_path)) {
+        $disk = $this->importFileDisk($import->file_path);
+        if (!$disk) {
             abort(404, 'File not found');
         }
-        return Storage::disk('public')->download(
+        return Storage::disk($disk)->download(
             $import->file_path,
             $import->file_name ?: 'import_' . $import->import_id . '.xlsx'
         );
@@ -343,7 +357,8 @@ class ImportHistoryController extends Controller
     public function retry($id)
     {
         $import = ImportHistory::findOrFail($id);
-        if (!$import->file_path || !Storage::disk('public')->exists($import->file_path)) {
+        $disk = $this->importFileDisk($import->file_path);
+        if (!$disk) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Original file not found. Cannot retry.',
@@ -372,7 +387,7 @@ class ImportHistoryController extends Controller
         }
 
         try {
-            $path = Storage::disk('public')->path($import->file_path);
+            $path = Storage::disk($disk)->path($import->file_path);
             $importClass = new EmissionsImport($overwrite, $mapping);
             Excel::import($importClass, $path);
             

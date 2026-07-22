@@ -126,6 +126,7 @@
             <p>Purchased goods, business travel, waste, downstream &amp; other value chain emissions</p>
             <button type="button" class="btn-add" id="scope3BtnAdd"><i class="fas fa-plus me-1"></i> Add Entry</button>
         </div>
+        @include('partials.quick_start', ['scope' => 3, 'manualTrigger' => 'scope3BtnAdd'])
         <div class="stats">
             <div class="sc"><div class="si a">&#127760;</div><div><div class="sv" id="scope3StatTotal">0</div><div class="sl">Total Entries</div></div></div>
             <div class="sc"><div class="si b">&#8593;</div><div><div class="sv" id="scope3StatUpstream">0</div><div class="sl">Upstream</div></div></div>

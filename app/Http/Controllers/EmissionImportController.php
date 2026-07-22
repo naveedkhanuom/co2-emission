@@ -78,8 +78,10 @@ class EmissionImportController extends Controller
             'started_at' => Carbon::now(),
         ]);
         
-        // Store file for later download if needed
-        $filePath = $file->store('imports', 'public');
+        // Store file on the private disk for later re-import/download — it holds
+        // the tenant's raw data and must not be web-accessible. Served only via
+        // the authorized import_history.download route.
+        $filePath = $file->store('imports', 'local');
         $importHistory->update(['file_path' => $filePath]);
 
         try {
@@ -93,8 +95,9 @@ class EmissionImportController extends Controller
             $skippedCount = $importClass->getSkippedCount();
             $successfulCount = $processedCount - $skippedCount;
             
-            $processingTime = Carbon::now()->diffInSeconds($importHistory->started_at);
-            
+            // Carbon 3 diffs are signed: measure start -> now so elapsed time is positive.
+            $processingTime = $importHistory->started_at->diffInSeconds(Carbon::now());
+
             // Update import history with success status
             $importHistory->update([
                 'status' => $skippedCount > 0 && $successfulCount > 0 ? 'partial' : 'completed',
@@ -124,7 +127,7 @@ class EmissionImportController extends Controller
             ]);
         } catch (\Throwable $e) {
             // Update import history with failure status
-            $processingTime = Carbon::now()->diffInSeconds($importHistory->started_at);
+            $processingTime = $importHistory->started_at->diffInSeconds(Carbon::now());
             $importHistory->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),

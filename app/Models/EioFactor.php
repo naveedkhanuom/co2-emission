@@ -62,20 +62,51 @@ class EioFactor extends Model
             return null;
         }
 
+        // The factor is per-unit-of-its-own-currency, so convert the spend into
+        // that currency before multiplying — otherwise e.g. an AED spend against
+        // a USD factor is treated as USD (overstating by the exchange ratio).
+        $spendForCalc = (float) $spendAmount;
         if ($currency && strtoupper((string) $factor->currency) !== strtoupper((string) $currency)) {
-            // No factor in the spend's currency and no FX conversion is applied,
-            // so the estimate is approximate. Surface it rather than silently
-            // mixing currencies.
-            Log::warning('EIO spend estimate uses a different currency than the spend', [
-                'sector_code'     => $sectorCode,
-                'spend_currency'  => $currency,
-                'factor_currency' => $factor->currency,
-            ]);
+            $converted = static::convertCurrency((float) $spendAmount, $currency, $factor->currency);
+            if ($converted !== null) {
+                $spendForCalc = $converted;
+            } else {
+                // Unknown rate for one of the currencies — fall back to the raw
+                // spend and surface it rather than silently mixing currencies.
+                Log::warning('EIO spend estimate: no FX rate to convert spend to factor currency', [
+                    'sector_code'     => $sectorCode,
+                    'spend_currency'  => $currency,
+                    'factor_currency' => $factor->currency,
+                ]);
+            }
         }
 
-        $raw = (float) $spendAmount * (float) $factor->emission_factor;
+        $raw = $spendForCalc * (float) $factor->emission_factor;
 
         return round(static::normalizeToTonnes($raw, $factor->factor_unit), 6);
+    }
+
+    /**
+     * Convert an amount between currencies using config/fx_rates.php (units per
+     * 1 USD). Returns null when either currency has no configured rate, so the
+     * caller can decide how to handle it rather than getting a wrong number.
+     */
+    protected static function convertCurrency(float $amount, ?string $from, ?string $to): ?float
+    {
+        $from = strtoupper((string) $from);
+        $to = strtoupper((string) $to);
+
+        if ($from === '' || $to === '' || $from === $to) {
+            return $amount;
+        }
+
+        $rates = config('fx_rates.rates', []);
+        if (empty($rates[$from]) || empty($rates[$to])) {
+            return null;
+        }
+
+        // amount(from) -> USD -> to
+        return $amount / (float) $rates[$from] * (float) $rates[$to];
     }
 
     /**

@@ -30,9 +30,12 @@ class EmissionEnrichmentService
         $companyId = $data['company_id'] ?? null;
         $scope = (int) ($data['scope'] ?? 0);
 
-        // 1. GWP set — snapshot the company's reporting basis onto the record.
+        // 1. GWP set — stamp the basis the figure was ACTUALLY computed under, i.e.
+        //    the basis of the bundled factor/source tables (currently AR5), so the
+        //    record's stated GWP set always matches its co2e_value. (The company's
+        //    aspirational preference from onboarding does not drive the math yet.)
         if (empty($data['gwp_version'])) {
-            $data['gwp_version'] = Gwp::versionForCompany($companyId ? (int) $companyId : null);
+            $data['gwp_version'] = Gwp::factorBasis();
         }
 
         // 2. Resolve and lock the emission factor used (for provenance/audit).

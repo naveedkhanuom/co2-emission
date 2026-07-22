@@ -50,6 +50,9 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+    // Data Health — completeness / "what to do next" overview
+    Route::get('/data-health', [App\Http\Controllers\DataHealthController::class, 'index'])->name('data_health.index');
+
     // First-run company setup wizard (plain-language onboarding for non-experts)
     Route::prefix('onboarding')->name('onboarding.')->group(function () {
         Route::get('/', [App\Http\Controllers\OnboardingController::class, 'index'])->name('index');
@@ -358,6 +361,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/utility-bills', [UtilityBillController::class, 'index'])->name('utility.index');
     Route::get('/utility-bills/create', [UtilityBillController::class, 'create'])->name('utility.create');
     Route::post('/utility-bills/upload', [UtilityBillController::class, 'upload'])->name('utility.upload');
+    Route::get('/utility-bills/{utilityBill}/download', [UtilityBillController::class, 'download'])->name('utility.download');
     
     Route::get('/bill-upload', [BillOCRController::class, 'showForm'])->name('bill.upload');
     Route::post('/bill-upload', [BillOCRController::class, 'upload'])->name('bill.upload.post');

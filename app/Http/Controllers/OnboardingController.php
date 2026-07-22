@@ -102,8 +102,19 @@ class OnboardingController extends Controller
 
         $industries = $this->industryOptions();
         $activities = $this->activityOptions();
+        $boundaries = $this->boundaryOptions();
+        $gwpOptions = $this->gwpOptions();
 
-        return view('onboarding.index', compact('company', 'industries', 'activities'));
+        // Sensible defaults for the "reporting basis" step.
+        $defaultBaseYear    = (int) $company->getSetting('base_year', now()->year);
+        $defaultBoundary    = $company->getSetting('consolidation_approach', config('boundary.default'));
+        $defaultGwp         = $company->getSetting('gwp_version', config('gwp.default', 'ar6'));
+        $currentYear        = now()->year;
+
+        return view('onboarding.index', compact(
+            'company', 'industries', 'activities', 'boundaries', 'gwpOptions',
+            'defaultBaseYear', 'defaultBoundary', 'defaultGwp', 'currentYear'
+        ));
     }
 
     /**
@@ -128,6 +139,9 @@ class OnboardingController extends Controller
             'sites.*.location'  => 'nullable|string|max:255',
             'activities'        => 'required|array|min:1',
             'activities.*'      => 'in:' . implode(',', array_keys(self::ACTIVITY_SCOPES)),
+            'base_year'              => 'nullable|integer|min:2000|max:' . (now()->year + 1),
+            'consolidation_approach' => 'nullable|in:' . implode(',', array_keys($this->boundaryOptions())),
+            'gwp_version'            => 'nullable|in:' . implode(',', array_keys($this->gwpOptions())),
         ], [
             'sites.required'      => 'Please add at least one location.',
             'sites.*.name.required' => 'Each location needs a name.',
@@ -170,6 +184,13 @@ class OnboardingController extends Controller
                 'location'   => $site['location'] ?? null,
             ]);
         }
+
+        // Reporting basis — stored as settings (no schema change) and consumed by
+        // the disclosure report (boundary), Gwp::versionForCompany (gwp_version),
+        // and future targets / year-over-year comparison (base_year).
+        $company->setSetting('base_year', $validated['base_year'] ?? now()->year, 'integer');
+        $company->setSetting('consolidation_approach', $validated['consolidation_approach'] ?? config('boundary.default'), 'string');
+        $company->setSetting('gwp_version', $validated['gwp_version'] ?? config('gwp.default', 'ar6'), 'string');
 
         // Remember what they told us, and mark setup complete.
         $company->setSetting('onboarding_activities', $validated['activities'], 'json');
@@ -236,6 +257,28 @@ class OnboardingController extends Controller
             'purchased_goods'  => ['icon' => 'fa-box',           'label' => 'We buy goods, materials or services','help' => 'Raw materials, supplies, outsourced services.'],
             'freight'          => ['icon' => 'fa-dolly',         'label' => 'We ship or receive goods',          'help' => 'Inbound and outbound transport of products.'],
         ];
+    }
+
+    /**
+     * Organizational boundary options (machine key => friendly label), sourced
+     * from config so the disclosure report agrees on the same labels.
+     */
+    private function boundaryOptions(): array
+    {
+        return config('boundary.labels', ['operational_control' => 'Operational control']);
+    }
+
+    /**
+     * Reporting standard (GWP set) options (key => human label), newest first.
+     * These feed Gwp::versionForCompany via the `gwp_version` setting.
+     */
+    private function gwpOptions(): array
+    {
+        $labels = config('gwp.labels', []);
+
+        return collect(\App\Support\Gwp::VERSIONS)
+            ->mapWithKeys(fn ($v) => [$v => $labels[$v] ?? strtoupper($v)])
+            ->all();
     }
 
     /**

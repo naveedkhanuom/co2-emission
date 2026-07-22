@@ -43,6 +43,14 @@ class UserController extends Controller
     {
         $query = User::query();
 
+        // Tenant isolation: a non-super-admin only sees users whose primary
+        // company is one they can access (User has no global company scope).
+        $actor = auth()->user();
+        if (! ($actor->is_super_admin ?? false)) {
+            $companyIds = $actor->accessibleCompanies()->pluck('id')->all();
+            $query->whereIn('company_id', $companyIds ?: [-1]);
+        }
+
         return DataTables::of($query)
             ->addColumn('roles_badge', function ($user) {
                 $roles = $user->getRoleNames();
@@ -115,9 +123,39 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    /**
+     * Block a non-super-admin from touching a user outside the companies they
+     * can access (User has no global company scope, so route-model binding would
+     * otherwise resolve any tenant's user by id — cross-tenant IDOR).
+     */
+    private function ensureCanManage(User $user): void
+    {
+        $actor = auth()->user();
+        if (! ($actor->is_super_admin ?? false) && ! $actor->canAccessCompany($user->company_id)) {
+            abort(403, 'You do not have access to this user.');
+        }
+    }
+
+    /**
+     * Roles the current actor is allowed to assign. Only a super-admin may grant
+     * the Super Admin role — otherwise any user-manager could escalate privileges.
+     */
+    private function assignableRoles($requested): array
+    {
+        $roles = array_values(array_filter((array) $requested));
+        if (! (auth()->user()->is_super_admin ?? false)) {
+            $roles = array_values(array_diff($roles, ['Super Admin']));
+        }
+
+        return $roles;
+    }
+
     public function store(StoreUserRequest $request): RedirectResponse
     {
         $input = $request->all();
+        // is_super_admin is never a form field. Strip it so it can't be
+        // mass-assigned to bypass the tenant scope (privilege escalation).
+        unset($input['is_super_admin']);
         $input['password'] = Hash::make($request->password);
         $input['is_demo_user'] = $request->boolean('is_demo_user');
         $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
@@ -133,7 +171,7 @@ class UserController extends Controller
         $input['company_access'] = $companyAccess;
 
         $user = User::create($input);
-        $user->assignRole($request->roles);
+        $user->assignRole($this->assignableRoles($request->roles));
 
         return redirect()->route('users.index')
                 ->withSuccess('New user is added successfully.');
@@ -152,6 +190,8 @@ class UserController extends Controller
      */
     public function edit(User $user): View
     {
+        $this->ensureCanManage($user);
+
         // Check Only Super Admin can update his own Profile
         if ($user->hasRole('Super Admin')){
             if($user->id != auth()->user()->id){
@@ -180,12 +220,23 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $this->ensureCanManage($user);
+
+        // Only a Super Admin may edit a Super Admin account (mirrors edit()).
+        // Without this the guard could be bypassed by POSTing straight to update.
+        if ($user->hasRole('Super Admin') && $user->id != auth()->id()) {
+            abort(403, 'USER DOES NOT HAVE THE RIGHT PERMISSIONS');
+        }
+
         $input = $request->all();
+        // Never let is_super_admin be set via the form (privilege escalation).
+        unset($input['is_super_admin']);
 
         if (!empty($request->password)) {
             $input['password'] = Hash::make($request->password);
         } else {
             $input = $request->except('password');
+            unset($input['is_super_admin']);
         }
         $input['is_demo_user'] = $request->boolean('is_demo_user');
         $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
@@ -202,7 +253,7 @@ class UserController extends Controller
 
         $user->update($input);
 
-        $user->syncRoles($request->roles);
+        $user->syncRoles($this->assignableRoles($request->roles));
 
         return redirect()->back()
                 ->withSuccess('User is updated successfully.');
@@ -213,6 +264,8 @@ class UserController extends Controller
      */
     public function destroy(User $user): RedirectResponse
     {
+        $this->ensureCanManage($user);
+
         // About if user is Super Admin or User ID belongs to Auth User
         if ($user->hasRole('Super Admin') || $user->id == auth()->user()->id)
         {

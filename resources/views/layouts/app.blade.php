@@ -157,7 +157,22 @@
         .sidebar-menu li {
             margin: 2px 0;
         }
-        
+
+        .sidebar-menu .sidebar-section {
+            margin: 16px 0 4px;
+            padding: 0 14px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--gray-500);
+            user-select: none;
+        }
+
+        .sidebar-menu .sidebar-section:first-child {
+            margin-top: 4px;
+        }
+
         .sidebar-menu a {
             display: flex;
             align-items: center;

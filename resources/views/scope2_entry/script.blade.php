@@ -283,13 +283,25 @@ function initScope2() {
     var gcef = document.getElementById('scope2FgCef');
     var chk = document.getElementById('scope2ChkEfOvr');
     var fefOvr = document.getElementById('scope2FefOvr');
+    var mkt = document.getElementById('scope2MktBox');
     if (rb) rb.style.display = 'none';
     if (eb) eb.style.display = 'none';
     if (ov) ov.style.display = 'none';
     if (gcef) gcef.style.display = 'none';
     if (chk) chk.checked = false;
     if (fefOvr) { fefOvr.style.display = 'none'; fefOvr.value = ''; }
+    if (mkt) mkt.style.display = 'none';
     if (!selSrc) return;
+
+    // Market-based dual reporting applies to grid electricity (location-based
+    // is the grid figure; market-based is captured alongside).
+    if (mkt && selSrc.isGrid) {
+      mkt.style.display = 'block';
+      var mktSel = document.getElementById('scope2Fmkt');
+      var mktEfWrap = document.getElementById('scope2FgMktEf');
+      if (mktSel) { mktSel.value = 'grid'; }
+      if (mktEfWrap) { mktEfWrap.style.display = 'none'; }
+    }
 
     if (selSrc.isGrid && gridEF.length) {
       if (rb) rb.style.display = 'block';
@@ -405,6 +417,14 @@ function initScope2() {
     if (chk) chk.checked = false;
     var fefOvr = document.getElementById('scope2FefOvr');
     if (fefOvr) { fefOvr.value = ''; fefOvr.style.display = 'none'; }
+    var mktBox = document.getElementById('scope2MktBox');
+    if (mktBox) mktBox.style.display = 'none';
+    var fmkt = document.getElementById('scope2Fmkt');
+    if (fmkt) fmkt.value = 'grid';
+    var fmktEf = document.getElementById('scope2FmktEf');
+    if (fmktEf) { fmktEf.value = ''; }
+    var mktEfWrap = document.getElementById('scope2FgMktEf');
+    if (mktEfWrap) mktEfWrap.style.display = 'none';
     document.getElementById('scope2Fper').value = '';
     upFiles = [];
     document.querySelectorAll('.scope2-app .ferr').forEach(function(e) { e.classList.remove('ferr'); });
@@ -490,6 +510,26 @@ function initScope2() {
     formData.append('emissionSourceSelect', selSrc.name);
     formData.append('co2eValue', t.toFixed(6));
     formData.append('activityData', document.getElementById('scope2Fqty').value);
+    // Scope 2 dual reporting: co2eValue above is location-based (grid). Capture
+    // the market-based figure from the contractual instrument alongside it.
+    (function() {
+      var mktMethod = 'location_based';
+      var mktCo2e = null;
+      var mktBox = document.getElementById('scope2MktBox');
+      var mktSel = document.getElementById('scope2Fmkt');
+      if (selSrc && selSrc.isGrid && mktSel && mktBox && mktBox.style.display !== 'none') {
+        var mqty = parseFloat(document.getElementById('scope2Fqty').value) || 0;
+        var muD = selSrc.units[uIdx];
+        var mkwh = muD ? toKwh(mqty, (muD.label || muD.u)) : 0;
+        if (mktSel.value === 'recs') { mktCo2e = 0; mktMethod = 'market_based'; }
+        else if (mktSel.value === 'supplier') {
+          var mef = parseFloat(document.getElementById('scope2FmktEf').value) || 0;
+          mktCo2e = (mkwh * mef) / 1000; mktMethod = 'market_based';
+        }
+      }
+      if (mktCo2e !== null) formData.append('market_based_co2e', mktCo2e.toFixed(6));
+      formData.append('scope2_method', mktMethod);
+    })();
     formData.append('confidenceLevel', 'medium');
     formData.append('dataSource', 'manual');
     var notes = document.getElementById('scope2Fdsc').value.trim();
@@ -571,6 +611,14 @@ function initScope2() {
   });
   var fefOvr = document.getElementById('scope2FefOvr');
   if (fefOvr) fefOvr.addEventListener('input', calcCO2e);
+  var fmkt = document.getElementById('scope2Fmkt');
+  if (fmkt) fmkt.addEventListener('change', function() {
+    var wrap = document.getElementById('scope2FgMktEf');
+    if (wrap) wrap.style.display = (this.value === 'supplier') ? 'block' : 'none';
+    calcCO2e();
+  });
+  var fmktEf = document.getElementById('scope2FmktEf');
+  if (fmktEf) fmktEf.addEventListener('input', calcCO2e);
 
   var fup = document.getElementById('scope2Fup'), fupi = document.getElementById('scope2Fupi');
   if (fup && fupi) {
