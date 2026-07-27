@@ -139,10 +139,10 @@
 <div class="login-wrapper" style="position: relative; z-index: 1;">
     <div class="login-box">
         <div class="icon-logo">
-            <img src="{{asset('logo.png')}}"
-                 alt="Altayaboon Logo"
+            <img src="{{ app_logo_url(asset('logo.png')) }}"
+                 alt="{{ \App\Models\Setting::get('app_name', config('app.name')) }} Logo"
                  loading="eager"
-                 onerror="this.style.display='none'; this.closest('.icon-logo').innerHTML='<h3 style=\'color: var(--color-primary); font-size: 20px;\'>ALTAYABOON</h3>';"/>
+                 onerror="this.onerror=null; this.src='{{ asset('logo.png') }}';"/>
         </div>
 
         <h2>Welcome Back</h2>

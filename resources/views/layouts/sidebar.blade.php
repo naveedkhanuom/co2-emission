@@ -11,7 +11,7 @@
             ? (\Illuminate\Support\Str::startsWith($__logo, ['http://', 'https://'])
                 ? $__logo
                 : \Illuminate\Support\Facades\Storage::disk('public')->url($__logo))
-            : $__defaultLogo;
+            : (app_logo_url() ?? $__defaultLogo); // company logo -> global app logo -> default
     @endphp
     <div class="sidebar-brand">
         <img
@@ -398,12 +398,14 @@
                         @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
                     </a>
                 </li>
+                @if(auth()->user()?->is_super_admin || auth()->user()?->hasRole('Super Admin'))
                 <li>
-                    <a href="#">
+                    <a href="{{ route('settings.general') }}" class="{{ request()->routeIs('settings.general') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>
                         <span>General Settings</span>
                     </a>
                 </li>
+                @endif
                 <li>
                     @php
                         $demoRestricted = demo_route_restricted('facilities.index');
