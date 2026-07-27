@@ -53,6 +53,10 @@ Route::middleware(['auth'])->group(function () {
     // Data Health — completeness / "what to do next" overview
     Route::get('/data-health', [App\Http\Controllers\DataHealthController::class, 'index'])->name('data_health.index');
 
+    // General (global, app-wide) settings — app name & logo
+    Route::get('/settings/general', [App\Http\Controllers\GeneralSettingController::class, 'edit'])->name('settings.general');
+    Route::post('/settings/general', [App\Http\Controllers\GeneralSettingController::class, 'update'])->name('settings.general.update');
+
     // First-run company setup wizard (plain-language onboarding for non-experts)
     Route::prefix('onboarding')->name('onboarding.')->group(function () {
         Route::get('/', [App\Http\Controllers\OnboardingController::class, 'index'])->name('index');

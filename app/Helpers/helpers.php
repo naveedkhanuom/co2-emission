@@ -51,6 +51,30 @@ if (!function_exists('current_company')) {
     }
 }
 
+if (!function_exists('app_logo_url')) {
+    /**
+     * Resolve the global app logo (General Settings) to a URL. An uploaded logo
+     * is a public-disk path; a full URL is used as-is. Returns $default when no
+     * app logo has been set. Used on the login screen and as the sidebar fallback.
+     */
+    function app_logo_url($default = null)
+    {
+        try {
+            $logo = \App\Models\Setting::get('app_logo');
+        } catch (\Throwable $e) {
+            return $default; // settings table not migrated yet, etc.
+        }
+
+        if (!$logo) {
+            return $default;
+        }
+
+        return \Illuminate\Support\Str::startsWith($logo, ['http://', 'https://'])
+            ? $logo
+            : \Illuminate\Support\Facades\Storage::disk('public')->url($logo);
+    }
+}
+
 if (!function_exists('current_company_id')) {
     /**
      * Get the current company ID from context.
