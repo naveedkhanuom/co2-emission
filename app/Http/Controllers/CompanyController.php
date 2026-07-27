@@ -57,7 +57,13 @@ class CompanyController extends Controller
             'reporting_standards' => 'nullable|array',
             'scopes_enabled' => 'nullable|array',
             'is_active' => 'nullable',
+            'logo' => 'nullable|mimes:jpg,jpeg,png,webp,svg|max:2048',
         ]);
+
+        // Logo is shown in the sidebar on every page, so it lives on the public disk.
+        if ($request->hasFile('logo')) {
+            $validated['logo'] = $request->file('logo')->store('company_logos', 'public');
+        }
 
         // Handle empty code - set to null if empty string
         if (isset($validated['code']) && (empty($validated['code']) || trim($validated['code']) === '')) {
@@ -119,7 +125,16 @@ class CompanyController extends Controller
             'reporting_standards' => 'sometimes|nullable|array',
             'scopes_enabled' => 'sometimes|nullable|array',
             'is_active' => 'sometimes|nullable',
+            'logo' => 'nullable|mimes:jpg,jpeg,png,webp,svg|max:2048',
         ]);
+
+        // Replace the logo only when a new file is uploaded; delete the old one.
+        if ($request->hasFile('logo')) {
+            if ($company->logo && !\Illuminate\Support\Str::startsWith($company->logo, ['http://', 'https://'])) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo);
+            }
+            $validated['logo'] = $request->file('logo')->store('company_logos', 'public');
+        }
 
         // Handle empty code - set to null if empty string
         if (isset($validated['code']) && (empty($validated['code']) || trim($validated['code']) === '')) {
