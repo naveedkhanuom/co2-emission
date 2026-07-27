@@ -1,10 +1,24 @@
 <!-- Sidebar Navigation -->
 <nav id="sidebar">
+    @php
+        // Logo is dynamic per company (companies.logo). Uploaded logos are stored
+        // as a path on the public disk; a legacy full URL is used as-is. Falls
+        // back to the default brand logo when the company hasn't set one.
+        $__company = current_company();
+        $__logo = $__company?->logo;
+        $__defaultLogo = 'https://cdn.prod.website-files.com/68ce511f0ec3dbdca3e16b5b/68ce5272a15164172603c206_logo%20green.avif';
+        $__logoUrl = $__logo
+            ? (\Illuminate\Support\Str::startsWith($__logo, ['http://', 'https://'])
+                ? $__logo
+                : \Illuminate\Support\Facades\Storage::disk('public')->url($__logo))
+            : $__defaultLogo;
+    @endphp
     <div class="sidebar-brand">
         <img
             class="sidebar-logo"
-            src="https://cdn.prod.website-files.com/68ce511f0ec3dbdca3e16b5b/68ce5272a15164172603c206_logo%20green.avif"
-            alt="GHG Monitor"
+            src="{{ $__logoUrl }}"
+            alt="{{ $__company?->name ?? 'GHG Monitor' }}"
+            onerror="this.onerror=null;this.src='{{ $__defaultLogo }}';"
         >
     </div>
 

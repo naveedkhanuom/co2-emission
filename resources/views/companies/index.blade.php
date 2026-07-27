@@ -93,6 +93,14 @@
                             <i class="fas fa-info-circle me-2 text-primary"></i>Basic Information
                         </h6>
                         <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Company Logo</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    <img id="logoPreview" src="" alt="Logo preview" style="height:44px;width:auto;max-width:160px;border-radius:8px;border:1px solid var(--gray-200);background:#fff;padding:2px;display:none;">
+                                    <input type="file" name="logo" id="companyLogo" class="form-control" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+                                </div>
+                                <small class="text-muted">PNG, JPG, WEBP or SVG, up to 2&nbsp;MB. Shown in the sidebar for this company.</small>
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label">Company Name <span class="text-danger">*</span></label>
                                 <input type="text" name="name" id="companyName" class="form-control" required placeholder="e.g., ABC Manufacturing Ltd">
@@ -597,6 +605,7 @@ $(document).ready(function() {
     $('#addCompanyBtn').click(function() {
         $('#companyForm')[0].reset();
         $('#companyId').val('');
+        $('#logoPreview').hide().attr('src', '');
         $('#modalTitle').text('Register New Company');
         $('#formErrors').html('').addClass('d-none');
         $('#scope1, #scope2, #scope3').prop('checked', true);
@@ -604,44 +613,44 @@ $(document).ready(function() {
         companyModal.show();
     });
 
+    // Live preview of a newly chosen logo file
+    $('#companyLogo').on('change', function() {
+        const file = this.files && this.files[0];
+        if (file) {
+            $('#logoPreview').attr('src', URL.createObjectURL(file)).show();
+        }
+    });
+
     // Submit Company Form
     $('#companyForm').submit(function(e) {
         e.preventDefault();
         
+        // Send as multipart so the logo file is included (checkbox arrays
+        // reporting_standards[]/scopes_enabled[] are carried natively).
         const formData = new FormData(this);
-        const data = {};
-        formData.forEach((value, key) => {
-            if (key.includes('[]')) {
-                const baseKey = key.replace('[]', '');
-                if (!data[baseKey]) data[baseKey] = [];
-                data[baseKey].push(value);
-            } else {
-                data[key] = value;
-            }
-        });
 
-        // Convert checkboxes
-        if (!data['reporting_standards']) data['reporting_standards'] = [];
-        if (!data['scopes_enabled']) data['scopes_enabled'] = [];
-        
-        // Convert is_active to proper boolean
-        data['is_active'] = $('#isActive').is(':checked') ? true : false;
+        // Normalise the is_active checkbox (unchecked boxes aren't in FormData).
+        formData.set('is_active', $('#isActive').is(':checked') ? 1 : 0);
 
-        const url = $('#companyId').val() 
-            ? `{{ url('companies') }}/${$('#companyId').val()}`
-            : '{{ route("companies.store") }}';
-        const method = $('#companyId').val() ? 'PUT' : 'POST';
+        // Don't send an empty file input (keeps the existing logo on edit).
+        if (!$('#companyLogo')[0].files.length) {
+            formData.delete('logo');
+        }
 
-        // Ensure is_active is sent as boolean
-        data['is_active'] = data['is_active'] === true || data['is_active'] === 'true' || data['is_active'] === 1 || data['is_active'] === '1';
+        const id = $('#companyId').val();
+        const url = id ? `{{ url('companies') }}/${id}` : '{{ route("companies.store") }}';
+        // Multipart file uploads can't go over PUT (PHP won't parse the body),
+        // so POST with Laravel method-spoofing for updates.
+        if (id) formData.append('_method', 'PUT');
 
         $.ajax({
             url: url,
-            method: method,
-            data: data,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
             headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
                 if (response.success) {
@@ -681,6 +690,13 @@ $(document).ready(function() {
             },
             success: function(company) {
                 $('#companyId').val(company.id);
+                // Show the existing logo (uploaded path -> /storage URL, or a full URL as-is).
+                if (company.logo) {
+                    var logoSrc = /^https?:\/\//.test(company.logo) ? company.logo : ('/storage/' + company.logo);
+                    $('#logoPreview').attr('src', logoSrc).show();
+                } else {
+                    $('#logoPreview').hide().attr('src', '');
+                }
                 $('#companyName').val(company.name);
                 $('#companyCode').val(company.code);
                 $('#industryType').val(company.industry_type);
