@@ -47,6 +47,11 @@ class EmissionRecord extends Model
         'supporting_documents',
         'created_by',
         'status',
+        'reviewed_by',
+        'reviewed_at',
+        'review_note',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
@@ -62,6 +67,8 @@ class EmissionRecord extends Model
         'co2e_n2o' => 'decimal:4',
         'co2e_other' => 'decimal:4',
         'biogenic_co2' => 'decimal:4',
+        'reviewed_at' => 'datetime',
+        'approved_at' => 'datetime',
         'supporting_documents' => 'array',
     ];
 
@@ -69,6 +76,10 @@ class EmissionRecord extends Model
     public function company() { return $this->belongsTo(Company::class); }
     public function site() { return $this->belongsTo(Site::class); }
     public function user() { return $this->belongsTo(User::class, 'created_by'); }
+
+    public function reviewer() { return $this->belongsTo(User::class, 'reviewed_by'); }
+
+    public function approver() { return $this->belongsTo(User::class, 'approved_by'); }
     public function emissionSource() { return $this->belongsTo(EmissionSource::class); }
     public function emissionFactor() { return $this->belongsTo(EmissionFactor::class); }
     public function scope3Category() { return $this->belongsTo(Scope3Category::class); }

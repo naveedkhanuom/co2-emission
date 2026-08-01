@@ -89,12 +89,38 @@ class EmissionRecordController extends Controller
         if (app()->bound('current_company_id')) {
             return app('current_company_id');
         }
-        
+
         if (auth()->check() && auth()->user()->company_id) {
             return auth()->user()->company_id;
         }
-        
+
         return null;
+    }
+
+    /**
+     * Block writes to a record whose year sits in a locked reporting period.
+     * Throws a 422 JSON response (all mutating actions here return JSON).
+     */
+    protected function assertPeriodOpen($entryDate, ?int $companyId): void
+    {
+        if (!$entryDate || !$companyId) {
+            return;
+        }
+
+        try {
+            $year = (int) \Carbon\Carbon::parse($entryDate)->year;
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        if (\App\Models\ReportingPeriod::isYearLocked($year, $companyId)) {
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                response()->json([
+                    'status' => false,
+                    'errors' => ['entryDate' => ["The {$year} reporting period is locked. Unlock it before changing its data."]],
+                ], 422)
+            );
+        }
     }
     public function index()
     {
@@ -430,6 +456,9 @@ class EmissionRecordController extends Controller
         // Get current company ID
         $companyId = $this->getCurrentCompanyId();
 
+        // Block writes to a locked (finalised) reporting period.
+        $this->assertPeriodOpen($request->entryDate, $companyId);
+
         // Validate site belongs to current company if provided
         if ($request->siteSelect) {
             $site = Site::find($request->siteSelect);
@@ -652,6 +681,9 @@ class EmissionRecordController extends Controller
         // Get current company ID
         $companyId = $this->getCurrentCompanyId();
 
+        // Block writes to a locked (finalised) reporting period.
+        $this->assertPeriodOpen($request->entryDate, $companyId);
+
         // Validate site belongs to current company if provided
         if ($request->siteSelect) {
             $site = Site::find($request->siteSelect);
@@ -734,6 +766,10 @@ class EmissionRecordController extends Controller
 
     public function update(Request $request, EmissionRecord $emissionRecord)
     {
+        // Can't edit a record in a locked year, nor move one into a locked year.
+        $this->assertPeriodOpen($emissionRecord->entry_date, $emissionRecord->company_id);
+        $this->assertPeriodOpen($request->entryDate, $emissionRecord->company_id);
+
         $validator = Validator::make($request->all(), [
             'entryDate'             => 'required|date',
             'facilitySelect'        => 'required|string|max:50',
@@ -863,6 +899,9 @@ class EmissionRecordController extends Controller
         if ($emissionRecord->company_id != $companyId) {
             return response()->json(['message' => 'You do not have access to this record.'], 403);
         }
+
+        // Can't delete a record in a locked (finalised) reporting period.
+        $this->assertPeriodOpen($emissionRecord->entry_date, $emissionRecord->company_id);
 
         $emissionRecord->delete();
 

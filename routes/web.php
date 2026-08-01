@@ -57,6 +57,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/settings/general', [App\Http\Controllers\GeneralSettingController::class, 'edit'])->name('settings.general');
     Route::post('/settings/general', [App\Http\Controllers\GeneralSettingController::class, 'update'])->name('settings.general.update');
 
+    // Base-year comparison report (uses the base year set on Reporting Periods)
+    Route::get('/base-year-comparison', [App\Http\Controllers\BaseYearComparisonController::class, 'index'])->name('base_year_comparison.index');
+
     // First-run company setup wizard (plain-language onboarding for non-experts)
     Route::prefix('onboarding')->name('onboarding.')->group(function () {
         Route::get('/', [App\Http\Controllers\OnboardingController::class, 'index'])->name('index');
@@ -215,6 +218,14 @@ Route::prefix('import-history')->name('import_history.')->middleware('auth')->gr
     Route::post('/{id}/cancel', [App\Http\Controllers\ImportHistoryController::class, 'cancel'])->name('cancel');
     Route::delete('/{id}', [App\Http\Controllers\ImportHistoryController::class, 'destroy'])->name('destroy');
     Route::post('/bulk-action', [App\Http\Controllers\ImportHistoryController::class, 'bulkAction'])->name('bulk_action');
+});
+
+// Governance: reporting-period lock/freeze + base year
+Route::prefix('reporting-periods')->name('reporting_periods.')->middleware('auth')->group(function () {
+    Route::get('/', [App\Http\Controllers\ReportingPeriodController::class, 'index'])->name('index');
+    Route::post('/{year}/lock', [App\Http\Controllers\ReportingPeriodController::class, 'lock'])->name('lock');
+    Route::post('/{year}/unlock', [App\Http\Controllers\ReportingPeriodController::class, 'unlock'])->name('unlock');
+    Route::post('/{year}/base-year', [App\Http\Controllers\ReportingPeriodController::class, 'setBaseYear'])->name('base_year');
 });
 
 Route::prefix('review-data')->name('review_data.')->middleware('auth')->group(function() {
@@ -378,6 +389,15 @@ Route::middleware(['auth'])->group(function () {
     // Ask Your Data — AI assistant over the company's emissions inventory
     Route::get('/ask', [App\Http\Controllers\AskController::class, 'index'])->name('assistant.index');
     Route::post('/ask', [App\Http\Controllers\AskController::class, 'ask'])->name('assistant.ask');
+
+    // AI Document Extraction (Phase 1) — upload a file, AI extracts emission
+    // line items, user reviews, saved as draft records into the Review queue.
+    Route::prefix('ai/extract')->name('ai_extract.')->group(function () {
+        Route::get('/', [App\Http\Controllers\DocumentExtractionController::class, 'index'])->name('index');
+        Route::get('/history', [App\Http\Controllers\DocumentExtractionController::class, 'history'])->name('history');
+        Route::post('/', [App\Http\Controllers\DocumentExtractionController::class, 'extract'])->name('extract');
+        Route::post('/save', [App\Http\Controllers\DocumentExtractionController::class, 'store'])->name('store');
+    });
 
     // In-app notifications (personal to the signed-in user)
     Route::prefix('notifications')->name('notifications.')->group(function () {

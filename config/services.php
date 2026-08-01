@@ -45,6 +45,13 @@ return [
         'base_url'    => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
         'max_tokens'  => (int) env('ANTHROPIC_MAX_TOKENS', 1024),
         'timeout'     => (int) env('ANTHROPIC_TIMEOUT', 30),
+        // Longer ceiling for document/image extraction, which is slower than
+        // plain-text chat. The controller raises PHP's execution limit to match.
+        'document_timeout' => (int) env('ANTHROPIC_DOCUMENT_TIMEOUT', 90),
+        // Document extraction returns one verbose JSON object per line item, so a
+        // 30-row table can easily exceed the 1k chat default and get truncated
+        // mid-object (unparseable JSON). Give extraction a much larger ceiling.
+        'document_max_tokens' => (int) env('ANTHROPIC_DOCUMENT_MAX_TOKENS', 8192),
     ],
 
     /*

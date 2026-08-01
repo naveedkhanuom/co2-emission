@@ -316,8 +316,9 @@
                         <label class="form-label">Data Status</label>
                         <select class="form-select" id="statusFilter">
                             <option value="">All Status</option>
-                            <option value="active">Validated</option>
-                            <option value="draft">Pending Review</option>
+                            <option value="draft">Draft</option>
+                            <option value="reviewed">Reviewed</option>
+                            <option value="active">Approved</option>
                         </select>
                     </div>
                     <div class="col-lg-3 col-md-6">
@@ -434,11 +435,14 @@
                     <div class="qa-card">
                         <div class="qa-head">Quick Actions</div>
                         <div class="qa-body d-grid gap-2">
-                            <button type="button" class="btn btn-validate" onclick="validateSelected()">
-                                <i class="fas fa-check-circle"></i> Validate Selected
+                            <button type="button" class="btn btn-validate" onclick="markReviewedSelected()">
+                                <i class="fas fa-user-check"></i> Mark Reviewed
+                            </button>
+                            <button type="button" class="btn btn-validate" onclick="approveSelected()">
+                                <i class="fas fa-check-double"></i> Approve Selected
                             </button>
                             <button type="button" class="btn btn-flag" onclick="flagForReview()">
-                                <i class="fas fa-flag"></i> Flag for Review
+                                <i class="fas fa-rotate-left"></i> Send to Draft
                             </button>
                             <button type="button" class="btn btn-delete" onclick="deleteSelected()">
                                 <i class="fas fa-trash"></i> Delete Selected
@@ -546,8 +550,9 @@
                         <label class="form-label">Select Action</label>
                         <select class="form-select" id="bulkActionSelect">
                             <option value="">Choose an action...</option>
-                            <option value="validate">Validate Selected</option>
-                            <option value="reject">Reject Records</option>
+                            <option value="review">Mark as Reviewed</option>
+                            <option value="approve">Approve (final)</option>
+                            <option value="reject">Send back to Draft</option>
                             <option value="delete">Delete Records</option>
                             <option value="export">Export Records</option>
                         </select>
@@ -698,23 +703,25 @@
             });
         }
         
-        function validateRecord(id) {
+        // Three-step workflow transition: status = 'reviewed' | 'active' (approve) | 'draft' (send back)
+        function setRecordStatus(id, status) {
+            const labels = { reviewed: 'marked as reviewed', active: 'approved', draft: 'sent back to draft' };
             $.ajax({
                 url: '{{ url("review-data") }}/' + id + '/status',
                 method: 'PUT',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    status: 'active'
-                },
+                data: { _token: '{{ csrf_token() }}', status: status },
                 success: function() {
                     dataTable.draw();
-                    showToast('Record validated successfully!', 'success');
+                    showToast('Record ' + (labels[status] || 'updated') + '.', 'success');
                 },
-                error: function() {
-                    showToast('Error validating record', 'error');
+                error: function(xhr) {
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) || 'Error updating record';
+                    showToast(msg, 'error');
                 }
             });
         }
+        // Back-compat alias
+        function validateRecord(id) { setRecordStatus(id, 'reviewed'); }
         
         // Bulk actions
         function showBulkActions() {
@@ -766,33 +773,31 @@
             });
         }
         
-        function validateSelected() {
+        function bulkWorkflow(action) {
             const selectedIds = $('.row-checkbox:checked').map(function() {
                 return $(this).val();
             }).get();
-            
+
             if (selectedIds.length === 0) {
                 showToast('Please select at least one record', 'error');
                 return;
             }
-            
+
             $.ajax({
                 url: '{{ route("review_data.bulk_update") }}',
                 method: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    ids: selectedIds,
-                    action: 'validate'
-                },
+                data: { _token: '{{ csrf_token() }}', ids: selectedIds, action: action },
                 success: function(response) {
                     dataTable.draw();
                     showToast(response.message, 'success');
                 },
                 error: function() {
-                    showToast('Error validating records', 'error');
+                    showToast('Error updating records', 'error');
                 }
             });
         }
+        function markReviewedSelected() { bulkWorkflow('review'); }
+        function approveSelected() { bulkWorkflow('approve'); }
         
         function flagForReview() {
             const selectedIds = $('.row-checkbox:checked').map(function() {

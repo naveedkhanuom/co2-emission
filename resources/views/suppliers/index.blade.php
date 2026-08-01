@@ -472,6 +472,7 @@
                         $('#editAddress').val(supplier.address);
                         $('#editStatus').val(supplier.status);
                         $('#editNotes').val(supplier.notes);
+                        $('#editModal').modal('show');
                     }
                 }
             });

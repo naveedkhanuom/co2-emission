@@ -143,6 +143,22 @@
 
         <li>
             @php
+                $demoRestricted = demo_route_restricted('ai_extract.index');
+                $userRestricted = ! user_can_see_sidebar_route('ai_extract.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('ai_extract.index') }}"
+               class="{{ request()->routeIs('ai_extract.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-robot"></i>
+                <span>AI Extract <span class="badge bg-success ms-1" style="font-size:.6rem;">AI</span></span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <li>
+            @php
                 $demoRestricted = demo_route_restricted('emissions.import.form');
                 $userRestricted = ! user_can_see_sidebar_route('emissions.import.form');
                 $restricted = $demoRestricted || $userRestricted;
@@ -204,6 +220,22 @@
                @if($title) title="{{ $title }}" @endif>
                 <i class="fas fa-clipboard-check"></i>
                 <span>Review Data</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <li>
+            @php
+                $demoRestricted = demo_route_restricted('reporting_periods.index');
+                $userRestricted = ! user_can_see_sidebar_route('reporting_periods.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('reporting_periods.index') }}"
+               class="{{ request()->routeIs('reporting_periods.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-lock"></i>
+                <span>Reporting Periods</span>
                 @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
             </a>
         </li>
@@ -303,6 +335,22 @@
                @if($title) title="{{ $title }}" @endif>
                 <i class="fas fa-clipboard-check"></i>
                 <span>Disclosure Reports</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <li>
+            @php
+                $demoRestricted = demo_route_restricted('base_year_comparison.index');
+                $userRestricted = ! user_can_see_sidebar_route('base_year_comparison.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('base_year_comparison.index') }}"
+               class="{{ request()->routeIs('base_year_comparison.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-chart-line"></i>
+                <span>Base Year Comparison</span>
                 @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
             </a>
         </li>

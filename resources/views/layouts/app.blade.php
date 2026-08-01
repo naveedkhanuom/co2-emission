@@ -637,6 +637,35 @@
             color: var(--dark-green) !important;
             border-left: 0;
         }
+
+        /* Brand-consistent primary buttons app-wide (Bootstrap's default is blue).
+           Page-pushed styles can still override this. */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--light-green) 100%) !important;
+            border-color: var(--primary-green) !important;
+            color: #fff !important;
+        }
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active,
+        .btn-primary.active {
+            background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%) !important;
+            border-color: var(--dark-green) !important;
+            color: #fff !important;
+        }
+        .btn-outline-primary {
+            color: var(--primary-green) !important;
+            border-color: var(--primary-green) !important;
+        }
+        .btn-outline-primary:hover,
+        .btn-outline-primary:focus,
+        .btn-outline-primary:active {
+            background: var(--primary-green) !important;
+            border-color: var(--primary-green) !important;
+            color: #fff !important;
+        }
+        .text-primary { color: var(--primary-green) !important; }
+        .btn-check:checked + .btn-outline-primary { background: var(--primary-green) !important; color: #fff !important; }
     </style>
 
     @stack('styles')
