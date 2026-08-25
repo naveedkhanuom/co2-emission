@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\EmissionRecord;
 use App\Models\Facilities;
+use App\Support\EnvironmentGuard;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        EnvironmentGuard::assertNotDebuggingInProduction(
+            $this->app->environment(),
+            (bool) config('app.debug')
+        );
+
         Gate::before(function ($user, $ability) {
             // Super Admin and Admin have full access to everything
             if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
