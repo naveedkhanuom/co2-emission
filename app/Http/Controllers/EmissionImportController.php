@@ -94,6 +94,21 @@ class EmissionImportController extends Controller
             $processedCount = $importClass->getProcessedCount();
             $skippedCount = $importClass->getSkippedCount();
             $successfulCount = $processedCount - $skippedCount;
+
+            // Rows rejected for a locked reporting period are reported separately:
+            // "12 rows skipped" alone reads like bad data, when the real cause is
+            // a governance rule the user can act on (unlock the year, or drop
+            // those rows from the file).
+            $lockedSkipped = $importClass->getLockedSkippedCount();
+            $lockedYears = $importClass->getLockedYears();
+            $lockedNote = $lockedSkipped > 0
+                ? sprintf(
+                    '%d row(s) were rejected because the %s reporting period%s locked.',
+                    $lockedSkipped,
+                    implode(', ', $lockedYears),
+                    count($lockedYears) > 1 ? 's are' : ' is'
+                )
+                : null;
             
             // Carbon 3 diffs are signed: measure start -> now so elapsed time is positive.
             $processingTime = $importHistory->started_at->diffInSeconds(Carbon::now());
@@ -106,16 +121,20 @@ class EmissionImportController extends Controller
                 'failed_records' => $skippedCount,
                 'processing_time' => $processingTime,
                 'completed_at' => Carbon::now(),
-                'logs' => json_encode([
+                'logs' => json_encode(array_merge([
                     ['level' => 'info', 'time' => Carbon::now()->format('H:i:s'), 'message' => 'Import started'],
                     ['level' => 'info', 'time' => Carbon::now()->format('H:i:s'), 'message' => "Parsed {$processedCount} records"],
                     ['level' => $skippedCount > 0 ? 'warning' : 'success', 'time' => Carbon::now()->format('H:i:s'), 'message' => "Import completed. {$successfulCount} successful, {$skippedCount} failed"],
-                ]),
+                ], $lockedNote ? [['level' => 'warning', 'time' => Carbon::now()->format('H:i:s'), 'message' => $lockedNote]] : [])),
             ]);
 
             $message = $successfulCount > 0
                 ? "Import completed. {$successfulCount} record(s) imported successfully" . ($skippedCount > 0 ? ", {$skippedCount} row(s) skipped." : ".")
                 : 'No records were imported. Please check your data and mapping.';
+
+            if ($lockedNote) {
+                $message .= ' ' . $lockedNote;
+            }
 
             return response()->json([
                 'status'    => 'success',
@@ -123,6 +142,8 @@ class EmissionImportController extends Controller
                 'import_id' => $importHistory->import_id,
                 'successful' => $successfulCount,
                 'skipped'   => $skippedCount,
+                'locked_skipped' => $lockedSkipped,
+                'locked_years'   => $lockedYears,
                 'total'     => $processedCount,
             ]);
         } catch (\Throwable $e) {

@@ -5,6 +5,8 @@ namespace App\Imports;
 use App\Models\Department;
 use App\Models\EmissionRecord;
 use App\Models\Facilities;
+use App\Models\ReportingPeriod;
+use App\Services\EmissionEnrichmentService;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -18,6 +20,18 @@ class EmissionsImport implements ToModel, WithHeadingRow
     protected int $processedCount = 0;
 
     protected int $skippedCount = 0;
+
+    // Rows rejected specifically because their year is a locked reporting
+    // period. Counted separately from $skippedCount's other causes so the
+    // import result can say WHY, rather than reporting a silent shortfall.
+    protected int $lockedSkippedCount = 0;
+
+    /** @var array<int, int> Locked years encountered, keyed by year. */
+    protected array $lockedYears = [];
+
+    // One isYearLocked() query per spreadsheet row would be a per-row N+1;
+    // a year's lock state cannot change mid-import, so memoise it.
+    protected array $lockedYearCache = [];
 
     protected ?int $importHistoryId = null;
 
@@ -47,6 +61,39 @@ class EmissionsImport implements ToModel, WithHeadingRow
     public function getSkippedCount(): int
     {
         return $this->skippedCount;
+    }
+
+    /** How many rows were rejected because their reporting period is locked. */
+    public function getLockedSkippedCount(): int
+    {
+        return $this->lockedSkippedCount;
+    }
+
+    /**
+     * The locked years the spreadsheet tried to write into, ascending.
+     *
+     * @return array<int, int>
+     */
+    public function getLockedYears(): array
+    {
+        $years = array_values($this->lockedYears);
+        sort($years);
+
+        return $years;
+    }
+
+    /**
+     * Is this year locked for this company? Memoised — see $lockedYearCache.
+     */
+    protected function isYearLocked(int $year, int $companyId): bool
+    {
+        $key = $companyId.'|'.$year;
+
+        if (! array_key_exists($key, $this->lockedYearCache)) {
+            $this->lockedYearCache[$key] = ReportingPeriod::isYearLocked($year, $companyId);
+        }
+
+        return $this->lockedYearCache[$key];
     }
 
     /**
@@ -164,10 +211,9 @@ class EmissionsImport implements ToModel, WithHeadingRow
             return null;
         }
 
-        // Resolve facility and department (memoised per import — see caches above).
-        $facility = $this->resolveFacility($facilityName, $companyId);
-        $department = $this->resolveDepartment($departmentName, $facility, $companyId);
-
+        // Date is parsed before facility/department are resolved: those resolvers
+        // firstOrCreate(), so running them first would leave new facility and
+        // department rows behind for a row that is then rejected below.
         try {
             $parsedDate = \Carbon\Carbon::parse($dateValue)->format('Y-m-d');
         } catch (\Throwable $e) {
@@ -176,6 +222,36 @@ class EmissionsImport implements ToModel, WithHeadingRow
 
             return null;
         }
+
+        // A locked reporting period is final. EmissionRecordController refuses
+        // every write into one; an import has to refuse too, or a spreadsheet
+        // becomes the way around the lock. With $overwrite on the damage is
+        // worse than an extra row: updateOrCreate would replace figures inside
+        // a signed-off inventory, leaving nothing to notice afterwards.
+        //
+        // Skip the row rather than aborting the file: one stray date should not
+        // discard the rows that are legitimately open. The count is surfaced in
+        // the import result so a partial import reports itself honestly.
+        $year = (int) \Carbon\Carbon::parse($parsedDate)->year;
+        if ($this->isYearLocked($year, $companyId)) {
+            $this->skippedCount++;
+            $this->lockedSkippedCount++;
+            $this->lockedYears[$year] = $year;
+
+            Log::warning('Import: row rejected, reporting period locked', [
+                'year' => $year,
+                'company_id' => $companyId,
+                'facility' => $facilityName,
+                'entry_date' => $parsedDate,
+                'import_history_id' => $this->importHistoryId,
+            ]);
+
+            return null;
+        }
+
+        // Resolve facility and department (memoised per import — see caches above).
+        $facility = $this->resolveFacility($facilityName, $companyId);
+        $department = $this->resolveDepartment($departmentName, $facility, $companyId);
 
         $getRowValue = function ($mappingKey) use ($row) {
             $column = $this->mapping[$mappingKey] ?? null;
@@ -226,11 +302,19 @@ class EmissionsImport implements ToModel, WithHeadingRow
             'status' => 'active',
         ];
 
-        // A spreadsheet's co2e column is as untrusted as a browser's: verify it
-        // against the row's own activity data and factor. A material mismatch
-        // is corrected and the row is held as a draft for review, rather than
-        // landing straight in a report as 'active'.
-        $data = app(\App\Services\EmissionFigureVerifier::class)->verify($data);
+        // Imported rows go through the same enrichment as a hand-entered one.
+        //
+        // enrich() runs EmissionFigureVerifier as its first step, so a
+        // spreadsheet's co2e column is still treated as untrusted — checked
+        // against the row's own activity data and factor, corrected on a
+        // material mismatch and held as a draft for review. On top of that it
+        // stamps the GWP basis, locks the emission factor for provenance,
+        // derives the per-gas split and applies Scope 2 dual reporting.
+        //
+        // Calling the verifier alone (as this did) left imported records with a
+        // NULL gwp_version, which CSRD/ESRS E1 and CDP both require a figure to
+        // state, and with no factor lock to audit against.
+        $data = app(EmissionEnrichmentService::class)->enrich($data);
 
         /**
          * ---------------------------------------------------
