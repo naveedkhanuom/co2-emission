@@ -9,6 +9,7 @@ use App\Models\FactorOrganization;
 use App\Models\Company;
 use App\Models\Site;
 use App\Models\Country;
+use App\Services\Factors\BuiltInFactorCatalog;
 use Illuminate\Http\Request;
 use DataTables;
 use Illuminate\Support\Facades\Storage;
@@ -502,6 +503,26 @@ class EmissionRecordController extends Controller
             'created_by'        => auth()->id(),
             'status'            => $status,
         ];
+
+        // The Scope 1 entry page computes CO2e in the browser and posts only the
+        // total, leaving nothing for EmissionFigureVerifier to check the total
+        // against. Derive the factor server-side from the built-in catalogue so
+        // the figure becomes verifiable and carries its provenance.
+        //
+        // Only fills a gap: a factor the caller supplied is never overwritten,
+        // and an unresolvable source leaves the record exactly as it was before.
+        if (empty($data['emission_factor'])) {
+            $resolved = app(BuiltInFactorCatalog::class)->resolve(
+                (int) $request->scopeSelect,
+                $emissionSourceName,
+                $data['activity_unit']
+            );
+
+            if ($resolved !== null) {
+                $data['emission_factor'] = $resolved->value;
+                $data['factor_dataset'] = $resolved->datasetLabel();
+            }
+        }
 
         // Data quality applies to every scope. Scope 1/2 activity data is
         // metered/invoiced (primary) by default; Scope 3 is typically estimated.

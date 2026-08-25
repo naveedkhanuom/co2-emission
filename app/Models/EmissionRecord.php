@@ -59,7 +59,7 @@ class EmissionRecord extends Model
         'entry_date' => 'date',
         'activity_data' => 'decimal:4',
         'spend_amount' => 'decimal:2',
-        'emission_factor' => 'decimal:6',
+        'emission_factor' => 'decimal:10',
         'market_based_factor' => 'decimal:6',
         'co2e_value' => 'decimal:4',
         'market_based_co2e' => 'decimal:4',
