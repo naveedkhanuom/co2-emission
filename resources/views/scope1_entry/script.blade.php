@@ -186,7 +186,7 @@ function goStep(n) {
 }
 
 function resetForm() {
-  ['scope1Fqty', 'scope1Fdt', 'scope1Ffac', 'scope1Fdsc'].forEach(function(id) {
+  ['scope1Fqty', 'scope1Fdt', 'scope1Ffac', 'scope1Fdept', 'scope1Fdsc'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -253,7 +253,8 @@ document.getElementById('scope1N2n').addEventListener('click', function() {
   var per = document.getElementById('scope1Fper').value;
   var dt = document.getElementById('scope1Fdt').value;
   var fac = document.getElementById('scope1Ffac').value;
-  document.getElementById('scope1Rvw').innerHTML = '<strong>Source:</strong> ' + selSrc.name + '<br><strong>Quantity:</strong> ' + document.getElementById('scope1Fqty').value + ' ' + uLabel + '<br><strong>Emissions:</strong> <span style="color:var(--primary-green);font-weight:700">' + t.toFixed(4) + ' tCO2e</span><br><strong>EF:</strong> ' + (selSrc.note || '') + '<br><strong>Period:</strong> ' + per + ' | ' + dt + '<br><strong>Facility:</strong> ' + fac;
+  var dept = document.getElementById('scope1Fdept').value;
+  document.getElementById('scope1Rvw').innerHTML = '<strong>Source:</strong> ' + selSrc.name + '<br><strong>Quantity:</strong> ' + document.getElementById('scope1Fqty').value + ' ' + uLabel + '<br><strong>Emissions:</strong> <span style="color:var(--primary-green);font-weight:700">' + t.toFixed(4) + ' tCO2e</span><br><strong>EF:</strong> ' + (selSrc.note || '') + '<br><strong>Period:</strong> ' + per + ' | ' + dt + '<br><strong>Facility:</strong> ' + fac + (dept ? '<br><strong>Department:</strong> ' + dept : '');
   goStep(3);
 });
 
@@ -266,10 +267,14 @@ document.getElementById('scope1N3s').addEventListener('click', function() {
   formData.append('_token', window.scope1Csrf);
   formData.append('entryDate', document.getElementById('scope1Fdt').value);
   formData.append('facilitySelect', document.getElementById('scope1Ffac').value.trim());
+  formData.append('departmentSelect', document.getElementById('scope1Fdept').value);
   formData.append('scopeSelect', '1');
   formData.append('emissionSourceSelect', selSrc.name);
   formData.append('co2eValue', t.toFixed(6));
   formData.append('activityData', document.getElementById('scope1Fqty').value);
+  // Persist the unit the quantity was entered in; without it activity_data is
+  // an unreadable bare number after the fact.
+  formData.append('activityUnit', (selSrc.units[uIdx] || {}).u || '');
   formData.append('confidenceLevel', 'medium');
   formData.append('dataSource', 'manual');
   var notes = document.getElementById('scope1Fdsc').value.trim();
@@ -550,13 +555,14 @@ $(document).ready(function() {
     columns: [
       { data: 'emission_source', name: 'emission_source' },
       { data: 'activity_data', name: 'activity_data', render: function(v) { return v != null ? Number(v) : '-'; } },
+      { data: 'activity_unit', name: 'activity_unit', render: function(v) { return v ? v : '—'; } },
       { data: 'co2e_value', name: 'co2e_value' },
       { data: 'facility', name: 'facility' },
       { data: 'entry_date', name: 'entry_date' },
       { data: 'attachments', name: 'attachments', orderable: false, searchable: false, createdCell: function(td, cellData) { $(td).html(cellData || ''); } },
       { data: 'actions', name: 'actions', orderable: false, searchable: false, createdCell: function(td, cellData) { $(td).html(cellData || ''); } }
     ],
-    order: [[4, 'desc']],
+    order: [[5, 'desc']],
     pageLength: 10,
     responsive: true
   });

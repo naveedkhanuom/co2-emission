@@ -1,0 +1,106 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, boundary]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      # The suite runs against MySQL, not SQLite: several tests assert against
+      # real column types and enum constraints (emission_records.status), which
+      # SQLite would not enforce.
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ghg_testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: ghg_testing
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, gd, zip, bcmath, intl, imagick
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent; then exit 0; fi
+            sleep 2
+          done
+          echo "MySQL did not become ready in time" && exit 1
+
+      # The suite depends on seeded reference data — the 15 Scope 3 categories,
+      # the permission set, emission sources and the sector templates — so a
+      # bare migrate is not enough.
+      - name: Migrate and seed
+        run: php artisan migrate --seed --force
+
+      - name: Run tests
+        run: php artisan test
+
+  style:
+    runs-on: ubuntu-latest
+    # ADVISORY ONLY, for now. The codebase has ~160 files with pre-existing
+    # formatting drift that predates this workflow, so a blocking check would
+    # fail every build from day one.
+    #
+    # To make it blocking: run `vendor/bin/pint` once across the repo, commit
+    # the result as a single formatting-only change, then delete this line.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Check formatting
+        run: vendor/bin/pint --test

@@ -2,18 +2,23 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * The root route redirects to login. This is a multi-tenant B2B app with
+     * self-registration disabled, so there is no public landing page — a guest
+     * hitting `/` is sent to sign in.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_the_root_route_sends_guests_to_login(): void
     {
-        $response = $this->get('/');
+        $this->get('/')->assertRedirect(route('login'));
+    }
 
-        $response->assertStatus(200);
+    /** A signed-in user is not bounced back to the login screen. */
+    public function test_login_page_is_reachable(): void
+    {
+        $this->get(route('login'))->assertOk();
     }
 }

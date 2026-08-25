@@ -1,42 +1,37 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
-use App\Http\Controllers\CompanyController;
-use App\Http\Controllers\SiteController;
-use App\Http\Controllers\EmissionSourceController;
-use App\Http\Controllers\EmissionFactorController;
-use App\Http\Controllers\EmissionRecordController;
-use App\Http\Controllers\UtilityBillController;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\BillOCRController;
-use App\Http\Controllers\DepartmentController;
-use App\Http\Controllers\FacilitiesController;
-use App\Http\Controllers\EmissionImportController;
-use App\Http\Controllers\ReviewDataController;
-use App\Http\Controllers\ImportHistoryController;
-use App\Http\Controllers\TargetController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanySwitcherController;
-use App\Http\Controllers\Scope3Controller;
+use App\Http\Controllers\CountryController;
+use App\Http\Controllers\DataQualityController;
+use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DisclosureReportController;
+use App\Http\Controllers\EioFactorController;
+use App\Http\Controllers\EmissionFactorController;
+use App\Http\Controllers\EmissionImportController;
+use App\Http\Controllers\EmissionRecordController;
+use App\Http\Controllers\EmissionSourceController;
+use App\Http\Controllers\EnergyAttributeCertificateController;
+use App\Http\Controllers\FacilitiesController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MrvReportController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReviewDataController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Scope1EntryController;
 use App\Http\Controllers\Scope2EntryController;
+use App\Http\Controllers\Scope3Controller;
 use App\Http\Controllers\Scope3EntryController;
 use App\Http\Controllers\ScopeClassifierController;
+use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierSurveyController;
-use App\Http\Controllers\EioFactorController;
-use App\Http\Controllers\EnergyAttributeCertificateController;
-use App\Http\Controllers\DisclosureReportController;
-use App\Http\Controllers\MrvReportController;
-use App\Http\Controllers\DataQualityController;
-use App\Http\Controllers\CountryController;
-use App\Http\Controllers\AnalyticsController;
-use App\Http\Controllers\NotificationController;
-
+use App\Http\Controllers\TargetController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UtilityBillController;
+use Illuminate\Support\Facades\Route;
 
 // Public self-registration is disabled: this is a multi-tenant B2B app and a
 // self-registered user would have no company (see HasCompanyScope). Provision
@@ -91,9 +86,6 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('users', UserController::class);
 });
 
-
-
-
 // Company Switcher Routes
 Route::middleware(['auth'])->group(function () {
     Route::post('company/switch', [CompanySwitcherController::class, 'switch'])->name('company.switch');
@@ -109,12 +101,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('companies/{id}', [CompanyController::class, 'destroy'])->name('companies.destroy');
 });
 
-
-
 Route::middleware(['auth'])->group(function () {
     Route::resource('departments', DepartmentController::class);
 });
-
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/facilities', [FacilitiesController::class, 'index'])->name('facilities.index');
@@ -122,8 +111,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/facilities/{facility}', [FacilitiesController::class, 'update'])->name('facilities.update');
     Route::delete('/facilities/{facility}', [FacilitiesController::class, 'destroy'])->name('facilities.destroy');
 });
-
-
 
 Route::prefix('sites')->middleware('auth')->group(function () {
     Route::get('/', [SiteController::class, 'index'])->name('sites.index');
@@ -158,19 +145,17 @@ Route::prefix('countries')->name('countries.')->middleware('auth')->group(functi
     Route::delete('/{id}', [CountryController::class, 'destroy']);
 });
 
-
-
-Route::prefix('emission-records')->middleware('auth')->group(function() {
-    Route::get('/', [EmissionRecordController::class,'index'])->name('emission_records.index');
-    Route::get('/scope-entry', [EmissionRecordController::class,'scopeEntry'])->name('emission_records.scope_entry');
-    Route::post('/quick-add', [EmissionRecordController::class,'quickAdd'])->name('emission_records.quick_add');
-    Route::get('/data', [EmissionRecordController::class,'getData'])->name('emission_records.data');
-    Route::post('/store', [EmissionRecordController::class,'store'])->name('emission-records.store');
-    Route::post('/store-or-update', [EmissionRecordController::class,'storeOrUpdate'])->name('emission_records.storeOrUpdate');
+Route::prefix('emission-records')->middleware('auth')->group(function () {
+    Route::get('/', [EmissionRecordController::class, 'index'])->name('emission_records.index');
+    Route::get('/scope-entry', [EmissionRecordController::class, 'scopeEntry'])->name('emission_records.scope_entry');
+    Route::post('/quick-add', [EmissionRecordController::class, 'quickAdd'])->name('emission_records.quick_add');
+    Route::get('/data', [EmissionRecordController::class, 'getData'])->name('emission_records.data');
+    Route::post('/store', [EmissionRecordController::class, 'store'])->name('emission-records.store');
+    Route::post('/store-or-update', [EmissionRecordController::class, 'storeOrUpdate'])->name('emission_records.storeOrUpdate');
     Route::get('/{emissionRecord}/document/{index}', [EmissionRecordController::class, 'downloadDocument'])->name('emission_records.document');
-    Route::put('/{emissionRecord}', [EmissionRecordController::class,'update'])->name('emission_records.update');
-    Route::get('/{emissionRecord}', [EmissionRecordController::class,'show']);
-    Route::delete('/{emissionRecord}', [EmissionRecordController::class,'destroy']);
+    Route::put('/{emissionRecord}', [EmissionRecordController::class, 'update'])->name('emission_records.update');
+    Route::get('/{emissionRecord}', [EmissionRecordController::class, 'show']);
+    Route::delete('/{emissionRecord}', [EmissionRecordController::class, 'destroy']);
 });
 
 // Scope 1 Entry (separate page — direct emissions, 3-step flow)
@@ -201,7 +186,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Import History Routes
-Route::prefix('import-history')->name('import_history.')->middleware('auth')->group(function() {
+Route::prefix('import-history')->name('import_history.')->middleware('auth')->group(function () {
     Route::get('/', [App\Http\Controllers\ImportHistoryController::class, 'index'])->name('index');
     Route::get('/data', [App\Http\Controllers\ImportHistoryController::class, 'getData'])->name('data');
     Route::get('/statistics', [App\Http\Controllers\ImportHistoryController::class, 'getStatistics'])->name('statistics');
@@ -228,7 +213,7 @@ Route::prefix('reporting-periods')->name('reporting_periods.')->middleware('auth
     Route::post('/{year}/base-year', [App\Http\Controllers\ReportingPeriodController::class, 'setBaseYear'])->name('base_year');
 });
 
-Route::prefix('review-data')->name('review_data.')->middleware('auth')->group(function() {
+Route::prefix('review-data')->name('review_data.')->middleware('auth')->group(function () {
     Route::get('/', [ReviewDataController::class, 'index'])->name('index');
     Route::get('/data', [ReviewDataController::class, 'getData'])->name('data');
     Route::get('/{id}', [ReviewDataController::class, 'show'])->name('show');
@@ -236,7 +221,7 @@ Route::prefix('review-data')->name('review_data.')->middleware('auth')->group(fu
     Route::post('/bulk-update', [ReviewDataController::class, 'bulkUpdate'])->name('bulk_update');
 });
 
-Route::prefix('targets')->name('targets.')->middleware('auth')->group(function() {
+Route::prefix('targets')->name('targets.')->middleware('auth')->group(function () {
     Route::get('/', [TargetController::class, 'index'])->name('index');
     Route::get('/data', [TargetController::class, 'getData'])->name('data');
     Route::post('/store-or-update', [TargetController::class, 'storeOrUpdate'])->name('storeOrUpdate');
@@ -258,6 +243,19 @@ Route::prefix('scope3')->name('scope3.')->middleware('auth')->group(function () 
 Route::middleware(['auth'])->group(function () {
     Route::get('/scope-finder', [ScopeClassifierController::class, 'index'])->name('scope_classifier.index');
     Route::post('/scope-finder/classify', [ScopeClassifierController::class, 'classify'])->name('scope_classifier.classify');
+});
+
+// Boundary Advisor — works out WHAT a company needs to measure, before any
+// number is entered. Produces a decided, justified inventory boundary.
+Route::prefix('boundary')->name('boundary.')->middleware('auth')->group(function () {
+    Route::get('/', [App\Http\Controllers\BoundaryController::class, 'index'])->name('index');
+    Route::post('/start', [App\Http\Controllers\BoundaryController::class, 'start'])->name('start');
+    Route::post('/{assessment}/generate', [App\Http\Controllers\BoundaryController::class, 'generate'])->name('generate');
+    Route::post('/{assessment}/accept-recommended', [App\Http\Controllers\BoundaryController::class, 'acceptRecommended'])->name('accept_recommended');
+    Route::post('/{assessment}/activate', [App\Http\Controllers\BoundaryController::class, 'activate'])->name('activate');
+    Route::patch('/items/{item}', [App\Http\Controllers\BoundaryController::class, 'decide'])->name('items.decide');
+    Route::get('/{assessment}/statement', [App\Http\Controllers\BoundaryController::class, 'export'])->name('statement');
+    Route::post('/restart', [App\Http\Controllers\BoundaryController::class, 'restart'])->name('restart');
 });
 
 // Supplier Routes
@@ -336,31 +334,31 @@ Route::prefix('data-quality')->name('data_quality.')->middleware('auth')->group(
     Route::put('/record/{id}', [DataQualityController::class, 'updateQuality'])->name('update_quality');
 });
 
-Route::prefix('reports')->middleware('auth')->group(function() {
+Route::prefix('reports')->middleware('auth')->group(function () {
     Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
     Route::get('/statistics', [App\Http\Controllers\ReportController::class, 'statistics'])->name('reports.statistics');
     Route::get('/data', [App\Http\Controllers\ReportController::class, 'getData'])->name('reports.data');
     Route::get('/json', [App\Http\Controllers\ReportController::class, 'getReportsJson'])->name('reports.json');
     Route::post('/store-or-update', [App\Http\Controllers\ReportController::class, 'storeOrUpdate'])->name('reports.storeOrUpdate');
-    
+
     // GHG Protocol Report (must come before /{id} route)
     Route::get('/ghg-protocol', [App\Http\Controllers\GHGReportController::class, 'index'])->name('reports.ghg_protocol');
     Route::get('/ghg-protocol/export', [App\Http\Controllers\GHGReportController::class, 'export'])->name('reports.ghg_protocol.export');
-    
+
     // Templates
     Route::get('/templates/list', [App\Http\Controllers\ReportController::class, 'getTemplates'])->name('reports.templates.list');
     Route::post('/templates/store', [App\Http\Controllers\ReportController::class, 'storeTemplate'])->name('reports.templates.store');
-    
+
     // Scheduled Reports
     Route::get('/scheduled/list', [App\Http\Controllers\ReportController::class, 'getScheduledReports'])->name('reports.scheduled.list');
     Route::post('/scheduled/store', [App\Http\Controllers\ReportController::class, 'storeScheduledReport'])->name('reports.scheduled.store');
     Route::post('/scheduled/{id}/run', [App\Http\Controllers\ReportController::class, 'runScheduledNow'])->name('reports.scheduled.run');
-    
+
     // Export Jobs
     Route::get('/exports/list', [App\Http\Controllers\ReportController::class, 'getExportJobs'])->name('reports.exports.list');
     Route::post('/exports/store', [App\Http\Controllers\ReportController::class, 'storeExportJob'])->name('reports.exports.store');
     Route::get('/exports/{id}/download', [App\Http\Controllers\ReportController::class, 'downloadExportJob'])->name('reports.exports.download');
-    
+
     // Dynamic routes (must come last)
     Route::get('/{id}/download/{format}', [App\Http\Controllers\ReportController::class, 'download'])->name('reports.download');
     Route::get('/{id}', [App\Http\Controllers\ReportController::class, 'show']);
@@ -368,19 +366,15 @@ Route::prefix('reports')->middleware('auth')->group(function() {
     Route::post('/{id}/track-view', [App\Http\Controllers\ReportController::class, 'trackView'])->name('reports.trackView');
 });
 
-
-
-
-
 Route::middleware(['auth'])->group(function () {
     Route::get('/utility-bills', [UtilityBillController::class, 'index'])->name('utility.index');
     Route::get('/utility-bills/create', [UtilityBillController::class, 'create'])->name('utility.create');
     Route::post('/utility-bills/upload', [UtilityBillController::class, 'upload'])->name('utility.upload');
     Route::get('/utility-bills/{utilityBill}/download', [UtilityBillController::class, 'download'])->name('utility.download');
-    
+
     Route::get('/bill-upload', [BillOCRController::class, 'showForm'])->name('bill.upload');
     Route::post('/bill-upload', [BillOCRController::class, 'upload'])->name('bill.upload.post');
-    
+
     // Data Source - Coming Soon
     Route::get('/data-source', function () {
         return view('data_source.coming_soon');
@@ -409,13 +403,3 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
     });
 });
-
-
-
-
-
-
-
-
-
-

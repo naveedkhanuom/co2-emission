@@ -61,6 +61,14 @@ return [
         'import_history.report',
         'import_history.export_logs',
 
+        // Boundary Advisor — scoping a boundary makes paid AI calls, so demo
+        // users can view the workspace but not generate or activate one.
+        'boundary.start',
+        'boundary.generate',
+        'boundary.accept_recommended',
+        'boundary.activate',
+        'boundary.restart',
+
         // Add more route names or prefixes (e.g. 'reports.ghg_protocol', 'targets.')
         // 'reports.ghg_protocol',
         // 'targets.',
@@ -80,6 +88,7 @@ return [
     'restrictable_sidebar_options' => [
         // Main menu
         'home' => 'Dashboard',
+        'boundary.' => 'Boundary Advisor',
         'emission_records.' => 'Manual Entry & Scope-Based Entry',
         'emissions.import.' => 'Import Data',
         'review_data.' => 'Review Data',

@@ -95,7 +95,7 @@
                         </div>
                     </div>
                     <span class="score-badge {{ $verdict[1] }}">{{ $verdict[0] }}</span>
-                    <p class="score-cap">This blends scope coverage, Scope 3 breadth, monthly completeness, review status and data quality.</p>
+                    <p class="score-cap">This blends boundary coverage, scope coverage, Scope 3 breadth, monthly completeness, review status and data quality.</p>
                 </div>
             </div>
 
@@ -167,11 +167,30 @@
                 <div class="hd">At a glance</div>
                 <div class="bd">
                     <div class="mini">
+                        <div class="mtile">
+                            <div class="mv">{{ $boundary['has_boundary'] && $boundary['total'] ? $boundary['covered'].'/'.$boundary['total'] : '—' }}</div>
+                            <div class="ml">Boundary items with data</div>
+                        </div>
                         <div class="mtile"><div class="mv">{{ $scope3['enabled'] ? $scope3['covered'].'/'.$scope3['total'] : '—' }}</div><div class="ml">Scope 3 categories</div></div>
                         <div class="mtile"><div class="mv">{{ $monthsCovered }}/{{ $monthsElapsed }}</div><div class="ml">Months covered ({{ $year }})</div></div>
                         <div class="mtile"><div class="mv">{{ number_format($pendingReview) }}</div><div class="ml">Awaiting review</div></div>
                         <div class="mtile"><div class="mv">{{ $dqTotal ? round($dqPrimary / $dqTotal * 100) : 0 }}%</div><div class="ml">Measured data</div></div>
                     </div>
+
+                    @if(!$boundary['has_boundary'])
+                        <div style="margin-top:16px;font-size:.8rem;color:var(--gray-600);line-height:1.5">
+                            <b style="color:var(--gray-700)">No boundary yet.</b>
+                            You haven’t defined what your company needs to measure.
+                            <a href="{{ route('boundary.index') }}" style="color:var(--primary-green);font-weight:700">Scope it now</a>
+                            and the rest of this page becomes specific to your business.
+                        </div>
+                    @elseif($boundary['top_gaps']->isNotEmpty())
+                        <div style="margin-top:16px;font-size:.8rem;color:var(--gray-600);line-height:1.5">
+                            <b style="color:var(--gray-700)">Boundary gaps:</b>
+                            {{ $boundary['top_gaps']->pluck('suggested_name')->implode(', ') }}{{ $boundary['gaps']->count() > 3 ? ' +'.($boundary['gaps']->count() - 3).' more' : '' }}
+                        </div>
+                    @endif
+
                     @if($scope3['enabled'] && !empty($scope3['missing_list']))
                         <div style="margin-top:16px;font-size:.8rem;color:var(--gray-600)">
                             <b style="color:var(--gray-700)">Scope 3 gaps:</b>

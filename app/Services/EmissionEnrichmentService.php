@@ -21,14 +21,23 @@ use App\Support\Gwp;
 class EmissionEnrichmentService
 {
     /**
-     * @param array $data    The record attributes being persisted (mutated copy returned).
-     * @param array $context Optional hints: emission_factor_id, energy_attribute_certificate_id,
-     *                       market_based_co2e, scope2_method.
+     * @param  array  $data  The record attributes being persisted (mutated copy returned).
+     * @param  array  $context  Optional hints: emission_factor_id, energy_attribute_certificate_id,
+     *                          market_based_co2e, scope2_method.
      */
+    public function __construct(protected EmissionFigureVerifier $verifier) {}
+
     public function enrich(array $data, array $context = []): array
     {
         $companyId = $data['company_id'] ?? null;
         $scope = (int) ($data['scope'] ?? 0);
+
+        // 0. Verify the figure against its own activity data and factor BEFORE
+        //    anything is derived from it. The activity-based value arrives from
+        //    the client, and everything below (the gas split, the market-based
+        //    figure) treats co2e_value as authoritative — so an unchecked value
+        //    would propagate consistently and invisibly.
+        $data = $this->verifier->verify($data);
 
         // 1. GWP set — stamp the basis the figure was ACTUALLY computed under, i.e.
         //    the basis of the bundled factor/source tables (currently AR5), so the
@@ -77,7 +86,7 @@ class EmissionEnrichmentService
 
         $sourceName = $data['emission_source'] ?? null;
         $factorValue = $data['emission_factor'] ?? null;
-        if (!$sourceName || $factorValue === null) {
+        if (! $sourceName || $factorValue === null) {
             return null;
         }
 
@@ -98,7 +107,7 @@ class EmissionEnrichmentService
      */
     protected function gasSplit(EmissionFactor $factor, float $co2e, ?string $gwpVersion): ?array
     {
-        if (!$factor->hasGasBreakdown() || $co2e <= 0) {
+        if (! $factor->hasGasBreakdown() || $co2e <= 0) {
             return null;
         }
 
@@ -132,7 +141,7 @@ class EmissionEnrichmentService
         if ($certId) {
             $cert = EnergyAttributeCertificate::find($certId);
             // Tenant guard: ignore a certificate from another company.
-            if ($cert && (!isset($data['company_id']) || $cert->company_id == $data['company_id'])) {
+            if ($cert && (! isset($data['company_id']) || $cert->company_id == $data['company_id'])) {
                 $data['energy_attribute_certificate_id'] = $cert->id;
                 $data['market_based_factor'] = $cert->emission_factor;
 
@@ -148,6 +157,7 @@ class EmissionEnrichmentService
                     $data['market_based_co2e'] = $context['market_based_co2e'] ?? ($data['market_based_co2e'] ?? null);
                 }
                 $data['scope2_method'] = 'market_based';
+
                 return $data;
             }
         }

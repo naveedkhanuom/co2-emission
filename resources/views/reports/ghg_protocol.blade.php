@@ -693,15 +693,30 @@
     
     <!-- ApexCharts JS -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
-    
     <script>
+        @php
+            // Built here, not inline in @json(...): the @json directive explodes
+            // its argument on commas (CompilesJson::compileJson), so an inline
+            // array literal loses everything past the second comma.
+            $scopeSeries = [
+                (float) $chartData['scope_breakdown']['Scope 1'],
+                (float) $chartData['scope_breakdown']['Scope 2'],
+                (float) $chartData['scope_breakdown']['Scope 3'],
+            ];
+            $scope1CategorySeries = [
+                (float) $chartData['scope1_categories']['Stationary Combustion'],
+                (float) $chartData['scope1_categories']['Mobile Combustion'],
+                (float) $chartData['scope1_categories']['Fugitive Emissions'],
+                (float) $chartData['scope1_categories']['Process Emissions'],
+            ];
+        @endphp
         // Scope Breakdown Pie Chart
         var scopeBreakdownOptions = {
-            series: [
-                {{ number_format($chartData['scope_breakdown']['Scope 1'], 2) }},
-                {{ number_format($chartData['scope_breakdown']['Scope 2'], 2) }},
-                {{ number_format($chartData['scope_breakdown']['Scope 3'], 2) }}
-            ],
+            // Emitted as JSON, not number_format(): a thousands separator in a
+            // raw JS array literal splits one value into two elements (4,500.00
+            // becomes 4 and 500.00), which is what produced the phantom
+            // "series-4" slice and shifted every label onto the wrong scope.
+            series: @json($scopeSeries),
             chart: {
                 type: 'donut',
                 height: 300
@@ -732,12 +747,8 @@
         var scope1CategoriesOptions = {
             series: [{
                 name: 'Emissions (tCO₂e)',
-                data: [
-                    {{ number_format($chartData['scope1_categories']['Stationary Combustion'], 2) }},
-                    {{ number_format($chartData['scope1_categories']['Mobile Combustion'], 2) }},
-                    {{ number_format($chartData['scope1_categories']['Fugitive Emissions'], 2) }},
-                    {{ number_format($chartData['scope1_categories']['Process Emissions'], 2) }}
-                ]
+                // Same reason as the donut above: raw JSON floats, never number_format().
+                data: @json($scope1CategorySeries)
             }],
             chart: {
                 type: 'bar',
@@ -758,6 +769,21 @@
             },
             xaxis: {
                 categories: ['Stationary Combustion', 'Mobile Combustion', 'Fugitive Emissions', 'Process Emissions']
+            },
+            yaxis: {
+                // Same as the monthly trend: without an explicit scale, a series
+                // where most bars are zero makes ApexCharts derive a degenerate
+                // tick interval and render "15000.000000000000".
+                min: 0,
+                forceNiceScale: true,
+                title: {
+                    text: 'Emissions (tCO₂e)'
+                },
+                labels: {
+                    formatter: function(val) {
+                        return Number(val).toLocaleString('en-US', {maximumFractionDigits: 2});
+                    }
+                }
             },
             colors: ['#0066cc'],
             tooltip: {
@@ -803,6 +829,22 @@
             },
             xaxis: {
                 categories: monthlyCategories
+            },
+            yaxis: {
+                // Without an explicit scale a flat/near-flat series makes
+                // ApexCharts derive a degenerate tick interval and render
+                // labels like "4500.000000". min + forceNiceScale keeps the
+                // scale sane; the formatter matches the tooltip below.
+                min: 0,
+                forceNiceScale: true,
+                title: {
+                    text: 'Emissions (tCO₂e)'
+                },
+                labels: {
+                    formatter: function(val) {
+                        return Number(val).toLocaleString('en-US', {maximumFractionDigits: 2});
+                    }
+                }
             },
             colors: ['#0066cc', '#4caf50', '#ff9800'],
             legend: {
@@ -857,6 +899,20 @@
             },
             xaxis: {
                 categories: facilityNames
+            },
+            yaxis: {
+                // Same as the charts above: pin the scale so a single dominant
+                // facility (or one with data) can't produce degenerate ticks.
+                min: 0,
+                forceNiceScale: true,
+                title: {
+                    text: 'Emissions (tCO₂e)'
+                },
+                labels: {
+                    formatter: function(val) {
+                        return Number(val).toLocaleString('en-US', {maximumFractionDigits: 2});
+                    }
+                }
             },
             colors: ['#0066cc', '#4caf50', '#ff9800'],
             legend: {

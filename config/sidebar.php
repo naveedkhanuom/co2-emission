@@ -16,6 +16,7 @@ return [
     'menu_items' => [
         'main' => [
             'home' => 'Dashboard',
+            'boundary.index' => 'Boundary Advisor',
             'emission_records.index' => 'Manual Entry',
             'emission_records.scope_entry' => 'Scope-Based Entry',
             'scope1_entry.index' => 'Scope 1 Entry',

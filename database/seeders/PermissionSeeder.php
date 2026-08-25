@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Spatie\Permission\Models\Permission;
 
 class PermissionSeeder extends Seeder
@@ -149,6 +148,11 @@ class PermissionSeeder extends Seeder
             'create-utility-bill',
             'edit-utility-bill',
             'delete-utility-bill',
+
+            // Boundary Advisor
+            'list-boundary',
+            'create-boundary',
+            'edit-boundary',
         ];
 
         foreach ($permissions as $name) {

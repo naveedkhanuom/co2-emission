@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
+use App\Auditable;
+use App\HasCompanyScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\HasCompanyScope;
-use App\Auditable;
 
 class EmissionRecord extends Model
 {
-    use HasFactory, HasCompanyScope, Auditable;
+    use Auditable, HasCompanyScope, HasFactory;
 
     protected $fillable = [
         'entry_date',
@@ -21,6 +21,7 @@ class EmissionRecord extends Model
         'supplier_id',
         'emission_source',
         'activity_data',
+        'activity_unit',
         'spend_amount',
         'spend_currency',
         'emission_factor',
@@ -73,18 +74,53 @@ class EmissionRecord extends Model
     ];
 
     // Relationships
-    public function company() { return $this->belongsTo(Company::class); }
-    public function site() { return $this->belongsTo(Site::class); }
-    public function user() { return $this->belongsTo(User::class, 'created_by'); }
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 
-    public function reviewer() { return $this->belongsTo(User::class, 'reviewed_by'); }
+    public function site()
+    {
+        return $this->belongsTo(Site::class);
+    }
 
-    public function approver() { return $this->belongsTo(User::class, 'approved_by'); }
-    public function emissionSource() { return $this->belongsTo(EmissionSource::class); }
-    public function emissionFactor() { return $this->belongsTo(EmissionFactor::class); }
-    public function scope3Category() { return $this->belongsTo(Scope3Category::class); }
-    public function supplier() { return $this->belongsTo(Supplier::class); }
-    public function energyAttributeCertificate() { return $this->belongsTo(EnergyAttributeCertificate::class); }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    // NOTE: there is deliberately no emissionSource() relation here. This table
+    // records its source as a NAME (the `emission_source` string column), not a
+    // foreign key — a belongsTo would query a column that does not exist.
+    public function emissionFactor()
+    {
+        return $this->belongsTo(EmissionFactor::class);
+    }
+
+    public function scope3Category()
+    {
+        return $this->belongsTo(Scope3Category::class);
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    public function energyAttributeCertificate()
+    {
+        return $this->belongsTo(EnergyAttributeCertificate::class);
+    }
 
     /**
      * GHG Protocol market-based Scope 2 figure. Falls back to the location-based

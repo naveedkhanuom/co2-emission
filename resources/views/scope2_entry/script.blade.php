@@ -395,7 +395,7 @@ function initScope2() {
   }
 
   function resetForm() {
-    ['scope2Fqty', 'scope2Fdt', 'scope2Ffac', 'scope2Fdsc'].forEach(function(id) {
+    ['scope2Fqty', 'scope2Fdt', 'scope2Ffac', 'scope2Fdept', 'scope2Fdsc'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -485,6 +485,7 @@ function initScope2() {
     var per = document.getElementById('scope2Fper').value;
     var dt = document.getElementById('scope2Fdt').value;
     var fac = document.getElementById('scope2Ffac').value;
+    var dept = document.getElementById('scope2Fdept').value;
     var regionTxt = '';
     if (selSrc.isGrid && gridEF[selRegionIdx]) {
       if (gridEF[selRegionIdx].region.indexOf('Custom') !== -1) {
@@ -493,7 +494,7 @@ function initScope2() {
         regionTxt = ' | Region: ' + gridEF[selRegionIdx].region;
       }
     }
-    document.getElementById('scope2Rvw').innerHTML = '<strong>Source:</strong> ' + selSrc.name + '<br><strong>Quantity:</strong> ' + document.getElementById('scope2Fqty').value + ' ' + uLabel + regionTxt + '<br><strong>Emissions:</strong> <span style="color:var(--primary-green);font-weight:700">' + t.toFixed(4) + ' tCO2e</span><br><strong>EF:</strong> ' + (selSrc.note || '') + '<br><strong>Period:</strong> ' + per + ' | ' + dt + '<br><strong>Facility:</strong> ' + fac;
+    document.getElementById('scope2Rvw').innerHTML = '<strong>Source:</strong> ' + selSrc.name + '<br><strong>Quantity:</strong> ' + document.getElementById('scope2Fqty').value + ' ' + uLabel + regionTxt + '<br><strong>Emissions:</strong> <span style="color:var(--primary-green);font-weight:700">' + t.toFixed(4) + ' tCO2e</span><br><strong>EF:</strong> ' + (selSrc.note || '') + '<br><strong>Period:</strong> ' + per + ' | ' + dt + '<br><strong>Facility:</strong> ' + fac + (dept ? '<br><strong>Department:</strong> ' + dept : '');
     goStep(3);
   });
 
@@ -506,10 +507,12 @@ function initScope2() {
     formData.append('_token', window.scope2Csrf);
     formData.append('entryDate', document.getElementById('scope2Fdt').value);
     formData.append('facilitySelect', document.getElementById('scope2Ffac').value.trim());
+    formData.append('departmentSelect', document.getElementById('scope2Fdept').value);
     formData.append('scopeSelect', '2');
     formData.append('emissionSourceSelect', selSrc.name);
     formData.append('co2eValue', t.toFixed(6));
     formData.append('activityData', document.getElementById('scope2Fqty').value);
+    formData.append('activityUnit', (selSrc.units[uIdx] || {}).u || '');
     // Scope 2 dual reporting: co2eValue above is location-based (grid). Capture
     // the market-based figure from the contractual instrument alongside it.
     (function() {
@@ -659,13 +662,14 @@ function initScope2() {
       columns: [
         { data: 'emission_source', name: 'emission_source' },
         { data: 'activity_data', name: 'activity_data', render: function(v) { return v != null ? Number(v) : '-'; } },
+        { data: 'activity_unit', name: 'activity_unit', render: function(v) { return v ? v : '—'; } },
         { data: 'co2e_value', name: 'co2e_value' },
         { data: 'facility', name: 'facility' },
         { data: 'entry_date', name: 'entry_date' },
         { data: 'attachments', name: 'attachments', orderable: false, searchable: false, createdCell: function(td, cellData) { $(td).html(cellData || ''); } },
         { data: 'actions', name: 'actions', orderable: false, searchable: false, createdCell: function(td, cellData) { $(td).html(cellData || ''); } }
       ],
-      order: [[4, 'desc']],
+      order: [[5, 'desc']],
       pageLength: 10,
       responsive: true
     });

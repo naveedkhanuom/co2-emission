@@ -389,7 +389,7 @@ function initScope3() {
   }
 
   function resetForm() {
-    ['scope3Fco2', 'scope3Fco2Override', 'scope3Fdt', 'scope3Ffac', 'scope3Fdsc'].forEach(function(id) {
+    ['scope3Fco2', 'scope3Fco2Override', 'scope3Fdt', 'scope3Ffac', 'scope3Fdept', 'scope3Fdsc'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -472,10 +472,11 @@ function initScope3() {
     var per = document.getElementById('scope3Fper').value;
     var dt = document.getElementById('scope3Fdt').value;
     var fac = document.getElementById('scope3Ffac').value;
+    var dept = document.getElementById('scope3Fdept').value;
     var method = document.getElementById('scope3Fmethod').value;
     var quality = document.getElementById('scope3Fquality').value;
     var actLine = actPayload && typeof actPayload === 'object' ? JSON.stringify(actPayload) : '';
-    document.getElementById('scope3Rvw').innerHTML = '<strong>Category:</strong> ' + (selCat.emission_source_name || selCat.name) + '<br><strong>Emissions:</strong> <span style="color:var(--primary-green);font-weight:700">' + co2.toFixed(4) + ' tCO2e</span><br><strong>Method:</strong> ' + method + ' | <strong>Data quality:</strong> ' + quality + (actLine ? '<br><strong>Activity data:</strong> ' + actLine : '') + '<br><strong>Period:</strong> ' + per + ' | ' + dt + '<br><strong>Facility:</strong> ' + fac;
+    document.getElementById('scope3Rvw').innerHTML = '<strong>Category:</strong> ' + (selCat.emission_source_name || selCat.name) + '<br><strong>Emissions:</strong> <span style="color:var(--primary-green);font-weight:700">' + co2.toFixed(4) + ' tCO2e</span><br><strong>Method:</strong> ' + method + ' | <strong>Data quality:</strong> ' + quality + (actLine ? '<br><strong>Activity data:</strong> ' + actLine : '') + '<br><strong>Period:</strong> ' + per + ' | ' + dt + '<br><strong>Facility:</strong> ' + fac + (dept ? '<br><strong>Department:</strong> ' + dept : '');
     goStep(3);
   });
 
@@ -487,6 +488,7 @@ function initScope3() {
     formData.append('_token', window.scope3Csrf);
     formData.append('entryDate', document.getElementById('scope3Fdt').value);
     formData.append('facilitySelect', document.getElementById('scope3Ffac').value.trim());
+    formData.append('departmentSelect', document.getElementById('scope3Fdept').value);
     formData.append('scopeSelect', '3');
     formData.append('scope3_category_id', selCat.id);
     formData.append('emissionSourceSelect', selCat.emission_source_name || selCat.name);

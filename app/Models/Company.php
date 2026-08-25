@@ -13,6 +13,9 @@ class Company extends Model
         'name',
         'code',
         'industry_type',
+        'business_description',
+        'sub_industry',
+        'isic_code',
         'country',
         'address',
         'contact_person',
@@ -72,11 +75,11 @@ class Company extends Model
     public function getSetting($key, $default = null)
     {
         $setting = $this->settings()->where('key', $key)->first();
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
-        return match($setting->type) {
+        return match ($setting->type) {
             'boolean' => (bool) $setting->value,
             'integer' => (int) $setting->value,
             'json' => json_decode($setting->value, true),
@@ -89,7 +92,7 @@ class Company extends Model
      */
     public function setSetting($key, $value, $type = 'string', $description = null)
     {
-        $value = match($type) {
+        $value = match ($type) {
             'boolean', 'integer' => (string) $value,
             'json' => json_encode($value),
             default => $value,
@@ -105,16 +108,31 @@ class Company extends Model
         );
     }
 
+    public function boundaryAssessments()
+    {
+        return $this->hasMany(BoundaryAssessment::class);
+    }
+
     /**
-     * Get industry-specific emission templates.
+     * The company's live inventory boundary, if the Boundary Advisor has been
+     * run and activated. Null means the company has not scoped its boundary yet.
+     */
+    public function activeBoundaryAssessment(?int $year = null): ?BoundaryAssessment
+    {
+        return $this->boundaryAssessments()
+            ->where('status', 'active')
+            ->when($year, fn ($q) => $q->where('reporting_year', $year))
+            ->latest('reporting_year')
+            ->first();
+    }
+
+    /**
+     * Get industry-specific emission templates, narrowing to the company's
+     * sub-industry when one is set (a car-rental firm and a shipping line are
+     * both `transportation` but need different templates).
      */
     public function getIndustryTemplates()
     {
-        return IndustryEmissionTemplate::where('industry_type', $this->industry_type)
-            ->where('is_active', true)
-            ->orderBy('priority')
-            ->orderBy('scope')
-            ->get();
+        return IndustryEmissionTemplate::getByIndustry($this->industry_type, null, $this->sub_industry);
     }
 }
-

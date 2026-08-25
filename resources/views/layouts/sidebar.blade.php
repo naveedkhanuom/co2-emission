@@ -79,6 +79,22 @@
 
         <li>
             @php
+                $demoRestricted = demo_route_restricted('scope_classifier.index');
+                $userRestricted = ! user_can_see_sidebar_route('scope_classifier.index');
+                $restricted = $demoRestricted || $userRestricted;
+                $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+            @endphp
+            <a href="{{ route('scope_classifier.index') }}"
+               class="{{ request()->routeIs('scope_classifier.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+               @if($title) title="{{ $title }}" @endif>
+                <i class="fas fa-search"></i>
+                <span>Scope Finder</span>
+                @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+            </a>
+        </li>
+
+        <li>
+            @php
                 $demoRestricted = demo_route_restricted('scope1_entry.index');
                 $userRestricted = ! user_can_see_sidebar_route('scope1_entry.index');
                 $restricted = $demoRestricted || $userRestricted;
@@ -191,16 +207,16 @@
 
         <li>
             @php
-                $demoRestricted = demo_route_restricted('scope_classifier.index');
-                $userRestricted = ! user_can_see_sidebar_route('scope_classifier.index');
+                $demoRestricted = demo_route_restricted('boundary.index');
+                $userRestricted = ! user_can_see_sidebar_route('boundary.index');
                 $restricted = $demoRestricted || $userRestricted;
                 $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
             @endphp
-            <a href="{{ route('scope_classifier.index') }}"
-               class="{{ request()->routeIs('scope_classifier.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+            <a href="{{ route('boundary.index') }}"
+               class="{{ request()->routeIs('boundary.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
                @if($title) title="{{ $title }}" @endif>
-                <i class="fas fa-search"></i>
-                <span>Scope Finder</span>
+                <i class="fas fa-compass-drafting"></i>
+                <span>Boundary Advisor</span>
                 @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
             </a>
         </li>

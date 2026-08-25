@@ -19,32 +19,32 @@ class ClaudeService
      */
     public function enabled(): bool
     {
-        return !empty(config('services.anthropic.key'));
+        return ! empty(config('services.anthropic.key'));
     }
 
     /**
      * Send a single-turn message and return Claude's text response.
      *
-     * @param  string       $prompt   The user message.
-     * @param  string|null  $system   Optional system prompt.
-     * @param  array        $options  Overrides: model, max_tokens, temperature.
-     * @return string|null            The assistant text, or null on failure.
+     * @param  string  $prompt  The user message.
+     * @param  string|null  $system  Optional system prompt.
+     * @param  array  $options  Overrides: model, max_tokens, temperature.
+     * @return string|null The assistant text, or null on failure.
      */
     public function message(string $prompt, ?string $system = null, array $options = []): ?string
     {
-        if (!$this->enabled()) {
+        if (! $this->enabled()) {
             return null;
         }
 
         $payload = [
-            'model'      => $options['model'] ?? config('services.anthropic.model'),
+            'model' => $options['model'] ?? config('services.anthropic.model'),
             'max_tokens' => $options['max_tokens'] ?? config('services.anthropic.max_tokens'),
-            'messages'   => [
+            'messages' => [
                 ['role' => 'user', 'content' => $prompt],
             ],
         ];
 
-        if (!empty($system)) {
+        if (! empty($system)) {
             $payload['system'] = $system;
         }
 
@@ -52,20 +52,30 @@ class ClaudeService
             $payload['temperature'] = $options['temperature'];
         }
 
+        // Long-running calls (large prompts, high max_tokens) can exceed the
+        // default chat timeout. Callers may raise it via options['timeout'];
+        // keep PHP's execution limit above it so a slow call returns a clean
+        // failure instead of a fatal "max execution time".
+        $timeout = (int) ($options['timeout'] ?? config('services.anthropic.timeout', 30));
+        if ($timeout > 30 && function_exists('set_time_limit')) {
+            @set_time_limit($timeout + 30);
+        }
+
         try {
             $response = Http::withHeaders([
-                'x-api-key'         => config('services.anthropic.key'),
+                'x-api-key' => config('services.anthropic.key'),
                 'anthropic-version' => config('services.anthropic.version'),
-                'content-type'      => 'application/json',
+                'content-type' => 'application/json',
             ])
-                ->timeout((int) config('services.anthropic.timeout', 30))
-                ->post(rtrim((string) config('services.anthropic.base_url'), '/') . '/v1/messages', $payload);
+                ->timeout($timeout)
+                ->post(rtrim((string) config('services.anthropic.base_url'), '/').'/v1/messages', $payload);
 
             if ($response->failed()) {
                 Log::warning('Claude API request failed', [
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body' => $response->body(),
                 ]);
+
                 return null;
             }
 
@@ -80,7 +90,8 @@ class ClaudeService
 
             return $text !== '' ? $text : null;
         } catch (\Throwable $e) {
-            Log::warning('Claude API exception: ' . $e->getMessage());
+            Log::warning('Claude API exception: '.$e->getMessage());
+
             return null;
         }
     }
@@ -93,23 +104,22 @@ class ClaudeService
      * assistant); for one-shot prompts use message() instead.
      *
      * @param  array<int, array{role: string, content: string}>  $messages
-     * @param  string|null  $system
-     * @param  array        $options  Overrides: model, max_tokens, temperature.
-     * @return string|null            The assistant text, or null on failure.
+     * @param  array  $options  Overrides: model, max_tokens, temperature.
+     * @return string|null The assistant text, or null on failure.
      */
     public function chat(array $messages, ?string $system = null, array $options = []): ?string
     {
-        if (!$this->enabled() || empty($messages)) {
+        if (! $this->enabled() || empty($messages)) {
             return null;
         }
 
         $payload = [
-            'model'      => $options['model'] ?? config('services.anthropic.model'),
+            'model' => $options['model'] ?? config('services.anthropic.model'),
             'max_tokens' => $options['max_tokens'] ?? config('services.anthropic.max_tokens'),
-            'messages'   => array_values($messages),
+            'messages' => array_values($messages),
         ];
 
-        if (!empty($system)) {
+        if (! empty($system)) {
             $payload['system'] = $system;
         }
 
@@ -119,18 +129,19 @@ class ClaudeService
 
         try {
             $response = Http::withHeaders([
-                'x-api-key'         => config('services.anthropic.key'),
+                'x-api-key' => config('services.anthropic.key'),
                 'anthropic-version' => config('services.anthropic.version'),
-                'content-type'      => 'application/json',
+                'content-type' => 'application/json',
             ])
                 ->timeout((int) config('services.anthropic.timeout', 30))
-                ->post(rtrim((string) config('services.anthropic.base_url'), '/') . '/v1/messages', $payload);
+                ->post(rtrim((string) config('services.anthropic.base_url'), '/').'/v1/messages', $payload);
 
             if ($response->failed()) {
                 Log::warning('Claude chat request failed', [
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body' => $response->body(),
                 ]);
+
                 return null;
             }
 
@@ -144,7 +155,8 @@ class ClaudeService
 
             return $text !== '' ? $text : null;
         } catch (\Throwable $e) {
-            Log::warning('Claude chat exception: ' . $e->getMessage());
+            Log::warning('Claude chat exception: '.$e->getMessage());
+
             return null;
         }
     }
@@ -158,23 +170,22 @@ class ClaudeService
      * and textBlock(). Falls back to null when the provider is unavailable.
      *
      * @param  array<int, array>  $content  Anthropic content blocks.
-     * @return string|null
      */
     public function messageWithContent(array $content, ?string $system = null, array $options = []): ?string
     {
-        if (!$this->enabled() || empty($content)) {
+        if (! $this->enabled() || empty($content)) {
             return null;
         }
 
         $payload = [
-            'model'      => $options['model'] ?? config('services.anthropic.model'),
+            'model' => $options['model'] ?? config('services.anthropic.model'),
             'max_tokens' => $options['max_tokens'] ?? config('services.anthropic.max_tokens'),
-            'messages'   => [
+            'messages' => [
                 ['role' => 'user', 'content' => array_values($content)],
             ],
         ];
 
-        if (!empty($system)) {
+        if (! empty($system)) {
             $payload['system'] = $system;
         }
 
@@ -191,20 +202,21 @@ class ClaudeService
 
         try {
             $response = Http::withHeaders([
-                'x-api-key'         => config('services.anthropic.key'),
+                'x-api-key' => config('services.anthropic.key'),
                 'anthropic-version' => config('services.anthropic.version'),
-                'content-type'      => 'application/json',
+                'content-type' => 'application/json',
             ])
                 // Documents (PDFs) can be large and slower to process than plain
                 // text — allow a longer ceiling than the default chat timeout.
                 ->timeout($docTimeout)
-                ->post(rtrim((string) config('services.anthropic.base_url'), '/') . '/v1/messages', $payload);
+                ->post(rtrim((string) config('services.anthropic.base_url'), '/').'/v1/messages', $payload);
 
             if ($response->failed()) {
                 Log::warning('Claude document request failed', [
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body' => $response->body(),
                 ]);
+
                 return null;
             }
 
@@ -218,7 +230,8 @@ class ClaudeService
 
             return $text !== '' ? $text : null;
         } catch (\Throwable $e) {
-            Log::warning('Claude document exception: ' . $e->getMessage());
+            Log::warning('Claude document exception: '.$e->getMessage());
+
             return null;
         }
     }
@@ -228,14 +241,13 @@ class ClaudeService
      * return it decoded.
      *
      * @param  array<int, array>  $content
-     * @return array|null
      */
     public function jsonWithContent(array $content, ?string $system = null, array $options = []): ?array
     {
         $jsonDirective = 'Respond with a single valid JSON object and nothing else. '
-            . 'Do not wrap it in markdown code fences or add commentary.';
+            .'Do not wrap it in markdown code fences or add commentary.';
 
-        $system = $system ? ($system . "\n\n" . $jsonDirective) : $jsonDirective;
+        $system = $system ? ($system."\n\n".$jsonDirective) : $jsonDirective;
 
         $raw = $this->messageWithContent($content, $system, $options);
 
@@ -262,7 +274,7 @@ class ClaudeService
     public function imageBlock(string $mediaType, string $base64): array
     {
         return [
-            'type'   => 'image',
+            'type' => 'image',
             'source' => ['type' => 'base64', 'media_type' => $mediaType, 'data' => $base64],
         ];
     }
@@ -271,7 +283,7 @@ class ClaudeService
     public function documentBlock(string $base64, string $mediaType = 'application/pdf'): array
     {
         return [
-            'type'   => 'document',
+            'type' => 'document',
             'source' => ['type' => 'base64', 'media_type' => $mediaType, 'data' => $base64],
         ];
     }
@@ -282,14 +294,14 @@ class ClaudeService
      * The system prompt is augmented to force a raw-JSON reply, and any
      * markdown code fences are stripped before decoding.
      *
-     * @return array|null  The decoded JSON object, or null on failure.
+     * @return array|null The decoded JSON object, or null on failure.
      */
     public function json(string $prompt, ?string $system = null, array $options = []): ?array
     {
         $jsonDirective = 'Respond with a single valid JSON object and nothing else. '
-            . 'Do not wrap it in markdown code fences or add commentary.';
+            .'Do not wrap it in markdown code fences or add commentary.';
 
-        $system = $system ? ($system . "\n\n" . $jsonDirective) : $jsonDirective;
+        $system = $system ? ($system."\n\n".$jsonDirective) : $jsonDirective;
 
         $raw = $this->message($prompt, $system, $options);
 
@@ -341,6 +353,7 @@ class ClaudeService
             $decoded = json_decode($repaired, true);
             if (is_array($decoded)) {
                 Log::warning('Claude JSON was truncated; salvaged complete elements from a partial reply.');
+
                 return $decoded;
             }
         }
@@ -360,9 +373,9 @@ class ClaudeService
     private function repairTruncatedJson(string $text): ?string
     {
         $inString = false;
-        $escape   = false;
-        $stack    = [];   // currently open brackets, in order
-        $cut      = -1;    // byte offset to truncate at
+        $escape = false;
+        $stack = [];   // currently open brackets, in order
+        $cut = -1;    // byte offset to truncate at
         $cutStack = [];    // open-bracket stack as it stood at $cut
 
         $len = strlen($text);
@@ -377,6 +390,7 @@ class ClaudeService
                 } elseif ($ch === '"') {
                     $inString = false;
                 }
+
                 continue;
             }
 

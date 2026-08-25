@@ -89,7 +89,24 @@
       "Bash(rm -f \"C:/Users/NAVEED/AppData/Local/Temp/claude/d--Projects-Development-GHG-EMSSION-NEW-DESIGN/bd3cba58-fd66-486f-871c-76ce354ce908/scratchpad/img_check.php\")",
       "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $a=require '\\\\''bootstrap/app.php'\\\\''; $a->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); try{ \\\\Illuminate\\\\Support\\\\Facades\\\\Blade::compileString\\(file_get_contents\\(resource_path\\('\\\\''views/ai_extract/index.blade.php'\\\\''\\)\\)\\); echo '\\\\''index view: OK'\\\\''; }catch\\(\\\\Throwable $e\\){ echo '\\\\''ERROR: '\\\\''.$e->getMessage\\(\\); }')",
       "Bash(sed 's/\\\\\\(KEY=\\\\\\).*/\\\\1***REDACTED***/')",
-      "Bash(php \"C:/Users/NAVEED/AppData/Local/Temp/claude/d--Projects-Development-GHG-EMSSION-NEW-DESIGN/8853787a-f140-44c0-81ac-911db12be5b9/scratchpad/test_repair.php\")"
+      "Bash(php \"C:/Users/NAVEED/AppData/Local/Temp/claude/d--Projects-Development-GHG-EMSSION-NEW-DESIGN/8853787a-f140-44c0-81ac-911db12be5b9/scratchpad/test_repair.php\")",
+      "Bash(grep -E \"^\\\\s*\\(Route::\\(get|post|put|patch|delete|resource\\)|// ---|/\\\\*\\)\" routes/web.php)",
+      "Bash(vendor/bin/pint --dirty)",
+      "PowerShell(php vendor/bin/pint --dirty)",
+      "PowerShell(php artisan test tests/Unit 2>&1)",
+      "PowerShell(php artisan route:list --path=boundary -v 2>&1)",
+      "PowerShell(php artisan test tests/Feature/BoundaryRouteBindingTest.php 2>&1)",
+      "PowerShell(php artisan test 2>&1)",
+      "PowerShell(php artisan test tests/Feature/BoundaryCoverageTest.php 2>&1)",
+      "PowerShell(php artisan test tests/Feature/TenantRouteBindingTest.php 2>&1)",
+      "Bash(sed -i 's/, .ef.gas_type.//; s/\\\\$r->gas_type ?? .-., //' C:/Users/NAVEED/AppData/Local/Temp/claude/d--Projects-Development-GHG-EMSSION-NEW-DESIGN/7affc72f-b712-4d47-bdd3-7903c602496e/scratchpad/diag.php)",
+      "Bash(sed -i \"s/%-6s %s%s',/%-6s%s',/\" \"C:/Users/NAVEED/AppData/Local/Temp/claude/d--Projects-Development-GHG-EMSSION-NEW-DESIGN/7affc72f-b712-4d47-bdd3-7903c602496e/scratchpad/diag.php\")",
+      "Bash(grep -rln \"Services\\\\\\\\\\\\\\\\AI\\\\|Services\\\\\\\\\\\\\\\\Boundary\" app/Http/Controllers/ app/Console/Commands/)",
+      "PowerShell(php artisan test tests/Unit/GwpTest.php tests/Feature/EmissionCalculationTest.php 2>&1)",
+      "Bash(awk 'NR>=360 && NR<=386' routes/web.php)",
+      "Bash(awk 'NR<=384 && /Route::middleware|^}\\\\\\);/ {print NR\": \"$0}' routes/web.php)",
+      "Bash(grep -n 'EmissionRecord::create\\\\|EmissionRecord::updateOrCreate\\\\|->update\\($data\\)\\\\|enrich\\(' app/Http/Controllers/EmissionRecordController.php)",
+      "PowerShell(php artisan test tests/Feature/EmissionCalculationTest.php 2>&1)"
     ]
   }
 }

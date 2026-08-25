@@ -1,12 +1,37 @@
 # AI Features — GHG Emissions Platform
 
 A catalogue of AI capabilities for this platform, grounded in the **existing
-codebase**. Use it to decide what to build and in what order. Nothing here is
-implemented yet — this is a planning document.
+codebase**. Use it to decide what to build and in what order.
 
-- **Date:** 2026-06-18
-- **AI provider already in place:** Anthropic Claude via `app/Services/AI/ClaudeService.php`
-- **Where AI is already used:** OCR bill extraction (`app/Services/BillDataExtractor.php` + `BillOCRController`)
+- **Written:** 2026-06-18 · **Last reviewed:** 2026-08-05
+- **AI provider:** Anthropic Claude via `app/Services/AI/ClaudeService.php`
+
+> **Status note (2026-08-05).** This document was written as a plan ("nothing
+> here is implemented yet"). That is no longer true — most of Tier 1 and part of
+> Tier 2 have shipped. Current state:
+>
+> | Feature | Status | Where |
+> |---|---|---|
+> | 1. AI Scope Classifier | **Shipped** | `ScopeClassificationService` + `ScopeClassifierController` |
+> | 2. Smart Emission-Factor Matching | **Shipped** | `FactorMatchingService` |
+> | 3. Supplier Survey Parsing | **Service only** — `SupplierMatchingService` exists, not wired to a controller |
+> | 4. Anomaly & Data-Quality Detection | **Shipped** | `AnomalyDetectionService` + `ScanAnomalies` command + `AnomalyAlert` |
+> | 5. Ask-Your-Data Assistant | **Shipped** | `AskYourDataService` + `AskController` |
+> | 6. Disclosure Narrative Generator | Not started | — |
+> | 7. Reduction Recommendations | Not started | — |
+> | 8–9. Factor updates / SBTi | Not started | — |
+> | 10. Bulk Document Ingestion | **Shipped** | `DocumentEmissionExtractor` + `DocumentExtractionController`, `AiExtraction` |
+> | 11. Report Summarizer | Not started | — |
+>
+> Also shipped, and **not** in the original list: **natural-language entry**
+> (`NaturalLanguageEntryService`) and the **Boundary Advisor** — which scopes
+> *what a company must measure* before any number is entered, and sits upstream
+> of every feature here. See `BOUNDARY_ADVISOR_PLAN.md`.
+>
+> **Provider note:** `ClaudeService::message()` accepts an `options['timeout']`
+> override. Large prompts (the boundary catalogue, long document extractions)
+> exceed the 30-second chat default and will silently fall back or return null
+> without it.
 
 ---
 
@@ -137,11 +162,20 @@ generated report ("Total emissions fell 6% YoY, driven by…").
 
 ## Recommended sequencing
 
-1. **#1 AI Scope Classifier** — fastest win, reuses `ClaudeService`, immediately useful in daily entry.
-2. **#5 Ask-Your-Data Assistant** — highest demo/sales impact.
-3. **#6 Disclosure Narrative Generator** — leverages the disclosure data layer just built.
-4. Then #4 (anomaly detection) and #2 (factor matching) to harden data quality.
-5. #7 / #9 (recommendations, SBTi) as the "decarbonization planning" differentiator.
+The original order — #1, #5, #6, then #4/#2, then #7/#9 — has been followed
+except for #6. Everything except #6 in that list is now shipped.
+
+**What to build next, as of 2026-08-05:**
+
+1. **#6 Disclosure Narrative Generator** — the only unbuilt Tier 2 item, and the
+   disclosure data layer it needs already exists.
+2. **Wire up #3** — `SupplierMatchingService` is written but has no controller,
+   so supplier replies are still parsed by hand.
+3. **Boundary coverage → Data Health** — surface `BoundaryCoverageService` on the
+   Data Health page (phase 5 of `BOUNDARY_ADVISOR_PLAN.md`). Cheapest remaining
+   win: it turns the boundary from a one-off wizard into a recurring work queue.
+4. **#7 / #9** (recommendations, SBTi) as the decarbonization-planning
+   differentiator.
 
 ---
 

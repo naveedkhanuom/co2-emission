@@ -147,7 +147,7 @@
             <div class="th2"><h3>Entries</h3></div>
             <div class="p-3">
                 <table class="table table-sm table-hover mb-0" id="scope2Table" width="100%">
-                    <thead><tr><th>Source</th><th>Quantity</th><th>tCO2e</th><th>Facility</th><th>Date</th><th>Attachments</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Source</th><th>Quantity</th><th>Unit</th><th>tCO2e</th><th>Facility</th><th>Date</th><th>Attachments</th><th>Actions</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -213,6 +213,7 @@
                 <div class="co2box" id="scope2Co2box" style="display:none"><div class="co2v" id="scope2Co2v">0.00</div><div class="co2l">tonnes CO2e</div><div class="co2f" id="scope2Co2f"></div></div>
                 <div class="fr"><div class="fg" id="scope2FgPer"><label>Period <span class="rq">*</span></label><select class="fsl" id="scope2Fper"><option value="">Select...</option><option>Monthly</option><option>Quarterly</option><option>Annually</option></select><div class="fem">Select period</div></div><div class="fg" id="scope2FgDt"><label>Date <span class="rq">*</span></label><input class="fi" type="date" id="scope2Fdt"><div class="fem">Select date</div></div></div>
                 <div class="fg" id="scope2FgFac"><label>Facility / Location <span class="rq">*</span></label><select class="fsl" id="scope2Ffac" required><option value="">Select facility...</option>@foreach(facilities() as $facility)<option value="{{ $facility->name }}">{{ $facility->name }}</option>@endforeach</select><div class="fem">Select facility</div></div>
+                <div class="fg" id="scope2FgDept"><label>Department / Cost Center</label><select class="fsl" id="scope2Fdept"><option value="">Select department (optional)...</option>@foreach(departments() as $department)<option value="{{ $department->name }}">{{ $department->name }}</option>@endforeach</select></div>
                 <div class="fg"><label>Notes</label><textarea class="fta" id="scope2Fdsc" placeholder="Optional..."></textarea></div>
                 <div class="fn"><button type="button" class="btn bs" id="scope2N2b">&larr; Back</button><button type="button" class="btn bp" id="scope2N2n">Next &rarr;</button></div>
             </div>

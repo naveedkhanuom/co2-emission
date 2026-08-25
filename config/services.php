@@ -39,12 +39,15 @@ return [
     | directly in controllers/services — always go through this config.
     */
     'anthropic' => [
-        'key'         => env('ANTHROPIC_API_KEY'),
-        'model'       => env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
-        'version'     => env('ANTHROPIC_VERSION', '2023-06-01'),
-        'base_url'    => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
-        'max_tokens'  => (int) env('ANTHROPIC_MAX_TOKENS', 1024),
-        'timeout'     => (int) env('ANTHROPIC_TIMEOUT', 30),
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-6'),
+        'version' => env('ANTHROPIC_VERSION', '2023-06-01'),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+        'max_tokens' => (int) env('ANTHROPIC_MAX_TOKENS', 1024),
+        'timeout' => (int) env('ANTHROPIC_TIMEOUT', 30),
+        // Boundary scoping sends the whole factor/category catalogue and asks
+        // for a long structured answer, so it needs far longer than a chat turn.
+        'boundary_timeout' => (int) env('ANTHROPIC_BOUNDARY_TIMEOUT', 150),
         // Longer ceiling for document/image extraction, which is slower than
         // plain-text chat. The controller raises PHP's execution limit to match.
         'document_timeout' => (int) env('ANTHROPIC_DOCUMENT_TIMEOUT', 90),
