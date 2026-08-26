@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\EmissionRecord;
 use App\Models\Facilities;
+use App\Models\User;
 use App\Support\EnvironmentGuard;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
@@ -48,6 +49,15 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Gate::before(function ($user, $ability) {
+            // Only tenant users carry Spatie roles. Platform staff authenticate
+            // on a different guard against a different table and have no roles
+            // at all, so calling hasRole() on one is a fatal error — which is
+            // exactly what happened the first time the back-office ran an
+            // authorization check.
+            if (! $user instanceof User) {
+                return null;
+            }
+
             // Super Admin and Admin have full access to everything
             if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
                 return true;

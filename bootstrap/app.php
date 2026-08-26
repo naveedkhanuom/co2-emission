@@ -6,6 +6,7 @@ use App\Http\Middleware\SetCompanyConnection;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,24 +29,34 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // 🌐 Global Web Middleware
         //
-        // Tenancy is NOT here — it is applied in routes/tenant.php, so that
-        // central routes stay genuinely tenant-free rather than relying on a
-        // middleware deciding to no-op.
+        // Deliberately empty of tenant concerns. SetCompanyConnection,
+        // DemoRestrictAccess and RestrictSidebarAccess are applied in
+        // routes/tenant.php instead, because all three are about a client's
+        // users — companies, demo limits, sidebar rules — and none of it
+        // means anything on the central domain.
         //
-        // These three run after it on tenant routes, which is required:
-        // SetCompanyConnection reads the companies table, and must read the
-        // tenant's rather than the central one. On central routes there is no
-        // authenticated user, so each of them returns early.
-        $middleware->web([
-            SetCompanyConnection::class,
-            DemoRestrictAccess::class,
-            RestrictSidebarAccess::class,
-        ]);
+        // They were global until the back-office arrived, and it broke
+        // immediately: RestrictSidebarAccess calls hasRole() on the signed-in
+        // user, and platform staff authenticate on a different guard against
+        // a table with no roles at all. Scoping them to tenant routes fixes
+        // that at the cause rather than teaching each one to recognise a user
+        // it should never have been handed.
 
         // ✅ Exclude Zoho webhook from CSRF
         $middleware->validateCsrfTokens(except: [
             'zoho/mail/webhook',
         ]);
+
+        // Unauthenticated users are sent to the right sign-in screen for where
+        // they are. Without this, a guest hitting the back-office would be
+        // redirected to route('login') — the TENANT login, which is registered
+        // inside the tenant route group and does not answer on the central
+        // domain at all.
+        $middleware->redirectGuestsTo(function (Request $request) {
+            return $request->is('admin', 'admin/*')
+                ? route('platform.login')
+                : route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

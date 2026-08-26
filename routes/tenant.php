@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\DemoRestrictAccess;
 use App\Http\Middleware\EnsureTenantIsActive;
+use App\Http\Middleware\RestrictSidebarAccess;
+use App\Http\Middleware\SetCompanyConnection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain;
@@ -39,6 +42,14 @@ Route::middleware([
     // entitled to be served. Without this, suspending an account changed
     // nothing the user could notice.
     EnsureTenantIsActive::class,
+
+    // Tenant concerns, and only tenant concerns. These used to be global on
+    // the `web` group, which meant they also ran for back-office requests —
+    // where the signed-in user is platform staff with no company and no
+    // roles, and RestrictSidebarAccess fatals calling hasRole() on them.
+    SetCompanyConnection::class,
+    DemoRestrictAccess::class,
+    RestrictSidebarAccess::class,
 ])->group(function () {
     /**
      * Confirms tenant resolution end to end: reachable only on a tenant

@@ -40,6 +40,17 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        /*
+         * Our own staff, for the back-office on the central domain. A separate
+         * guard rather than a flag on the tenant guard, so that a client's user
+         * table can never contain an account with reach beyond that client —
+         * and so a session on one is not a session on the other.
+         */
+        'platform' => [
+            'driver' => 'session',
+            'provider' => 'platform_users',
+        ],
     ],
 
     /*
@@ -63,6 +74,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'platform_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\PlatformUser::class,
         ],
 
         // 'users' => [
