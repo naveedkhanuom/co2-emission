@@ -15,7 +15,7 @@ use Tests\TenantTestCase;
  * SetCompanyConnection is appended to the `web` middleware group, so it runs
  * AFTER SubstituteBindings. During implicit route-model binding there is no
  * company context bound yet, and HasCompanyScope falls through to its
- * deny-everything branch for non-super-admins — so a route type-hinting a
+ * deny-everything branch for anyone who is not an account owner — so a route type-hinting a
  * company-scoped model 404s on rows the user genuinely owns.
  *
  * BoundaryController therefore resolves its models explicitly. These tests fail
@@ -83,7 +83,7 @@ class BoundaryRouteBindingTest extends TenantTestCase
     }
 
     /**
-     * The bug that shipped: a non-super-admin owner got "No query results for
+     * The bug that shipped: a user who is not an account owner got "No query results for
      * model [BoundaryAssessment]" on their own draft. Hitting the route with an
      * invalid payload must now produce a 422 (validation ran, so the model
      * resolved) rather than a 404.

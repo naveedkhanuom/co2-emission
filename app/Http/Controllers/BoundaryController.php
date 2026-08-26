@@ -438,7 +438,7 @@ class BoundaryController extends Controller
      * is appended to the `web` middleware group, so it runs AFTER
      * SubstituteBindings — at binding time `current_company_id` is not yet
      * bound, and HasCompanyScope falls through to its deny-everything branch
-     * for any non-super-admin. Implicit binding therefore 404s on rows the user
+     * for anyone who is not an account owner. Implicit binding therefore 404s on rows the user
      * genuinely owns.
      *
      * The global scope is dropped and the tenant check made explicit here, so

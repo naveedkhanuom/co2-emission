@@ -110,8 +110,8 @@ class ProvisionTenant extends Command
                         'company_id' => $company->id,
                         // Account owner: sees every company in THIS tenant,
                         // and nothing outside it. The flag is still named
-                        // is_super_admin from the single-database era.
-                        'is_super_admin' => true,
+                        // is_account_owner from the single-database era.
+                        'is_account_owner' => true,
                     ]);
 
                     $owner->assignRole('Super Admin');

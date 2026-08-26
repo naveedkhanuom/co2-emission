@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use App\Models\UtilityBill;
+use App\Models\Department;
+use App\Models\EmissionFactor;
 use App\Models\EmissionRecord;
 use App\Models\EmissionSource;
-use App\Models\EmissionFactor;
 use App\Models\Facilities;
-use App\Models\Department;
-use Illuminate\Support\Facades\Auth;
+use App\Models\UtilityBill;
 use App\Services\BillDataExtractor;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use thiagoalessio\TesseractOCR\TesseractOCR;
 
 class UtilityBillController extends Controller
@@ -34,7 +34,7 @@ class UtilityBillController extends Controller
         $facilities = Facilities::all();
         $departments = Department::all();
         $emissionSources = EmissionSource::all();
-        
+
         return view('utility_bills.create', compact('facilities', 'departments', 'emissionSources'));
     }
 
@@ -42,6 +42,7 @@ class UtilityBillController extends Controller
     public function index()
     {
         $bills = UtilityBill::with(['company', 'site', 'uploader'])->latest()->get();
+
         return view('utility_bills.index', compact('bills'));
     }
 
@@ -49,13 +50,13 @@ class UtilityBillController extends Controller
      * Stream a bill file to authorized users only. Bills live on the private
      * disk (not web-accessible); this is the only way to view one. Route-model
      * binding is company-scoped via HasCompanyScope, so a user cannot bind
-     * another company's bill; the explicit check guards super-admins too.
+     * another company's bill; the explicit check guards account owners too.
      * Falls back to the legacy public disk for files uploaded before the move.
      */
     public function download(UtilityBill $utilityBill)
     {
         $user = Auth::user();
-        if (! ($user && $user->is_super_admin) && $utilityBill->company_id != current_company_id()) {
+        if (! ($user && $user->is_account_owner) && $utilityBill->company_id != current_company_id()) {
             abort(403, 'You do not have access to this file.');
         }
 
@@ -86,7 +87,7 @@ class UtilityBillController extends Controller
 
         $file = $request->file('bill_file');
         $billType = $request->bill_type;
-        
+
         // Store the uploaded file on the private disk — bills contain sensitive
         // consumption/cost data and must not be web-accessible. Served later via
         // the authorized utility.download route.
@@ -101,10 +102,10 @@ class UtilityBillController extends Controller
 
         // Try OCR.space API first if API key is configured
         $ocrSpaceApiKey = config('services.ocr_space.key');
-        if (!empty($ocrSpaceApiKey)) {
+        if (! empty($ocrSpaceApiKey)) {
             try {
                 $response = Http::withHeaders([
-                    'apikey' => $ocrSpaceApiKey
+                    'apikey' => $ocrSpaceApiKey,
                 ])->timeout(20)->attach(
                     'file', file_get_contents($filePath), $file->getClientOriginalName()
                 )->post('https://api.ocr.space/parse/image', [
@@ -120,11 +121,11 @@ class UtilityBillController extends Controller
                     $ocrMethod = 'ocr_space';
                 } elseif (isset($result['ErrorMessage'])) {
                     // Log error but continue to fallback
-                    Log::warning('OCR.space API error: ' . $result['ErrorMessage']);
+                    Log::warning('OCR.space API error: '.$result['ErrorMessage']);
                 }
             } catch (\Exception $e) {
                 // Log error but continue to fallback
-                Log::warning('OCR.space API exception: ' . $e->getMessage());
+                Log::warning('OCR.space API exception: '.$e->getMessage());
             }
         }
 
@@ -134,37 +135,37 @@ class UtilityBillController extends Controller
                 try {
                     // Try to get Tesseract path from config or use default
                     $tesseractPath = config('services.tesseract.path', 'tesseract');
-                    
+
                     $text = (new TesseractOCR($filePath))
                         ->executable($tesseractPath)
                         ->run();
                     $ocrMethod = 'tesseract';
                 } catch (\Exception $e) {
-                    return back()->withInput()->with('error', 'OCR extraction failed: ' . $e->getMessage());
+                    return back()->withInput()->with('error', 'OCR extraction failed: '.$e->getMessage());
                 }
             } elseif ($ext === 'pdf') {
                 try {
                     // Try to extract text directly using pdftotext (if available).
                     // escapeshellarg() guards the interpolated path.
-                    $text = shell_exec('pdftotext ' . escapeshellarg($filePath) . ' - 2>&1');
-                    
-                    if (!empty($text)) {
+                    $text = shell_exec('pdftotext '.escapeshellarg($filePath).' - 2>&1');
+
+                    if (! empty($text)) {
                         $ocrMethod = 'pdftotext';
                     }
-                    
+
                     // If pdftotext is not available, try using PDF to Image library
                     if (empty($text) && class_exists(\Spatie\PdfToImage\Pdf::class)) {
                         try {
                             $pdf = new \Spatie\PdfToImage\Pdf($filePath);
                             $pdf->setPage(1);
-                            
+
                             // Create temp directory if it doesn't exist
                             $tempDir = storage_path('app/temp');
-                            if (!file_exists($tempDir)) {
+                            if (! file_exists($tempDir)) {
                                 mkdir($tempDir, 0755, true);
                             }
-                            
-                            $imagePath = $tempDir . '/' . uniqid() . '.png';
+
+                            $imagePath = $tempDir.'/'.uniqid().'.png';
                             $pdf->saveImage($imagePath);
 
                             try {
@@ -184,12 +185,12 @@ class UtilityBillController extends Controller
                             return back()->withInput()->with('error', 'PDF processing failed. Please convert PDF to image (JPG/PNG) or install pdftotext utility.');
                         }
                     }
-                    
+
                     if (empty($text)) {
                         return back()->withInput()->with('error', 'Could not extract text from PDF. Please convert PDF to image (JPG/PNG) or install pdftotext utility.');
                     }
                 } catch (\Exception $e) {
-                    return back()->withInput()->with('error', 'PDF processing failed: ' . $e->getMessage() . '. Please ensure spatie/pdf-to-image is installed or convert PDF to image first.');
+                    return back()->withInput()->with('error', 'PDF processing failed: '.$e->getMessage().'. Please ensure spatie/pdf-to-image is installed or convert PDF to image first.');
                 }
             } else {
                 return back()->withInput()->with('error', 'Unsupported file type.');
@@ -216,8 +217,8 @@ class UtilityBillController extends Controller
         $emissionSourceName = $request->emission_source;
 
         // Step 5: Get emission factor
-        $emissionSource = EmissionSource::where('name', 'like', '%' . $emissionSourceName . '%')
-            ->orWhere('name', 'like', '%' . ($billType === 'electricity' ? 'Electricity' : 'Fuel') . '%')
+        $emissionSource = EmissionSource::where('name', 'like', '%'.$emissionSourceName.'%')
+            ->orWhere('name', 'like', '%'.($billType === 'electricity' ? 'Electricity' : 'Fuel').'%')
             ->first();
 
         $emissionFactor = null;
@@ -243,7 +244,7 @@ class UtilityBillController extends Controller
         // Default emission factors if not found in database
         if ($factorValue == 0) {
             $normalizedUnit = $consumptionUnit ? strtolower(trim($consumptionUnit)) : null;
-            if ($normalizedUnit !== null && !in_array($normalizedUnit, $expectedUnit, true)) {
+            if ($normalizedUnit !== null && ! in_array($normalizedUnit, $expectedUnit, true)) {
                 $unitMismatch = true;
             }
 
@@ -257,7 +258,7 @@ class UtilityBillController extends Controller
 
         // Step 6: Calculate CO2e (skip when the unit can't be trusted with the factor)
         $co2eValue = 0;
-        if ($extractedData['consumption'] && $factorValue > 0 && !$unitMismatch) {
+        if ($extractedData['consumption'] && $factorValue > 0 && ! $unitMismatch) {
             $co2eValue = $extractedData['consumption'] * $factorValue;
         }
 
@@ -302,7 +303,7 @@ class UtilityBillController extends Controller
         $warnings = [];
         $recordCreated = false;
 
-        if ($extractedData['consumption'] && $extractedData['bill_date'] && !$unitMismatch) {
+        if ($extractedData['consumption'] && $extractedData['bill_date'] && ! $unitMismatch) {
             $emissionRecord = EmissionRecord::create([
                 'entry_date' => $extractedData['bill_date'],
                 'company_id' => $companyId ?? $bill->company_id ?? null,
@@ -315,7 +316,7 @@ class UtilityBillController extends Controller
                 'confidence_level' => $extractedData['confidence'] ?? 'medium',
                 'department' => $department ? $department->name : null,
                 'data_source' => 'api',
-                'notes' => "Extracted from {$billType} bill via OCR. Supplier: " . ($extractedData['supplier_name'] ?? 'Unknown'),
+                'notes' => "Extracted from {$billType} bill via OCR. Supplier: ".($extractedData['supplier_name'] ?? 'Unknown'),
                 'created_by' => Auth::id(),
                 'status' => 'draft', // Set as draft for review
             ]);
@@ -324,10 +325,10 @@ class UtilityBillController extends Controller
             $bill->update(['emission_record_id' => $emissionRecord->id]);
             $recordCreated = true;
         } else {
-            if (!$extractedData['consumption']) {
+            if (! $extractedData['consumption']) {
                 $warnings[] = 'consumption could not be read';
             }
-            if (!$extractedData['bill_date']) {
+            if (! $extractedData['bill_date']) {
                 $warnings[] = 'the bill date could not be read';
             }
             if ($unitMismatch) {
@@ -337,11 +338,11 @@ class UtilityBillController extends Controller
 
         if ($recordCreated) {
             return redirect()->route('utility.index')
-                ->with('success', 'Bill uploaded and processed successfully! ' .
-                      ($extractedData['consumption'] ? "Consumption: {$extractedData['consumption']} {$extractedData['consumption_unit']}, CO2e: " . number_format($co2eValue, 4) . " tCO₂e" : 'Please review extracted data.'));
+                ->with('success', 'Bill uploaded and processed successfully! '.
+                      ($extractedData['consumption'] ? "Consumption: {$extractedData['consumption']} {$extractedData['consumption_unit']}, CO2e: ".number_format($co2eValue, 4).' tCO₂e' : 'Please review extracted data.'));
         }
 
         return redirect()->route('utility.index')
-            ->with('warning', 'Bill uploaded, but no emission record was created because ' . implode(' and ', $warnings) . '. Please review the bill and add the emission record manually.');
+            ->with('warning', 'Bill uploaded, but no emission record was created because '.implode(' and ', $warnings).'. Please review the bill and add the emission record manually.');
     }
 }

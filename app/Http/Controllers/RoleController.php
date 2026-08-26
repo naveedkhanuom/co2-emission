@@ -4,22 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
-use DB;
+use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:list-roles|create-role|edit-role|delete-role', ['only' => ['index','show']]);
-        $this->middleware('permission:create-role', ['only' => ['create','store']]);
-        $this->middleware('permission:edit-role', ['only' => ['edit','update']]);
+        $this->middleware('permission:list-roles|create-role|edit-role|delete-role', ['only' => ['index', 'show']]);
+        $this->middleware('permission:create-role', ['only' => ['create', 'store']]);
+        $this->middleware('permission:edit-role', ['only' => ['edit', 'update']]);
         $this->middleware('permission:delete-role', ['only' => ['destroy']]);
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -27,7 +27,7 @@ class RoleController extends Controller
     {
         return view('roles.index', [
             'roles' => Role::with('permissions')->orderBy('id', 'DESC')->paginate(10),
-            'permissions' => Permission::get()
+            'permissions' => Permission::get(),
         ]);
     }
 
@@ -43,7 +43,7 @@ class RoleController extends Controller
      * Store a newly created resource in storage.
      */
     /**
-     * The permission names to sync onto a role, restricted so a non-super-admin
+     * The permission names to sync onto a role, restricted so someone who is not an account owner
      * can only grant permissions they themselves hold (prevents privilege
      * escalation via role management). Existing permissions the actor can't
      * manage are preserved rather than stripped.
@@ -53,7 +53,7 @@ class RoleController extends Controller
         $requested = Permission::whereIn('id', (array) $requestedIds)->pluck('name')->toArray();
 
         $actor = auth()->user();
-        if ($actor->is_super_admin ?? false) {
+        if ($actor->is_account_owner ?? false) {
             return $requested;
         }
 
@@ -72,7 +72,7 @@ class RoleController extends Controller
         $role->syncPermissions($this->restrictedPermissionNames($role, $request->permissions));
 
         return redirect()->route('roles.index')
-                ->withSuccess('New role is added successfully.');
+            ->withSuccess('New role is added successfully.');
     }
 
     /**
@@ -103,7 +103,7 @@ class RoleController extends Controller
         $role->syncPermissions($this->restrictedPermissionNames($role, $request->permissions));
 
         return redirect()->route('roles.index')
-                ->withSuccess('Role is updated successfully.');
+            ->withSuccess('Role is updated successfully.');
     }
 
     /**
@@ -111,14 +111,15 @@ class RoleController extends Controller
      */
     public function destroy(Role $role): RedirectResponse
     {
-        if($role->name=='Super Admin'){
+        if ($role->name == 'Super Admin') {
             abort(403, 'SUPER ADMIN ROLE CAN NOT BE DELETED');
         }
-        if(auth()->user()->hasRole($role->name)){
+        if (auth()->user()->hasRole($role->name)) {
             abort(403, 'CAN NOT DELETE SELF ASSIGNED ROLE');
         }
         $role->delete();
+
         return redirect()->route('roles.index')
-                ->withSuccess('Role is deleted successfully.');
+            ->withSuccess('Role is deleted successfully.');
     }
 }

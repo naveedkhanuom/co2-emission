@@ -23,15 +23,19 @@ class AuditLogController extends Controller
     }
 
     /**
-     * Restrict the query to the viewer's tenant. Super-admins see everything;
-     * everyone else sees only their own company's logs.
+     * Restrict the query to the viewer's company. Account owners see every
+     * company in the account; everyone else sees only their own.
+     *
+     * The tenant boundary is not enforced here and does not need to be — this
+     * query runs against the tenant's own database, so there is no other
+     * client's log in it to reach.
      */
     private function scopedQuery()
     {
         $query = AuditLog::query()->with('user')->latest();
 
         $user = auth()->user();
-        if ($user && !$user->is_super_admin) {
+        if ($user && ! $user->is_account_owner) {
             $companyId = current_company_id() ?? $user->company_id;
             $query->where('company_id', $companyId);
         }
@@ -75,8 +79,8 @@ class AuditLogController extends Controller
             ->toArray();
 
         return view('audit_logs.index', [
-            'logs'    => $logs,
-            'models'  => $models,
+            'logs' => $logs,
+            'models' => $models,
             'filters' => $request->only(['event', 'model', 'search', 'from', 'to']),
         ]);
     }

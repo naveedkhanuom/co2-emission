@@ -16,7 +16,7 @@ use Tests\TenantTestCase;
  * SetCompanyConnection is appended to the `web` middleware group, so it runs
  * AFTER SubstituteBindings. During binding there is no company context bound,
  * and HasCompanyScope falls through to `whereRaw('1 = 0')` for anyone who is
- * not a super-admin — so an ordinary user gets a 404 on their OWN records.
+ * not an account owner — so an ordinary user gets a 404 on their OWN records.
  *
  * AppServiceProvider registers explicit bindings for the affected models to
  * resolve the company the same way the middleware does. These tests prove both
@@ -45,7 +45,7 @@ class TenantRouteBindingTest extends TenantTestCase
             'email' => 'tenant-test-'.uniqid().'@example.test',
             'password' => bcrypt('password'),
             'company_id' => $company->id,
-            'is_super_admin' => $superAdmin,
+            'is_account_owner' => $superAdmin,
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -181,7 +181,7 @@ class TenantRouteBindingTest extends TenantTestCase
     }
 
     /**
-     * A super-admin who has picked a company in the switcher (which writes
+     * A account owner who has picked a company in the switcher (which writes
      * `current_company_id` to the session) must be able to work in it. The
      * binding has to honour the session company, not just the user's own
      * `company_id` — that is how cross-company access actually works here.
@@ -193,7 +193,7 @@ class TenantRouteBindingTest extends TenantTestCase
 
         $superAdmin = $this->makeUser($home, superAdmin: true);
 
-        // Gate::before keys off the ROLE, not the is_super_admin column.
+        // Gate::before keys off the ROLE, not the is_account_owner column.
         if (Role::where('name', 'Super Admin')->exists()) {
             $superAdmin->assignRole('Super Admin');
         }

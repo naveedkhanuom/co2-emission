@@ -18,7 +18,7 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
-        // Only list companies the user can access (super-admins see all).
+        // Only list companies the user can access (account owners see all).
         $accessible = auth()->user()->accessibleCompanies();
 
         // If JSON request, return companies as JSON
@@ -26,11 +26,13 @@ class CompanyController extends Controller
             $companies = $accessible->select('id', 'name', 'code', 'industry_type', 'size', 'country', 'is_active')
                 ->orderBy('id', 'desc')
                 ->get();
+
             return response()->json($companies);
         }
 
         // Otherwise return view
         $companies = $accessible->orderBy('name')->get();
+
         return view('companies.index', compact('companies'));
     }
 
@@ -69,7 +71,7 @@ class CompanyController extends Controller
         if (isset($validated['code']) && (empty($validated['code']) || trim($validated['code']) === '')) {
             $validated['code'] = null;
         }
-        
+
         // Convert is_active to boolean (handle string "true"/"false", 1/0, etc.)
         if (isset($validated['is_active'])) {
             $isActive = $validated['is_active'];
@@ -84,7 +86,7 @@ class CompanyController extends Controller
         } else {
             $validated['is_active'] = true;
         }
-        
+
         // Set defaults
         $validated['currency'] = $validated['currency'] ?? 'USD';
         $validated['timezone'] = $validated['timezone'] ?? 'UTC';
@@ -95,7 +97,7 @@ class CompanyController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Company created successfully',
-            'data' => $company
+            'data' => $company,
         ]);
     }
 
@@ -106,7 +108,7 @@ class CompanyController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'code' => 'sometimes|nullable|string|max:50|unique:companies,code,' . $id,
+            'code' => 'sometimes|nullable|string|max:50|unique:companies,code,'.$id,
             'industry_type' => 'sometimes|nullable|in:manufacturing,energy,transportation,agriculture,construction,retail,healthcare,education,technology,finance,hospitality,mining,chemical,textile,food_beverage,other',
             'country' => 'sometimes|nullable|string|max:255',
             'address' => 'sometimes|nullable|string',
@@ -130,7 +132,7 @@ class CompanyController extends Controller
 
         // Replace the logo only when a new file is uploaded; delete the old one.
         if ($request->hasFile('logo')) {
-            if ($company->logo && !\Illuminate\Support\Str::startsWith($company->logo, ['http://', 'https://'])) {
+            if ($company->logo && ! \Illuminate\Support\Str::startsWith($company->logo, ['http://', 'https://'])) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo);
             }
             $validated['logo'] = $request->file('logo')->store('company_logos', 'public');
@@ -140,7 +142,7 @@ class CompanyController extends Controller
         if (isset($validated['code']) && (empty($validated['code']) || trim($validated['code']) === '')) {
             $validated['code'] = null;
         }
-        
+
         // Convert is_active to boolean (handle string "true"/"false", 1/0, etc.)
         if (isset($validated['is_active'])) {
             $isActive = $validated['is_active'];
@@ -159,7 +161,7 @@ class CompanyController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Company updated successfully',
-            'data' => $company->fresh()
+            'data' => $company->fresh(),
         ]);
     }
 
@@ -167,6 +169,7 @@ class CompanyController extends Controller
     {
         abort_unless(auth()->user()->canAccessCompany($id), 403, 'You do not have access to this company.');
         $company = Company::findOrFail($id);
+
         return response()->json($company);
     }
 
@@ -174,6 +177,7 @@ class CompanyController extends Controller
     {
         abort_unless(auth()->user()->canAccessCompany($id), 403, 'You do not have access to this company.');
         $company = Company::findOrFail($id);
+
         return response()->json($company);
     }
 
@@ -185,7 +189,7 @@ class CompanyController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Company deleted successfully'
+            'message' => 'Company deleted successfully',
         ]);
     }
 }

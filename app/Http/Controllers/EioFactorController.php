@@ -42,23 +42,23 @@ class EioFactorController extends Controller
 
         return DataTables::of($factors)
             ->addColumn('factor_formatted', function ($factor) {
-                return number_format($factor->emission_factor, 6) . ' ' . $factor->factor_unit;
+                return number_format($factor->emission_factor, 6).' '.$factor->factor_unit;
             })
             ->addColumn('status_badge', function ($factor) {
-                return $factor->is_active 
+                return $factor->is_active
                     ? '<span class="badge bg-success">Active</span>'
                     : '<span class="badge bg-secondary">Inactive</span>';
             })
             ->addColumn('actions', function ($factor) {
                 return '
                     <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-info viewBtn" data-id="' . $factor->id . '" title="View">
+                        <button class="btn btn-sm btn-info viewBtn" data-id="'.$factor->id.'" title="View">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-primary editBtn" data-id="' . $factor->id . '" title="Edit">
+                        <button class="btn btn-sm btn-primary editBtn" data-id="'.$factor->id.'" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger deleteBtn" data-id="' . $factor->id . '" title="Delete">
+                        <button class="btn btn-sm btn-danger deleteBtn" data-id="'.$factor->id.'" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -82,16 +82,16 @@ class EioFactorController extends Controller
         $country = $request->country ?? 'USA';
         $factor = EioFactor::getFactor($request->sector_code, $country, $request->year);
 
-        if (!$factor) {
+        if (! $factor) {
             return response()->json([
                 'success' => false,
-                'message' => 'Factor not found for the specified criteria.'
+                'message' => 'Factor not found for the specified criteria.',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'factor' => $factor
+            'factor' => $factor,
         ]);
     }
 
@@ -118,7 +118,7 @@ class EioFactorController extends Controller
         if ($emissions === null) {
             return response()->json([
                 'success' => false,
-                'message' => 'Could not calculate emissions. Factor not found.'
+                'message' => 'Could not calculate emissions. Factor not found.',
             ], 404);
         }
 
@@ -136,7 +136,7 @@ class EioFactorController extends Controller
      */
     public function store(Request $request)
     {
-        $this->abortUnlessSuperAdmin();
+        $this->abortUnlessAccountOwner();
 
         $validated = $request->validate([
             'sector_code' => 'required|string|max:50',
@@ -153,7 +153,7 @@ class EioFactorController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'EIO factor created successfully',
-            'data' => $factor
+            'data' => $factor,
         ]);
     }
 
@@ -162,7 +162,7 @@ class EioFactorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->abortUnlessSuperAdmin();
+        $this->abortUnlessAccountOwner();
 
         $factor = EioFactor::findOrFail($id);
 
@@ -181,7 +181,7 @@ class EioFactorController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'EIO factor updated successfully',
-            'data' => $factor
+            'data' => $factor,
         ]);
     }
 
@@ -190,25 +190,31 @@ class EioFactorController extends Controller
      */
     public function destroy($id)
     {
-        $this->abortUnlessSuperAdmin();
+        $this->abortUnlessAccountOwner();
 
         $factor = EioFactor::findOrFail($id);
         $factor->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'EIO factor deleted successfully'
+            'message' => 'EIO factor deleted successfully',
         ]);
     }
 
     /**
-     * EIO factors are global reference data shared by every tenant, so a single
-     * tenant must not be able to mutate them. Only super-admins may write.
+     * EIO factors are reference data shared by every company inside this
+     * account — the account's own copy, seeded at provisioning and reachable
+     * by none of its neighbours, since each client has its own database.
+     *
+     * The restriction is therefore no longer about protecting other clients.
+     * It is that one subsidiary must not silently change the factors its
+     * sibling companies are reporting against, because that would restate
+     * their figures without anyone deciding to. Only account owners may write.
      */
-    private function abortUnlessSuperAdmin(): void
+    private function abortUnlessAccountOwner(): void
     {
-        if (!(auth()->user()->is_super_admin ?? false)) {
-            abort(403, 'EIO factors are shared reference data and can only be modified by a super administrator.');
+        if (! (auth()->user()->is_account_owner ?? false)) {
+            abort(403, 'EIO factors are shared across every company in this account and can only be changed by an account owner.');
         }
     }
 }

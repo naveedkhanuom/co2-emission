@@ -463,7 +463,7 @@
                     </a>
                 </li>
                 {{-- Organisation --}}
-                @if(auth()->user()?->is_super_admin || auth()->user()?->hasRole('Super Admin'))
+                @if(auth()->user()?->is_account_owner || auth()->user()?->hasRole('Super Admin'))
                 <li>
                     <a href="{{ route('settings.general') }}" class="{{ request()->routeIs('settings.general') ? 'active' : '' }}">
                         <i class="fas fa-cog"></i>

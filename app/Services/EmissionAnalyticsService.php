@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\EmissionRecord;
 use App\Models\Company;
-use App\Models\Facilities;
 use App\Models\Department;
-use Illuminate\Support\Facades\DB;
+use App\Models\EmissionRecord;
+use App\Models\Facilities;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class EmissionAnalyticsService
 {
@@ -44,7 +44,7 @@ class EmissionAnalyticsService
         }
 
         // Facility filter (stored as string name in emission_records)
-        if (!empty($filters['facility'])) {
+        if (! empty($filters['facility'])) {
             $facility = Facilities::find($filters['facility']);
             if ($facility) {
                 $query->where('facility', $facility->name);
@@ -52,7 +52,7 @@ class EmissionAnalyticsService
         }
 
         // Department filter (stored as string name)
-        if (!empty($filters['department'])) {
+        if (! empty($filters['department'])) {
             $department = Department::find($filters['department']);
             if ($department) {
                 $query->where('department', $department->name);
@@ -60,12 +60,12 @@ class EmissionAnalyticsService
         }
 
         // Scope filter
-        if (!empty($filters['scope'])) {
+        if (! empty($filters['scope'])) {
             $query->where('scope', $filters['scope']);
         }
 
         // Category / emission source filter
-        if (!empty($filters['category'])) {
+        if (! empty($filters['category'])) {
             $query->where('emission_source', $filters['category']);
         }
 
@@ -96,12 +96,13 @@ class EmissionAnalyticsService
         if ($dateRange === '3') {
             return [$now->copy()->subMonths(3)->startOfMonth(), $now->copy()->endOfMonth()];
         }
-        if ($dateRange === 'custom' && !empty($filters['start_date']) && !empty($filters['end_date'])) {
+        if ($dateRange === 'custom' && ! empty($filters['start_date']) && ! empty($filters['end_date'])) {
             $start = Carbon::parse($filters['start_date'])->startOfDay();
             $end = Carbon::parse($filters['end_date'])->endOfDay();
             if ($end->lt($start)) {
                 [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
             }
+
             return [$start, $end];
         }
 
@@ -147,7 +148,7 @@ class EmissionAnalyticsService
         if ($dimension === 'scope') {
             $results = $query
                 ->select(
-                    DB::raw("scope as raw_value"),
+                    DB::raw('scope as raw_value'),
                     DB::raw("CASE scope WHEN 1 THEN 'Scope 1 - Direct' WHEN 2 THEN 'Scope 2 - Indirect' WHEN 3 THEN 'Scope 3 - Value Chain' END as label"),
                     DB::raw('SUM(co2e_value) as value'),
                     DB::raw('COUNT(*) as count')
@@ -209,7 +210,7 @@ class EmissionAnalyticsService
     {
         $total = (float) $this->baseQuery($filters)->sum('co2e_value');
         // Use the canonical company-context helper (not the raw session value),
-        // so a super-admin who switched companies gets headcount/revenue for the
+        // so an account owner who switched companies gets headcount/revenue for the
         // SAME company the emission records are scoped to.
         $companyId = current_company_id() ?? (auth()->user()->company_id ?? null);
         $company = $companyId ? Company::withoutGlobalScopes()->find($companyId) : null;
@@ -240,6 +241,7 @@ class EmissionAnalyticsService
 
         $monthlyIntensity = $monthlyData->map(function ($item) use ($employeeCount, $annualRevenue) {
             $monthCount = 1;
+
             return [
                 'month' => $item->month_label,
                 'total' => round((float) $item->total, 2),
@@ -261,6 +263,7 @@ class EmissionAnalyticsService
                     3 => 'Scope 3',
                     default => 'Unknown',
                 };
+
                 return [
                     'scope' => $scopeLabel,
                     'total' => round((float) $item->total, 2),
@@ -342,7 +345,7 @@ class EmissionAnalyticsService
 
         $groupSql = match ($period) {
             'quarterly' => "CONCAT(YEAR(entry_date), ' Q', QUARTER(entry_date))",
-            'annual' => "YEAR(entry_date)",
+            'annual' => 'YEAR(entry_date)',
             default => "DATE_FORMAT(entry_date, '%b %Y')",
         };
 
@@ -358,7 +361,7 @@ class EmissionAnalyticsService
             // expression like DATE_FORMAT(entry_date,'%Y-%m') is rejected there.
             ->orderBy(DB::raw('MIN(entry_date)'))
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'label' => (string) $item->label,
                 'value' => round((float) $item->value, 2),
             ])
@@ -386,7 +389,7 @@ class EmissionAnalyticsService
             ->where('emission_source', '!=', '')
             ->groupBy('emission_source')
             ->pluck('total', 'emission_source')
-            ->map(fn($v) => (float) $v);
+            ->map(fn ($v) => (float) $v);
 
         // Previous period by source
         $filtersNoDate['start_date'] = $previousStart->toDateString();
@@ -397,7 +400,7 @@ class EmissionAnalyticsService
             ->where('emission_source', '!=', '')
             ->groupBy('emission_source')
             ->pluck('total', 'emission_source')
-            ->map(fn($v) => (float) $v);
+            ->map(fn ($v) => (float) $v);
 
         // Merge all sources
         $allSources = $currentBySource->keys()->merge($previousBySource->keys())->unique();
@@ -415,9 +418,9 @@ class EmissionAnalyticsService
                 'type' => $delta >= 0 ? 'increase' : 'decrease',
             ];
         })
-        ->sortByDesc(fn($item) => abs($item['delta']))
-        ->take(15)
-        ->values();
+            ->sortByDesc(fn ($item) => abs($item['delta']))
+            ->take(15)
+            ->values();
 
         return $waterfall;
     }
@@ -535,7 +538,7 @@ class EmissionAnalyticsService
             $series[] = [
                 'name' => $scopeLabels[$scope] ?? "Scope {$scope}",
                 'color' => $scopeColors[$scope] ?? '#999999',
-                'data' => $items->map(fn($item) => [
+                'data' => $items->map(fn ($item) => [
                     'x' => $item->emission_source,
                     'y' => round((float) $item->total, 2),
                 ])->values()->toArray(),

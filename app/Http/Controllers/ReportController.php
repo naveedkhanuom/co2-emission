@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Report;
-use App\Models\ReportTemplate;
-use App\Models\ScheduledReport;
-use App\Models\ExportJob;
-use App\Models\Facilities;
-use App\Models\Department;
 use App\Exports\EmissionsSummaryExport;
 use App\Jobs\ProcessExportJob;
 use App\Jobs\SendScheduledReportJob;
+use App\Models\Department;
+use App\Models\ExportJob;
+use App\Models\Facilities;
+use App\Models\Report;
+use App\Models\ReportTemplate;
+use App\Models\ScheduledReport;
 use App\Services\ReportGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,10 +27,11 @@ class ReportController extends Controller
         $this->middleware('permission:delete-report', ['only' => ['destroy']]);
     }
 
-    public function index() {
+    public function index()
+    {
         $facilities = Facilities::all();
         $departments = Department::all();
-        
+
         // Calculate statistics
         $total = Report::count();
         $thisMonth = Report::whereMonth('generated_at', now()->month)
@@ -38,7 +39,7 @@ class ReportController extends Controller
             ->count();
         $pending = Report::where('status', 'draft')->count();
         $published = Report::where('status', 'published')->count();
-        
+
         // Load dynamic data
         $templates = ReportTemplate::where('is_active', true)->get()->groupBy('category');
         $scheduledReports = ScheduledReport::with(['template', 'facility', 'department'])
@@ -46,13 +47,13 @@ class ReportController extends Controller
             ->orderBy('next_run_date')
             ->get();
         $exportJobs = ExportJob::orderBy('created_at', 'desc')->limit(20)->get();
-        
+
         return view('reports.index', compact(
-            'facilities', 
-            'departments', 
-            'total', 
-            'thisMonth', 
-            'pending', 
+            'facilities',
+            'departments',
+            'total',
+            'thisMonth',
+            'pending',
             'published',
             'templates',
             'scheduledReports',
@@ -60,7 +61,8 @@ class ReportController extends Controller
         ));
     }
 
-    public function statistics() {
+    public function statistics()
+    {
         $total = Report::count();
         $thisMonth = Report::whereMonth('generated_at', now()->month)
             ->whereYear('generated_at', now()->year)
@@ -86,7 +88,8 @@ class ReportController extends Controller
         ]);
     }
 
-    public function getData(Request $request) {
+    public function getData(Request $request)
+    {
         $query = Report::with(['facility', 'department', 'user']);
 
         // Apply filters
@@ -130,6 +133,7 @@ class ReportController extends Controller
                     'scheduled' => '<span class="badge bg-info">Scheduled</span>',
                     'archived' => '<span class="badge bg-secondary">Archived</span>',
                 ];
+
                 return $badges[$row->status] ?? '<span class="badge bg-secondary">Unknown</span>';
             })
             ->addColumn('type_badge', function ($row) {
@@ -139,11 +143,13 @@ class ReportController extends Controller
                     'internal' => '<span class="badge bg-success">Internal</span>',
                     'public' => '<span class="badge bg-info">Public</span>',
                 ];
+
                 return $types[$row->type] ?? '<span class="badge bg-secondary">Unknown</span>';
             })
             ->addColumn('actions', function ($row) {
                 $pdfUrl = route('reports.download', [$row->id, 'pdf']);
                 $xlsxUrl = route('reports.download', [$row->id, 'excel']);
+
                 return '<div class="btn-group">
                     <button class="btn btn-sm btn-info viewBtn" data-id="'.$row->id.'" title="View">
                         <i class="fas fa-eye"></i>
@@ -168,13 +174,16 @@ class ReportController extends Controller
             ->rawColumns(['status_badge', 'type_badge', 'actions'])
             ->make(true);
     }
-    
-    public function getReportsJson() {
+
+    public function getReportsJson()
+    {
         $reports = Report::with(['facility', 'department', 'user'])->get();
+
         return response()->json(['data' => $reports]);
     }
 
-    public function storeOrUpdate(Request $request) {
+    public function storeOrUpdate(Request $request)
+    {
         $validated = $request->validate([
             'id' => 'nullable|integer|exists:reports,id',
             'facility_id' => 'required|exists:facilities,id',
@@ -188,9 +197,9 @@ class ReportController extends Controller
 
         $data = $validated;
         unset($data['id']);
-        
+
         // Set created_by if not set
-        if (!isset($data['created_by']) && auth()->check()) {
+        if (! isset($data['created_by']) && auth()->check()) {
             $data['created_by'] = auth()->id();
         }
 
@@ -209,15 +218,17 @@ class ReportController extends Controller
         ]);
     }
 
-    public function show($id) {
-        return Report::with(['facility','department','user'])->findOrFail($id);
+    public function show($id)
+    {
+        return Report::with(['facility', 'department', 'user'])->findOrFail($id);
     }
 
     /**
      * Download a saved report as a generated PDF or Excel file.
      * findOrFail is company-scoped (HasCompanyScope), so a cross-tenant id 404s.
      */
-    public function download($id, $format, ReportGenerationService $service) {
+    public function download($id, $format, ReportGenerationService $service)
+    {
         $report = Report::with(['facility', 'department'])->findOrFail($id);
 
         $format = strtolower($format);
@@ -236,30 +247,32 @@ class ReportController extends Controller
     /**
      * Download a completed export job's generated file.
      */
-    public function downloadExportJob($id) {
+    public function downloadExportJob($id)
+    {
         $companyId = current_company_id() ?? (auth()->user()->company_id ?? null);
 
         // findOrFail is company-scoped via HasCompanyScope. Keep an explicit
         // tenant check as defense in depth: deny cross-tenant and null-company
-        // rows for anyone who isn't a super-admin (a super-admin may have no
+        // rows for anyone who isn't an account owner (an account owner may have no
         // single company bound and is allowed the cross-company view).
         $job = ExportJob::findOrFail($id);
 
-        if (!(auth()->user()->is_super_admin ?? false) && (int) $job->company_id !== (int) $companyId) {
+        if (! (auth()->user()->is_account_owner ?? false) && (int) $job->company_id !== (int) $companyId) {
             abort(403);
         }
 
-        if ($job->status !== 'completed' || !$job->file_path || !Storage::exists($job->file_path)) {
+        if ($job->status !== 'completed' || ! $job->file_path || ! Storage::exists($job->file_path)) {
             abort(404, 'Export file is not available.');
         }
 
         return Storage::download($job->file_path, basename($job->file_path));
     }
 
-    public function destroy($id) {
+    public function destroy($id)
+    {
         $report = Report::findOrFail($id);
         $report->delete();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Report deleted successfully',
@@ -267,12 +280,15 @@ class ReportController extends Controller
     }
 
     // Report Templates
-    public function getTemplates() {
+    public function getTemplates()
+    {
         $templates = ReportTemplate::where('is_active', true)->get();
+
         return response()->json(['data' => $templates]);
     }
 
-    public function storeTemplate(Request $request) {
+    public function storeTemplate(Request $request)
+    {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -292,14 +308,17 @@ class ReportController extends Controller
     }
 
     // Scheduled Reports
-    public function getScheduledReports() {
+    public function getScheduledReports()
+    {
         $scheduled = ScheduledReport::with(['template', 'facility', 'department'])
             ->orderBy('next_run_date')
             ->get();
+
         return response()->json(['data' => $scheduled]);
     }
 
-    public function storeScheduledReport(Request $request) {
+    public function storeScheduledReport(Request $request)
+    {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -332,7 +351,8 @@ class ReportController extends Controller
 
     // Run a single scheduled report immediately (on-demand), reusing the exact
     // path the scheduler uses.
-    public function runScheduledNow($id) {
+    public function runScheduledNow($id)
+    {
         // ScheduledReport is company-scoped, so findOrFail won't cross tenants.
         $report = ScheduledReport::findOrFail($id);
 
@@ -348,12 +368,15 @@ class ReportController extends Controller
     }
 
     // Export Jobs
-    public function getExportJobs() {
+    public function getExportJobs()
+    {
         $jobs = ExportJob::orderBy('created_at', 'desc')->limit(50)->get();
+
         return response()->json(['data' => $jobs]);
     }
 
-    public function storeExportJob(Request $request) {
+    public function storeExportJob(Request $request)
+    {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -379,12 +402,12 @@ class ReportController extends Controller
     }
 
     // Track report view
-    public function trackView($id) {
+    public function trackView($id)
+    {
         $report = Report::findOrFail($id);
         $report->increment('views_count');
         $report->update(['last_viewed_at' => now()]);
-        
+
         return response()->json(['success' => true]);
     }
 }
-

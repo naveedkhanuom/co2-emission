@@ -70,7 +70,7 @@ class AppServiceProvider extends ServiceProvider
      * AFTER SubstituteBindings. That means during implicit binding the
      * `current_company_id` container instance is not bound yet, and
      * HasCompanyScope falls through to its `whereRaw('1 = 0')` branch for any
-     * user who is not a super-admin — a plain user got a 404 on their OWN rows.
+     * user who is not an account owner — a plain user got a 404 on their OWN rows.
      *
      * Binding explicitly fixes it without reordering global middleware (which
      * would change model resolution for every route in the app). The company is
@@ -86,8 +86,8 @@ class AppServiceProvider extends ServiceProvider
 
             if ($companyId) {
                 $query->where('company_id', $companyId);
-            } elseif (! auth()->user()?->is_super_admin) {
-                // No company context and not a super-admin: deny rather than
+            } elseif (! auth()->user()?->is_account_owner) {
+                // No company context and not an account owner: deny rather than
                 // resolve unscoped, mirroring HasCompanyScope.
                 abort(404);
             }

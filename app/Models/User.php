@@ -42,7 +42,13 @@ class User extends Authenticatable
         'email',
         'password',
         'company_id',
-        'is_super_admin',
+
+        // Sees every company in this account, and nothing beyond it — the
+        // tenant's database is the edge of its reach, not this flag. Never a
+        // form field: UserController strips it from input on create and
+        // update, and tenant:provision is the only thing that grants it.
+        'is_account_owner',
+
         'company_access',
         'is_demo_user',
         'allowed_sidebar_routes',
@@ -69,7 +75,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_super_admin' => 'boolean',
+            'is_account_owner' => 'boolean',
             'company_access' => 'array',
             'is_demo_user' => 'boolean',
             'allowed_sidebar_routes' => 'array',
@@ -90,20 +96,20 @@ class User extends Authenticatable
      */
     public function accessibleCompanies()
     {
-        if ($this->is_super_admin) {
+        if ($this->is_account_owner) {
             return Company::query();
         }
-        
+
         $companyIds = $this->company_access ?? [];
         if ($this->company_id) {
             $companyIds[] = $this->company_id;
         }
-        
+
         if (empty($companyIds)) {
             // Return empty query if no companies assigned
             return Company::whereRaw('1 = 0');
         }
-        
+
         return Company::whereIn('id', array_unique($companyIds));
     }
 
@@ -112,14 +118,14 @@ class User extends Authenticatable
      */
     public function canAccessCompany($companyId)
     {
-        if ($this->is_super_admin) {
+        if ($this->is_account_owner) {
             return true;
         }
-        
+
         if ($this->company_id == $companyId) {
             return true;
         }
-        
+
         return in_array($companyId, $this->company_access ?? []);
     }
 }

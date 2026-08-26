@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SupplierSurvey;
-use App\Models\Supplier;
+use App\Helpers\CompanyHelper;
+use App\Mail\SupplierSurveyInvitation;
 use App\Models\Scope3Category;
+use App\Models\Supplier;
+use App\Models\SupplierSurvey;
 use App\Services\SupplierSurveyEmissionConverter;
 use App\Support\Notifier;
 use Illuminate\Http\Request;
-use App\Helpers\CompanyHelper;
-use App\Mail\SupplierSurveyInvitation;
-use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Yajra\DataTables\Facades\DataTables;
 
 class SupplierSurveyController extends Controller
 {
@@ -46,7 +46,7 @@ class SupplierSurveyController extends Controller
     public function getData(Request $request)
     {
         $companyId = CompanyHelper::currentCompanyId();
-        
+
         $surveys = SupplierSurvey::where('company_id', $companyId)
             ->with(['supplier', 'creator'])
             ->latest();
@@ -64,15 +64,17 @@ class SupplierSurveyController extends Controller
                     'overdue' => '<span class="badge bg-danger">Overdue</span>',
                     'cancelled' => '<span class="badge bg-dark">Cancelled</span>',
                 ];
+
                 return $badges[$survey->status] ?? '<span class="badge bg-secondary">Unknown</span>';
             })
             ->addColumn('due_date_formatted', function ($survey) {
-                if (!$survey->due_date) {
+                if (! $survey->due_date) {
                     return 'N/A';
                 }
                 $daysUntil = $survey->getDaysUntilDue();
                 $class = $daysUntil < 0 ? 'text-danger' : ($daysUntil < 7 ? 'text-warning' : '');
-                return '<span class="' . $class . '">' . $survey->due_date->format('Y-m-d') . '</span>';
+
+                return '<span class="'.$class.'">'.$survey->due_date->format('Y-m-d').'</span>';
             })
             ->addColumn('completion_percentage', function ($survey) {
                 if ($survey->status === 'completed') {
@@ -81,26 +83,29 @@ class SupplierSurveyController extends Controller
                 if ($survey->responses && is_array($survey->responses)) {
                     $answered = count(array_filter($survey->responses));
                     $total = $survey->questions ? count($survey->questions) : 0;
-                    return $total > 0 ? round(($answered / $total) * 100) . '%' : '0%';
+
+                    return $total > 0 ? round(($answered / $total) * 100).'%' : '0%';
                 }
+
                 return '0%';
             })
             ->addColumn('actions', function ($survey) {
                 $actions = '<div class="btn-group" role="group">';
-                $actions .= '<button class="btn btn-sm btn-info viewBtn" data-id="' . $survey->id . '" title="View"><i class="fas fa-eye"></i></button>';
-                
+                $actions .= '<button class="btn btn-sm btn-info viewBtn" data-id="'.$survey->id.'" title="View"><i class="fas fa-eye"></i></button>';
+
                 if ($survey->status === 'draft') {
-                    $actions .= '<button class="btn btn-sm btn-primary editBtn" data-id="' . $survey->id . '" title="Edit"><i class="fas fa-edit"></i></button>';
-                    $actions .= '<button class="btn btn-sm btn-success sendBtn" data-id="' . $survey->id . '" title="Send"><i class="fas fa-paper-plane"></i></button>';
+                    $actions .= '<button class="btn btn-sm btn-primary editBtn" data-id="'.$survey->id.'" title="Edit"><i class="fas fa-edit"></i></button>';
+                    $actions .= '<button class="btn btn-sm btn-success sendBtn" data-id="'.$survey->id.'" title="Send"><i class="fas fa-paper-plane"></i></button>';
                 }
-                
+
                 if (in_array($survey->status, ['sent', 'in_progress', 'overdue'])) {
-                    $actions .= '<button class="btn btn-sm btn-warning reminderBtn" data-id="' . $survey->id . '" title="Send Reminder"><i class="fas fa-bell"></i></button>';
-                    $actions .= '<button class="btn btn-sm btn-secondary resendBtn" data-id="' . $survey->id . '" title="Re-send fresh link"><i class="fas fa-link"></i></button>';
+                    $actions .= '<button class="btn btn-sm btn-warning reminderBtn" data-id="'.$survey->id.'" title="Send Reminder"><i class="fas fa-bell"></i></button>';
+                    $actions .= '<button class="btn btn-sm btn-secondary resendBtn" data-id="'.$survey->id.'" title="Re-send fresh link"><i class="fas fa-link"></i></button>';
                 }
-                
-                $actions .= '<button class="btn btn-sm btn-danger deleteBtn" data-id="' . $survey->id . '" title="Delete"><i class="fas fa-trash"></i></button>';
+
+                $actions .= '<button class="btn btn-sm btn-danger deleteBtn" data-id="'.$survey->id.'" title="Delete"><i class="fas fa-trash"></i></button>';
                 $actions .= '</div>';
+
                 return $actions;
             })
             ->rawColumns(['status_badge', 'due_date_formatted', 'actions'])
@@ -127,11 +132,11 @@ class SupplierSurveyController extends Controller
         ]);
 
         $companyId = CompanyHelper::currentCompanyId();
-        
-        if (!$companyId) {
+
+        if (! $companyId) {
             return response()->json([
                 'success' => false,
-                'message' => 'No company selected.'
+                'message' => 'No company selected.',
             ], 400);
         }
 
@@ -140,7 +145,7 @@ class SupplierSurveyController extends Controller
         if ($supplier->company_id != $companyId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid supplier.'
+                'message' => 'Invalid supplier.',
             ], 403);
         }
 
@@ -159,7 +164,7 @@ class SupplierSurveyController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Survey created successfully',
-            'data' => $survey
+            'data' => $survey,
         ]);
     }
 
@@ -169,7 +174,7 @@ class SupplierSurveyController extends Controller
     public function send($id)
     {
         $survey = SupplierSurvey::findOrFail($id);
-        
+
         // Verify survey belongs to company
         $companyId = CompanyHelper::currentCompanyId();
         if ($survey->company_id != $companyId) {
@@ -179,7 +184,7 @@ class SupplierSurveyController extends Controller
         if ($survey->status !== 'draft') {
             return response()->json([
                 'success' => false,
-                'message' => 'Only draft surveys can be sent.'
+                'message' => 'Only draft surveys can be sent.',
             ], 400);
         }
 
@@ -189,7 +194,7 @@ class SupplierSurveyController extends Controller
         if (empty($recipient)) {
             return response()->json([
                 'success' => false,
-                'message' => 'This supplier has no email address. Add one on the supplier record before sending.'
+                'message' => 'This supplier has no email address. Add one on the supplier record before sending.',
             ], 422);
         }
 
@@ -206,7 +211,7 @@ class SupplierSurveyController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Survey was marked as sent, but the email could not be delivered: ' . $e->getMessage(),
+                'message' => 'Survey was marked as sent, but the email could not be delivered: '.$e->getMessage(),
             ], 502);
         }
 
@@ -219,8 +224,8 @@ class SupplierSurveyController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Survey emailed to ' . $recipient,
-            'data' => $survey
+            'message' => 'Survey emailed to '.$recipient,
+            'data' => $survey,
         ]);
     }
 
@@ -230,7 +235,7 @@ class SupplierSurveyController extends Controller
     public function sendReminder($id)
     {
         $survey = SupplierSurvey::findOrFail($id);
-        
+
         $companyId = CompanyHelper::currentCompanyId();
         if ($survey->company_id != $companyId) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -242,14 +247,14 @@ class SupplierSurveyController extends Controller
         if (empty($recipient)) {
             return response()->json([
                 'success' => false,
-                'message' => 'This supplier has no email address. Add one on the supplier record before sending a reminder.'
+                'message' => 'This supplier has no email address. Add one on the supplier record before sending a reminder.',
             ], 422);
         }
 
-        if (!$survey->isPublicLinkValid()) {
+        if (! $survey->isPublicLinkValid()) {
             return response()->json([
                 'success' => false,
-                'message' => 'The survey link has expired. Re-send the survey to generate a new link.'
+                'message' => 'The survey link has expired. Re-send the survey to generate a new link.',
             ], 422);
         }
 
@@ -264,7 +269,7 @@ class SupplierSurveyController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'The reminder email could not be delivered: ' . $e->getMessage(),
+                'message' => 'The reminder email could not be delivered: '.$e->getMessage(),
             ], 502);
         }
 
@@ -279,7 +284,7 @@ class SupplierSurveyController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Reminder emailed to ' . $recipient
+            'message' => 'Reminder emailed to '.$recipient,
         ]);
     }
 
@@ -329,13 +334,13 @@ class SupplierSurveyController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'A new link was generated, but the email could not be delivered: ' . $e->getMessage(),
+                'message' => 'A new link was generated, but the email could not be delivered: '.$e->getMessage(),
             ], 502);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'A fresh survey link was emailed to ' . $recipient,
+            'message' => 'A fresh survey link was emailed to '.$recipient,
             'data' => $survey,
         ]);
     }
@@ -357,7 +362,7 @@ class SupplierSurveyController extends Controller
             return view('supplier_portal.survey_submitted', compact('survey'));
         }
 
-        if (!$survey->isPublicLinkValid()) {
+        if (! $survey->isPublicLinkValid()) {
             return view('supplier_portal.survey_expired', compact('survey'));
         }
 
@@ -381,7 +386,7 @@ class SupplierSurveyController extends Controller
             return view('supplier_portal.survey_submitted', compact('survey'));
         }
 
-        if (!$survey->isPublicLinkValid()) {
+        if (! $survey->isPublicLinkValid()) {
             return redirect()->back()->with('error', 'This survey link has expired.');
         }
 
@@ -411,7 +416,7 @@ class SupplierSurveyController extends Controller
 
         // Type-check each answer against its question's declared type.
         $typeErrors = $this->validateResponsesAgainstQuestions($questions, $responses);
-        if (!empty($typeErrors)) {
+        if (! empty($typeErrors)) {
             return redirect()->back()->withInput()
                 ->with('error', implode(' ', $typeErrors));
         }
@@ -422,7 +427,7 @@ class SupplierSurveyController extends Controller
             'status' => 'in_progress',
         ]);
 
-        $allAnswered = !empty($questions)
+        $allAnswered = ! empty($questions)
             ? count(array_filter($responses, fn ($v) => $v !== null && $v !== '')) >= count($questions)
             : true;
 
@@ -474,13 +479,13 @@ class SupplierSurveyController extends Controller
             }
 
             $type = is_array($q) ? ($q['type'] ?? 'text') : 'text';
-            $label = is_array($q) ? ($q['question'] ?? ('Question ' . ($i + 1))) : ('Question ' . ($i + 1));
+            $label = is_array($q) ? ($q['question'] ?? ('Question '.($i + 1))) : ('Question '.($i + 1));
 
-            if ($type === 'number' && !is_numeric($value)) {
+            if ($type === 'number' && ! is_numeric($value)) {
                 $errors[] = "\"{$label}\" must be a number.";
             } elseif ($type === 'date' && strtotime((string) $value) === false) {
                 $errors[] = "\"{$label}\" must be a valid date.";
-            } elseif ($type === 'yes_no' && !in_array(strtolower((string) $value), ['yes', 'no'], true)) {
+            } elseif ($type === 'yes_no' && ! in_array(strtolower((string) $value), ['yes', 'no'], true)) {
                 $errors[] = "\"{$label}\" must be Yes or No.";
             }
         }
@@ -496,7 +501,7 @@ class SupplierSurveyController extends Controller
         $survey = SupplierSurvey::findOrFail($id);
 
         // Tenant guard: findOrFail is company-scoped for normal users, but a
-        // super-admin (no company bound) bypasses the scope.
+        // account owner (no company bound) bypasses the scope.
         $companyId = CompanyHelper::currentCompanyId();
         if ($survey->company_id != $companyId) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -519,7 +524,7 @@ class SupplierSurveyController extends Controller
         }
 
         $typeErrors = $this->validateResponsesAgainstQuestions($questions, $responses);
-        if (!empty($typeErrors)) {
+        if (! empty($typeErrors)) {
             return response()->json([
                 'success' => false,
                 'message' => implode(' ', $typeErrors),
@@ -532,7 +537,7 @@ class SupplierSurveyController extends Controller
         ]);
 
         // Complete only when every question has a non-empty answer.
-        $allAnswered = !empty($questions)
+        $allAnswered = ! empty($questions)
             ? count(array_filter($responses, fn ($v) => $v !== null && $v !== '')) >= count($questions)
             : true;
 
@@ -552,7 +557,7 @@ class SupplierSurveyController extends Controller
         return response()->json([
             'success' => true,
             'message' => $allAnswered ? 'Survey completed successfully' : 'Responses saved',
-            'data' => $survey
+            'data' => $survey,
         ]);
     }
 
@@ -562,7 +567,7 @@ class SupplierSurveyController extends Controller
     public function show($id)
     {
         $survey = SupplierSurvey::with(['supplier', 'creator'])->findOrFail($id);
-        
+
         $companyId = CompanyHelper::currentCompanyId();
         if ($survey->company_id != $companyId) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -570,7 +575,7 @@ class SupplierSurveyController extends Controller
 
         return response()->json([
             'success' => true,
-            'survey' => $survey
+            'survey' => $survey,
         ]);
     }
 
@@ -580,7 +585,7 @@ class SupplierSurveyController extends Controller
     public function destroy($id)
     {
         $survey = SupplierSurvey::findOrFail($id);
-        
+
         $companyId = CompanyHelper::currentCompanyId();
         if ($survey->company_id != $companyId) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -589,7 +594,7 @@ class SupplierSurveyController extends Controller
         if ($survey->status === 'completed') {
             return response()->json([
                 'success' => false,
-                'message' => 'Cannot delete completed survey.'
+                'message' => 'Cannot delete completed survey.',
             ], 400);
         }
 
@@ -597,7 +602,7 @@ class SupplierSurveyController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Survey deleted successfully'
+            'message' => 'Survey deleted successfully',
         ]);
     }
 }

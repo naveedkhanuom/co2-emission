@@ -31,20 +31,20 @@ class OnboardingController extends Controller
      * The user only sees the friendly label; the scope is inferred for them.
      */
     private const ACTIVITY_SCOPES = [
-        'electricity'      => 2, // We use electricity
-        'onsite_fuel'      => 1, // We burn fuel on-site (gas boilers, diesel generators, furnaces)
-        'vehicles'         => 1, // We own/operate vehicles
-        'refrigerants'     => 1, // We use refrigeration or air-conditioning
-        'business_travel'  => 3, // Our staff travel for work (flights, hotels, taxis)
+        'electricity' => 2, // We use electricity
+        'onsite_fuel' => 1, // We burn fuel on-site (gas boilers, diesel generators, furnaces)
+        'vehicles' => 1, // We own/operate vehicles
+        'refrigerants' => 1, // We use refrigeration or air-conditioning
+        'business_travel' => 3, // Our staff travel for work (flights, hotels, taxis)
         'employee_commute' => 3, // Our staff commute to work
-        'waste'            => 3, // We produce waste
-        'purchased_goods'  => 3, // We buy goods, materials or services
-        'freight'          => 3, // We ship or receive goods
+        'waste' => 3, // We produce waste
+        'purchased_goods' => 3, // We buy goods, materials or services
+        'freight' => 3, // We ship or receive goods
     ];
 
     /**
      * Resolve the company the signed-in user belongs to (null for a
-     * super-admin with no single company selected).
+     * account owner with no single company selected).
      */
     private function resolveCompany(): ?Company
     {
@@ -63,7 +63,7 @@ class OnboardingController extends Controller
      */
     public function needsOnboarding(?Company $company): bool
     {
-        if (!$company) {
+        if (! $company) {
             return false;
         }
 
@@ -90,13 +90,13 @@ class OnboardingController extends Controller
     {
         $company = $this->resolveCompany();
 
-        // Super-admins (no single company) have nothing to set up here.
-        if (!$company) {
+        // Account owners (no single company) have nothing to set up here.
+        if (! $company) {
             return redirect()->route('home');
         }
 
         // Already set up — don't make them repeat it.
-        if (!$this->needsOnboarding($company)) {
+        if (! $this->needsOnboarding($company)) {
             return redirect()->route('home');
         }
 
@@ -106,10 +106,10 @@ class OnboardingController extends Controller
         $gwpOptions = $this->gwpOptions();
 
         // Sensible defaults for the "reporting basis" step.
-        $defaultBaseYear    = (int) $company->getSetting('base_year', now()->year);
-        $defaultBoundary    = $company->getSetting('consolidation_approach', config('boundary.default'));
-        $defaultGwp         = $company->getSetting('gwp_version', config('gwp.default', 'ar6'));
-        $currentYear        = now()->year;
+        $defaultBaseYear = (int) $company->getSetting('base_year', now()->year);
+        $defaultBoundary = $company->getSetting('consolidation_approach', config('boundary.default'));
+        $defaultGwp = $company->getSetting('gwp_version', config('gwp.default', 'ar6'));
+        $currentYear = now()->year;
 
         return view('onboarding.index', compact(
             'company', 'industries', 'activities', 'boundaries', 'gwpOptions',
@@ -124,26 +124,26 @@ class OnboardingController extends Controller
     {
         $company = $this->resolveCompany();
 
-        if (!$company) {
+        if (! $company) {
             return response()->json(['success' => false, 'message' => 'No company to set up.'], 422);
         }
 
         $validated = $request->validate([
-            'name'              => 'required|string|max:255',
-            'industry_type'     => 'required|in:' . implode(',', array_keys($this->industryOptions())),
-            'country'           => 'nullable|string|max:255',
-            'employee_count'    => 'nullable|integer|min:0',
+            'name' => 'required|string|max:255',
+            'industry_type' => 'required|in:'.implode(',', array_keys($this->industryOptions())),
+            'country' => 'nullable|string|max:255',
+            'employee_count' => 'nullable|integer|min:0',
             'fiscal_year_start' => 'nullable|string|max:10',
-            'sites'             => 'required|array|min:1',
-            'sites.*.name'      => 'required|string|max:255',
-            'sites.*.location'  => 'nullable|string|max:255',
-            'activities'        => 'required|array|min:1',
-            'activities.*'      => 'in:' . implode(',', array_keys(self::ACTIVITY_SCOPES)),
-            'base_year'              => 'nullable|integer|min:2000|max:' . (now()->year + 1),
-            'consolidation_approach' => 'nullable|in:' . implode(',', array_keys($this->boundaryOptions())),
-            'gwp_version'            => 'nullable|in:' . implode(',', array_keys($this->gwpOptions())),
+            'sites' => 'required|array|min:1',
+            'sites.*.name' => 'required|string|max:255',
+            'sites.*.location' => 'nullable|string|max:255',
+            'activities' => 'required|array|min:1',
+            'activities.*' => 'in:'.implode(',', array_keys(self::ACTIVITY_SCOPES)),
+            'base_year' => 'nullable|integer|min:2000|max:'.(now()->year + 1),
+            'consolidation_approach' => 'nullable|in:'.implode(',', array_keys($this->boundaryOptions())),
+            'gwp_version' => 'nullable|in:'.implode(',', array_keys($this->gwpOptions())),
         ], [
-            'sites.required'      => 'Please add at least one location.',
+            'sites.required' => 'Please add at least one location.',
             'sites.*.name.required' => 'Each location needs a name.',
             'activities.required' => 'Please pick at least one thing your business does.',
         ]);
@@ -158,13 +158,13 @@ class OnboardingController extends Controller
 
         // Update the company profile.
         $company->update([
-            'name'              => $validated['name'],
-            'industry_type'     => $validated['industry_type'],
-            'country'           => $validated['country'] ?? $company->country,
-            'employee_count'    => $validated['employee_count'] ?? $company->employee_count,
-            'size'              => $this->sizeFromEmployees($validated['employee_count'] ?? null) ?? $company->size,
+            'name' => $validated['name'],
+            'industry_type' => $validated['industry_type'],
+            'country' => $validated['country'] ?? $company->country,
+            'employee_count' => $validated['employee_count'] ?? $company->employee_count,
+            'size' => $this->sizeFromEmployees($validated['employee_count'] ?? null) ?? $company->size,
             'fiscal_year_start' => $validated['fiscal_year_start'] ?? $company->fiscal_year_start,
-            'scopes_enabled'    => $scopes,
+            'scopes_enabled' => $scopes,
         ]);
 
         // Create the sites (skip any that already exist by name for safety).
@@ -180,8 +180,8 @@ class OnboardingController extends Controller
             }
             Site::create([
                 'company_id' => $company->id,
-                'name'       => $site['name'],
-                'location'   => $site['location'] ?? null,
+                'name' => $site['name'],
+                'location' => $site['location'] ?? null,
             ]);
         }
 
@@ -197,8 +197,8 @@ class OnboardingController extends Controller
         $company->setSetting('onboarding_completed', true, 'boolean');
 
         return response()->json([
-            'success'  => true,
-            'message'  => 'Your account is set up. Welcome aboard!',
+            'success' => true,
+            'message' => 'Your account is set up. Welcome aboard!',
             'redirect' => route('home'),
         ]);
     }
@@ -222,22 +222,22 @@ class OnboardingController extends Controller
     private function industryOptions(): array
     {
         return [
-            'manufacturing'  => 'Manufacturing',
-            'energy'         => 'Energy & Utilities',
+            'manufacturing' => 'Manufacturing',
+            'energy' => 'Energy & Utilities',
             'transportation' => 'Transportation & Logistics',
-            'agriculture'    => 'Agriculture',
-            'construction'   => 'Construction',
-            'retail'         => 'Retail & Wholesale',
-            'healthcare'     => 'Healthcare',
-            'education'      => 'Education',
-            'technology'     => 'Technology & IT',
-            'finance'        => 'Finance & Insurance',
-            'hospitality'    => 'Hospitality & Tourism',
-            'mining'         => 'Mining',
-            'chemical'       => 'Chemicals',
-            'textile'        => 'Textiles',
-            'food_beverage'  => 'Food & Beverage',
-            'other'          => 'Something else',
+            'agriculture' => 'Agriculture',
+            'construction' => 'Construction',
+            'retail' => 'Retail & Wholesale',
+            'healthcare' => 'Healthcare',
+            'education' => 'Education',
+            'technology' => 'Technology & IT',
+            'finance' => 'Finance & Insurance',
+            'hospitality' => 'Hospitality & Tourism',
+            'mining' => 'Mining',
+            'chemical' => 'Chemicals',
+            'textile' => 'Textiles',
+            'food_beverage' => 'Food & Beverage',
+            'other' => 'Something else',
         ];
     }
 
@@ -247,15 +247,15 @@ class OnboardingController extends Controller
     private function activityOptions(): array
     {
         return [
-            'electricity'      => ['icon' => 'fa-bolt',          'label' => 'We use electricity',                'help' => 'Offices, factories, shops — anywhere on a power bill.'],
-            'onsite_fuel'      => ['icon' => 'fa-fire',          'label' => 'We burn fuel on-site',              'help' => 'Gas boilers, diesel generators, furnaces, heating.'],
-            'vehicles'         => ['icon' => 'fa-truck',         'label' => 'We own or operate vehicles',        'help' => 'Company cars, vans, trucks, forklifts.'],
-            'refrigerants'     => ['icon' => 'fa-snowflake',     'label' => 'We use refrigeration or A/C',       'help' => 'Air-conditioning, cold storage, chillers.'],
-            'business_travel'  => ['icon' => 'fa-plane',         'label' => 'Our staff travel for work',         'help' => 'Flights, hotels, taxis, rental cars.'],
-            'employee_commute' => ['icon' => 'fa-person-walking','label' => 'Our staff commute to work',         'help' => 'How employees get to and from the workplace.'],
-            'waste'            => ['icon' => 'fa-trash',         'label' => 'We produce waste',                  'help' => 'General waste, recycling, wastewater.'],
-            'purchased_goods'  => ['icon' => 'fa-box',           'label' => 'We buy goods, materials or services','help' => 'Raw materials, supplies, outsourced services.'],
-            'freight'          => ['icon' => 'fa-dolly',         'label' => 'We ship or receive goods',          'help' => 'Inbound and outbound transport of products.'],
+            'electricity' => ['icon' => 'fa-bolt',          'label' => 'We use electricity',                'help' => 'Offices, factories, shops — anywhere on a power bill.'],
+            'onsite_fuel' => ['icon' => 'fa-fire',          'label' => 'We burn fuel on-site',              'help' => 'Gas boilers, diesel generators, furnaces, heating.'],
+            'vehicles' => ['icon' => 'fa-truck',         'label' => 'We own or operate vehicles',        'help' => 'Company cars, vans, trucks, forklifts.'],
+            'refrigerants' => ['icon' => 'fa-snowflake',     'label' => 'We use refrigeration or A/C',       'help' => 'Air-conditioning, cold storage, chillers.'],
+            'business_travel' => ['icon' => 'fa-plane',         'label' => 'Our staff travel for work',         'help' => 'Flights, hotels, taxis, rental cars.'],
+            'employee_commute' => ['icon' => 'fa-person-walking', 'label' => 'Our staff commute to work',         'help' => 'How employees get to and from the workplace.'],
+            'waste' => ['icon' => 'fa-trash',         'label' => 'We produce waste',                  'help' => 'General waste, recycling, wastewater.'],
+            'purchased_goods' => ['icon' => 'fa-box',           'label' => 'We buy goods, materials or services', 'help' => 'Raw materials, supplies, outsourced services.'],
+            'freight' => ['icon' => 'fa-dolly',         'label' => 'We ship or receive goods',          'help' => 'Inbound and outbound transport of products.'],
         ];
     }
 
@@ -291,10 +291,10 @@ class OnboardingController extends Controller
         }
 
         return match (true) {
-            $count < 50   => 'small',
-            $count < 250  => 'medium',
+            $count < 50 => 'small',
+            $count < 250 => 'medium',
             $count < 1000 => 'large',
-            default       => 'enterprise',
+            default => 'enterprise',
         };
     }
 }

@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Company;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use Illuminate\View\View;
+use App\Models\Company;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 use Yajra\DataTables\Facades\DataTables;
 
 class UserController extends Controller
@@ -22,9 +22,9 @@ class UserController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:list-users|create-user|edit-user|delete-user', ['only' => ['index','show','getData']]);
-        $this->middleware('permission:create-user', ['only' => ['create','store']]);
-        $this->middleware('permission:edit-user', ['only' => ['edit','update']]);
+        $this->middleware('permission:list-users|create-user|edit-user|delete-user', ['only' => ['index', 'show', 'getData']]);
+        $this->middleware('permission:create-user', ['only' => ['create', 'store']]);
+        $this->middleware('permission:edit-user', ['only' => ['edit', 'update']]);
         $this->middleware('permission:delete-user', ['only' => ['destroy']]);
     }
 
@@ -43,10 +43,10 @@ class UserController extends Controller
     {
         $query = User::query();
 
-        // Tenant isolation: a non-super-admin only sees users whose primary
+        // Company isolation: a user who is not an account owner only sees users whose primary
         // company is one they can access (User has no global company scope).
         $actor = auth()->user();
-        if (! ($actor->is_super_admin ?? false)) {
+        if (! ($actor->is_account_owner ?? false)) {
             $companyIds = $actor->accessibleCompanies()->pluck('id')->all();
             $query->whereIn('company_id', $companyIds ?: [-1]);
         }
@@ -57,50 +57,54 @@ class UserController extends Controller
                 if ($roles->count() > 0) {
                     $badges = '';
                     foreach ($roles as $role) {
-                        $badges .= '<span class="badge bg-secondary me-1">' . $role . '</span>';
+                        $badges .= '<span class="badge bg-secondary me-1">'.$role.'</span>';
                     }
+
                     return $badges;
                 }
+
                 return '<span class="text-muted">No roles assigned</span>';
             })
             ->addColumn('name_with_badge', function ($user) {
-                $html = '<strong>' . $user->name . '</strong>';
+                $html = '<strong>'.$user->name.'</strong>';
                 if (in_array('Super Admin', $user->getRoleNames()->toArray() ?? [])) {
                     $html .= ' <span class="badge bg-danger ms-2">Protected</span>';
                 }
                 if ($user->is_demo_user) {
                     $html .= ' <span class="badge bg-warning text-dark ms-1" title="Restricted access">Demo</span>';
                 }
+
                 return $html;
             })
             ->addColumn('actions', function ($user) {
                 $html = '<div class="d-flex gap-1">';
-                
+
                 if (in_array('Super Admin', $user->getRoleNames()->toArray() ?? [])) {
                     if (Auth::user()->hasRole('Super Admin')) {
-                        $html .= '<a href="' . route('users.edit', $user->id) . '" class="btn btn-sm btn-warning" title="Edit">
+                        $html .= '<a href="'.route('users.edit', $user->id).'" class="btn btn-sm btn-warning" title="Edit">
                                     <i class="fas fa-edit"></i>
                                   </a>';
                     }
                 } else {
                     if (auth()->user()->can('edit-user')) {
-                        $html .= '<a href="' . route('users.edit', $user->id) . '" class="btn btn-sm btn-warning" title="Edit">
+                        $html .= '<a href="'.route('users.edit', $user->id).'" class="btn btn-sm btn-warning" title="Edit">
                                     <i class="fas fa-edit"></i>
                                   </a>';
                     }
-                    
+
                     if (auth()->user()->can('delete-user') && Auth::user()->id != $user->id) {
-                        $html .= '<form method="POST" action="' . route('users.destroy', $user->id) . '" class="d-inline" onsubmit="return confirm(\'Are you sure you want to delete this user?\');">
-                                    ' . csrf_field() . '
-                                    ' . method_field('DELETE') . '
+                        $html .= '<form method="POST" action="'.route('users.destroy', $user->id).'" class="d-inline" onsubmit="return confirm(\'Are you sure you want to delete this user?\');">
+                                    '.csrf_field().'
+                                    '.method_field('DELETE').'
                                     <button type="submit" class="btn btn-sm btn-danger" title="Delete">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                   </form>';
                     }
                 }
-                
+
                 $html .= '</div>';
+
                 return $html;
             })
             ->rawColumns(['roles_badge', 'name_with_badge', 'actions'])
@@ -113,6 +117,7 @@ class UserController extends Controller
     public function create(): View
     {
         $companies = Company::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']);
+
         return view('users.create', [
             'roles' => Role::pluck('name')->all(),
             'sidebarMenuItems' => config('sidebar.menu_items', []),
@@ -124,26 +129,26 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      */
     /**
-     * Block a non-super-admin from touching a user outside the companies they
+     * Block someone who is not an account owner from touching a user outside the companies they
      * can access (User has no global company scope, so route-model binding would
      * otherwise resolve any tenant's user by id — cross-tenant IDOR).
      */
     private function ensureCanManage(User $user): void
     {
         $actor = auth()->user();
-        if (! ($actor->is_super_admin ?? false) && ! $actor->canAccessCompany($user->company_id)) {
+        if (! ($actor->is_account_owner ?? false) && ! $actor->canAccessCompany($user->company_id)) {
             abort(403, 'You do not have access to this user.');
         }
     }
 
     /**
-     * Roles the current actor is allowed to assign. Only a super-admin may grant
+     * Roles the current actor is allowed to assign. Only an account owner may grant
      * the Super Admin role — otherwise any user-manager could escalate privileges.
      */
     private function assignableRoles($requested): array
     {
         $roles = array_values(array_filter((array) $requested));
-        if (! (auth()->user()->is_super_admin ?? false)) {
+        if (! (auth()->user()->is_account_owner ?? false)) {
             $roles = array_values(array_diff($roles, ['Super Admin']));
         }
 
@@ -153,9 +158,9 @@ class UserController extends Controller
     public function store(StoreUserRequest $request): RedirectResponse
     {
         $input = $request->all();
-        // is_super_admin is never a form field. Strip it so it can't be
+        // is_account_owner is never a form field. Strip it so it can't be
         // mass-assigned to bypass the tenant scope (privilege escalation).
-        unset($input['is_super_admin']);
+        unset($input['is_account_owner']);
         $input['password'] = Hash::make($request->password);
         $input['is_demo_user'] = $request->boolean('is_demo_user');
         $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
@@ -174,7 +179,7 @@ class UserController extends Controller
         $user->assignRole($this->assignableRoles($request->roles));
 
         return redirect()->route('users.index')
-                ->withSuccess('New user is added successfully.');
+            ->withSuccess('New user is added successfully.');
     }
 
     /**
@@ -193,8 +198,8 @@ class UserController extends Controller
         $this->ensureCanManage($user);
 
         // Check Only Super Admin can update his own Profile
-        if ($user->hasRole('Super Admin')){
-            if($user->id != auth()->user()->id){
+        if ($user->hasRole('Super Admin')) {
+            if ($user->id != auth()->user()->id) {
                 abort(403, 'USER DOES NOT HAVE THE RIGHT PERMISSIONS');
             }
         }
@@ -229,14 +234,14 @@ class UserController extends Controller
         }
 
         $input = $request->all();
-        // Never let is_super_admin be set via the form (privilege escalation).
-        unset($input['is_super_admin']);
+        // Never let is_account_owner be set via the form (privilege escalation).
+        unset($input['is_account_owner']);
 
-        if (!empty($request->password)) {
+        if (! empty($request->password)) {
             $input['password'] = Hash::make($request->password);
         } else {
             $input = $request->except('password');
-            unset($input['is_super_admin']);
+            unset($input['is_account_owner']);
         }
         $input['is_demo_user'] = $request->boolean('is_demo_user');
         $input['allowed_sidebar_routes'] = $request->boolean('use_default_sidebar') ? null : $request->input('sidebar_routes', []);
@@ -256,7 +261,7 @@ class UserController extends Controller
         $user->syncRoles($this->assignableRoles($request->roles));
 
         return redirect()->back()
-                ->withSuccess('User is updated successfully.');
+            ->withSuccess('User is updated successfully.');
     }
 
     /**
@@ -267,14 +272,14 @@ class UserController extends Controller
         $this->ensureCanManage($user);
 
         // About if user is Super Admin or User ID belongs to Auth User
-        if ($user->hasRole('Super Admin') || $user->id == auth()->user()->id)
-        {
+        if ($user->hasRole('Super Admin') || $user->id == auth()->user()->id) {
             abort(403, 'USER DOES NOT HAVE THE RIGHT PERMISSIONS');
         }
 
         $user->syncRoles([]);
         $user->delete();
+
         return redirect()->route('users.index')
-                ->withSuccess('User is deleted successfully.');
+            ->withSuccess('User is deleted successfully.');
     }
 }

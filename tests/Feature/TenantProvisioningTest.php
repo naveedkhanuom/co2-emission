@@ -65,7 +65,7 @@ class TenantProvisioningTest extends TestCase
             $owner = User::first();
             $this->assertSame('sara@phpunit.test', $owner->email);
             $this->assertSame(Company::first()->id, $owner->company_id);
-            $this->assertTrue((bool) $owner->is_super_admin, 'The owner sees every company in their account.');
+            $this->assertTrue((bool) $owner->is_account_owner, 'The owner sees every company in their account.');
             $this->assertTrue($owner->hasRole('Super Admin'));
 
             // Access control and the shared catalogues are seeded, so the
