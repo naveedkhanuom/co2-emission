@@ -103,13 +103,20 @@ class TenantController extends Controller
             return back()->withInput()->with('error', trim(Artisan::output()));
         }
 
+        $host = $subdomain.'.'.(config('tenancy.central_domains')[0] ?? 'localhost');
+
         return redirect()
             ->route('platform.tenants.index')
             ->with('credentials', [
                 'subdomain' => $subdomain,
-                'url' => 'http://'.$subdomain.'.'.(config('tenancy.central_domains')[0] ?? 'localhost').'/login',
+                'url' => 'http://'.$host.'/login',
                 'email' => $validated['owner_email'],
                 'password' => $password,
+                // Local only: the web server already answers for *.domain,
+                // but the Windows hosts file cannot wildcard, so the address
+                // will not resolve until this line exists. In production a
+                // single wildcard DNS record covers every client.
+                'hosts_line' => app()->isLocal() ? '127.0.0.1 '.$host : null,
             ]);
     }
 

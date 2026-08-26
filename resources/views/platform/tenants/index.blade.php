@@ -21,6 +21,21 @@
                 <tr><th>Email</th><td class="mono">{{ $credentials['email'] }}</td></tr>
                 <tr><th>Password</th><td class="mono"><strong>{{ $credentials['password'] }}</strong></td></tr>
             </table>
+
+            @if (! empty($credentials['hosts_line']))
+                <p style="margin: 1.1rem 0 .4rem; font-size: .9rem;">
+                    <strong>Local only:</strong> that address will not resolve until this line is in your
+                    hosts file — Windows cannot wildcard it, and in production one wildcard DNS record
+                    covers every client:
+                </p>
+                <p class="mono" style="margin: 0 0 .5rem; padding: .5rem .7rem; background: var(--surface-2); border-radius: 4px;">
+                    {{ $credentials['hosts_line'] }}
+                </p>
+                <p class="muted" style="margin: 0; font-size: .85rem;">
+                    Or run <code>php artisan tenant:hosts --write</code> from an administrator terminal
+                    to add every missing client at once.
+                </p>
+            @endif
         </div>
     @endif
 
