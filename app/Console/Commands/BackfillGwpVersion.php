@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresTenant;
 use App\Models\EmissionRecord;
 use App\Support\Gwp;
 use Illuminate\Console\Command;
@@ -24,6 +25,8 @@ use Illuminate\Console\Command;
  */
 class BackfillGwpVersion extends Command
 {
+    use RequiresTenant;
+
     protected $signature = 'emissions:backfill-gwp
                             {--apply : Write the changes. Without this the command only reports.}';
 
@@ -31,6 +34,10 @@ class BackfillGwpVersion extends Command
 
     public function handle(): int
     {
+        if (! $this->ensureTenantContext()) {
+            return self::FAILURE;
+        }
+
         $basis = Gwp::factorBasis();
 
         $missing = EmissionRecord::withoutGlobalScopes()

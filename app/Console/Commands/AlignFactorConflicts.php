@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresTenant;
 use App\Models\EmissionFactor;
 use App\Models\EmissionRecord;
 use Illuminate\Console\Command;
@@ -27,6 +28,8 @@ use Illuminate\Console\Command;
  */
 class AlignFactorConflicts extends Command
 {
+    use RequiresTenant;
+
     protected $signature = 'factors:align
                             {--apply : Write the changes. Without this the command only reports.}';
 
@@ -87,6 +90,10 @@ class AlignFactorConflicts extends Command
 
     public function handle(): int
     {
+        if (! $this->ensureTenantContext()) {
+            return self::FAILURE;
+        }
+
         $apply = (bool) $this->option('apply');
         $rows = [];
         $blocked = [];

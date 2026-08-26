@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresTenant;
 use App\Models\EmissionFactor;
 use App\Services\Factors\BuiltInFactorCatalog;
 use Illuminate\Console\Command;
@@ -22,6 +23,8 @@ use Illuminate\Console\Command;
  */
 class ReconcileFactorCatalogues extends Command
 {
+    use RequiresTenant;
+
     protected $signature = 'factors:reconcile
                             {--tolerance=0.01 : Relative difference treated as agreement (0.01 = 1%)}
                             {--all : Also list the entries that agree}
@@ -48,6 +51,10 @@ class ReconcileFactorCatalogues extends Command
 
     public function handle(BuiltInFactorCatalog $catalog): int
     {
+        if (! $this->ensureTenantContext()) {
+            return self::FAILURE;
+        }
+
         $tolerance = (float) $this->option('tolerance');
 
         $config = $this->configEntries($catalog);

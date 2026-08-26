@@ -2,12 +2,15 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\User;
+use App\Console\Concerns\RequiresTenant;
 use App\Models\Company;
+use App\Models\User;
+use Illuminate\Console\Command;
 
 class AssignCompanyToUser extends Command
 {
+    use RequiresTenant;
+
     /**
      * The name and signature of the console command.
      *
@@ -27,37 +30,42 @@ class AssignCompanyToUser extends Command
      */
     public function handle()
     {
+        if (! $this->ensureTenantContext()) {
+            return self::FAILURE;
+        }
+
         $userId = $this->argument('user_id');
         $companyIds = $this->argument('company_ids');
 
         // Get user
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             $this->error("User with ID {$userId} not found!");
+
             return 1;
         }
 
         // Get companies
         $companies = Company::whereIn('id', $companyIds)->get();
         if ($companies->count() !== count($companyIds)) {
-            $this->warn("Some company IDs were not found!");
+            $this->warn('Some company IDs were not found!');
         }
 
         // Get current access
         $currentAccess = $user->company_access ?? [];
-        
+
         // Add new company IDs (avoid duplicates)
         $newAccess = array_unique(array_merge($currentAccess, $companyIds));
-        
+
         // Update user
         $user->company_access = array_values($newAccess); // Re-index array
         $user->save();
 
         // Display results
         $this->info("✓ User: {$user->name} (ID: {$user->id})");
-        $this->info("✓ Primary Company ID: " . ($user->company_id ?? 'Not set'));
-        $this->info("✓ Company Access: " . json_encode($user->company_access));
-        
+        $this->info('✓ Primary Company ID: '.($user->company_id ?? 'Not set'));
+        $this->info('✓ Company Access: '.json_encode($user->company_access));
+
         $accessibleCount = $user->accessibleCompanies()->count();
         $this->info("✓ Total Accessible Companies: {$accessibleCount}");
 
@@ -65,7 +73,7 @@ class AssignCompanyToUser extends Command
         $accessibleCompanies = $user->accessibleCompanies()->get(['id', 'name', 'is_active']);
         $this->table(
             ['ID', 'Name', 'Active'],
-            $accessibleCompanies->map(function($company) {
+            $accessibleCompanies->map(function ($company) {
                 return [
                     $company->id,
                     $company->name,

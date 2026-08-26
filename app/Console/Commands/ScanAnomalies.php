@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Concerns\RequiresTenant;
 use App\Models\AnomalyAlert;
 use App\Models\Company;
 use App\Models\User;
@@ -15,17 +16,25 @@ use Illuminate\Support\Facades\Log;
  * company's users. Idempotent: an anomaly is recorded in anomaly_alerts and
  * only notified the first time it's seen, so running daily never re-spams.
  *
- * Runs from the console (no bound tenant); detection is scoped per company_id
- * explicitly inside AnomalyDetectionService.
+ * Runs inside one tenant and scans every active company in that account.
+ * Detection is scoped per company_id explicitly inside
+ * AnomalyDetectionService, so subsidiaries are never compared against each
+ * other. Schedule it across all clients with `tenants:each anomalies:scan`.
  */
 class ScanAnomalies extends Command
 {
+    use RequiresTenant;
+
     protected $signature = 'anomalies:scan {--company= : Limit the scan to a single company id}';
 
     protected $description = 'Detect emission spikes, new sources and data-quality drops, and notify affected companies.';
 
     public function handle(AnomalyDetectionService $detector): int
     {
+        if (! $this->ensureTenantContext()) {
+            return self::FAILURE;
+        }
+
         $companies = Company::query()
             ->when($this->option('company'), fn ($q, $id) => $q->where('id', $id))
             ->where('is_active', true)
@@ -33,6 +42,7 @@ class ScanAnomalies extends Command
 
         if ($companies->isEmpty()) {
             $this->info('No active companies to scan.');
+
             return self::SUCCESS;
         }
 
@@ -44,6 +54,7 @@ class ScanAnomalies extends Command
             } catch (\Throwable $e) {
                 Log::error('Anomaly scan failed for company', ['company_id' => $company->id, 'error' => $e->getMessage()]);
                 $this->error("  ✗ {$company->name}: {$e->getMessage()}");
+
                 continue;
             }
 
@@ -62,12 +73,12 @@ class ScanAnomalies extends Command
                 $alert = AnomalyAlert::firstOrCreate(
                     ['company_id' => $company->id, 'anomaly_key' => $a['key']],
                     [
-                        'type'        => $a['type'],
-                        'period'      => $a['period'],
-                        'title'       => $a['title'],
-                        'message'     => $a['message'],
-                        'severity'    => $a['severity'],
-                        'metadata'    => $a['metadata'] ?? null,
+                        'type' => $a['type'],
+                        'period' => $a['period'],
+                        'title' => $a['title'],
+                        'message' => $a['message'],
+                        'severity' => $a['severity'],
+                        'metadata' => $a['metadata'] ?? null,
                         'notified_at' => now(),
                     ]
                 );
