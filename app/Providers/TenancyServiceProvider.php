@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Stancl\JobPipeline\JobPipeline;
+use Stancl\Tenancy\Controllers\TenantAssetsController;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
@@ -115,6 +116,13 @@ class TenancyServiceProvider extends ServiceProvider
         $this->mapRoutes();
 
         $this->makeTenancyMiddlewareHighestPriority();
+
+        // The /tenancy/assets route — which serves a client's own uploaded
+        // files from their storage — identifies the tenant by DOMAIN out of
+        // the box. We identify by subdomain, so without this it can never
+        // resolve one and every tenant-uploaded file 404s with "Tenant could
+        // not be identified on domain".
+        TenantAssetsController::$tenancyMiddleware = Middleware\InitializeTenancyBySubdomain::class;
     }
 
     protected function bootEvents()

@@ -146,7 +146,18 @@ return [
          * disable asset() helper tenancy and explicitly use tenant_asset() calls in places
          * where you want to use tenant-specific assets (product images, avatars, etc).
          */
-        'asset_helper_tenancy' => true,
+        /*
+         * FALSE, deliberately. When true, asset() is rewritten to
+         * /tenancy/assets/{path} and served from the tenant's own storage —
+         * so every application asset in public/ 404s. The login page lost its
+         * background image and logo, leaving white text on a pale background.
+         *
+         * asset() means "a file shipped with the application", which is the
+         * same for every client. Files that genuinely belong to one tenant go
+         * through tenant_asset() or the storage disk instead — see
+         * app_logo_url() in app/Helpers/helpers.php.
+         */
+        'asset_helper_tenancy' => false,
     ],
 
     /**

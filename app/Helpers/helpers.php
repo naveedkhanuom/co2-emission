@@ -1,32 +1,32 @@
 <?php
 
-use App\Models\Facilities as Facility;
 use App\Models\Department;
+use App\Models\Facilities as Facility;
 
-if (!function_exists('facilities')) {
+if (! function_exists('facilities')) {
     function facilities($all = true)
     {
         $query = Facility::query();
-        
+
         // Automatically scope to current company if available
         $companyId = current_company_id();
         if ($companyId) {
             $query->where('company_id', $companyId);
         }
-        
+
         if ($all) {
             return $query->get();
         }
+
         return $query; // allows further chaining
     }
 }
 
-
-if (!function_exists('departments')) {
+if (! function_exists('departments')) {
     function departments($facilityId = null)
     {
         $query = Department::query();
-        
+
         // Automatically scope to current company if available
         $companyId = current_company_id();
         if ($companyId) {
@@ -41,7 +41,7 @@ if (!function_exists('departments')) {
     }
 }
 
-if (!function_exists('current_company')) {
+if (! function_exists('current_company')) {
     /**
      * Get the current company from context.
      */
@@ -51,7 +51,7 @@ if (!function_exists('current_company')) {
     }
 }
 
-if (!function_exists('app_logo_url')) {
+if (! function_exists('app_logo_url')) {
     /**
      * Resolve the global app logo (General Settings) to a URL. An uploaded logo
      * is a public-disk path; a full URL is used as-is. Returns $default when no
@@ -65,17 +65,35 @@ if (!function_exists('app_logo_url')) {
             return $default; // settings table not migrated yet, etc.
         }
 
-        if (!$logo) {
+        if (! $logo) {
             return $default;
         }
 
-        return \Illuminate\Support\Str::startsWith($logo, ['http://', 'https://'])
-            ? $logo
-            : \Illuminate\Support\Facades\Storage::disk('public')->url($logo);
+        if (\Illuminate\Support\Str::startsWith($logo, ['http://', 'https://'])) {
+            return $logo;
+        }
+
+        /*
+         * Inside a tenant, the public disk points at storage/tenant{id}/app/
+         * public — but Storage::url() still returns /storage/..., which the
+         * public/storage symlink resolves to the CENTRAL storage directory.
+         * A client's own uploaded logo lives in neither place the symlink can
+         * see, so it 404s.
+         *
+         * tenant_asset() goes through stancl's asset route, which reads from
+         * the current tenant's storage. The 'public/' prefix is because that
+         * route serves relative to the tenant's app/ directory, while the
+         * stored path is relative to the public disk one level inside it.
+         */
+        if (function_exists('tenancy') && tenancy()->initialized) {
+            return tenant_asset('public/'.$logo);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($logo);
     }
 }
 
-if (!function_exists('current_company_id')) {
+if (! function_exists('current_company_id')) {
     /**
      * Get the current company ID from context.
      */
@@ -85,28 +103,29 @@ if (!function_exists('current_company_id')) {
     }
 }
 
-if (!function_exists('sites')) {
+if (! function_exists('sites')) {
     /**
      * Get sites for the current company.
      */
     function sites($all = true)
     {
         $query = \App\Models\Site::query();
-        
+
         // Automatically scope to current company if available
         $companyId = current_company_id();
         if ($companyId) {
             $query->where('company_id', $companyId);
         }
-        
+
         if ($all) {
             return $query->orderBy('name')->get();
         }
+
         return $query->orderBy('name'); // allows further chaining
     }
 }
 
-if (!function_exists('scope3_categories')) {
+if (! function_exists('scope3_categories')) {
     /**
      * Get active Scope 3 categories.
      */
@@ -119,28 +138,29 @@ if (!function_exists('scope3_categories')) {
     }
 }
 
-if (!function_exists('suppliers')) {
+if (! function_exists('suppliers')) {
     /**
      * Get suppliers for the current company.
      */
     function suppliers($all = true)
     {
         $query = \App\Models\Supplier::query();
-        
+
         // Automatically scope to current company if available
         $companyId = current_company_id();
         if ($companyId) {
             $query->where('company_id', $companyId);
         }
-        
+
         if ($all) {
             return $query->orderBy('name')->get();
         }
+
         return $query->orderBy('name'); // allows further chaining
     }
 }
 
-if (!function_exists('get_demo_restricted_routes')) {
+if (! function_exists('get_demo_restricted_routes')) {
     /**
      * Get the list of restricted route patterns for a demo user.
      * When user has restricted_sidebar_routes set (array), use that; when null, use config.
@@ -154,11 +174,12 @@ if (!function_exists('get_demo_restricted_routes')) {
         if ($user->restricted_sidebar_routes !== null && is_array($user->restricted_sidebar_routes)) {
             return $user->restricted_sidebar_routes;
         }
+
         return config('demo.restricted_routes', []);
     }
 }
 
-if (!function_exists('route_matches_restricted_pattern')) {
+if (! function_exists('route_matches_restricted_pattern')) {
     /**
      * Check if a route name matches a restricted pattern (exact or prefix).
      */
@@ -167,11 +188,12 @@ if (!function_exists('route_matches_restricted_pattern')) {
         if (str_ends_with($pattern, '.')) {
             return str_starts_with($routeName, $pattern);
         }
+
         return $routeName === $pattern;
     }
 }
 
-if (!function_exists('demo_route_restricted')) {
+if (! function_exists('demo_route_restricted')) {
     /**
      * Check if a route is restricted for the current user (demo user = restricted access).
      * Uses per-user restricted_sidebar_routes when set; otherwise config. Used for sidebar (lock links).
@@ -194,11 +216,12 @@ if (!function_exists('demo_route_restricted')) {
                 return true;
             }
         }
+
         return false;
     }
 }
 
-if (!function_exists('user_can_see_sidebar_route')) {
+if (! function_exists('user_can_see_sidebar_route')) {
     /**
      * Check if the current user should see this sidebar link.
      * Demo users see all sidebar links (restricted ones show with lock; click shows no-permission).
@@ -219,20 +242,21 @@ if (!function_exists('user_can_see_sidebar_route')) {
         if ($allowed === null || ! is_array($allowed)) {
             return true;
         }
+
         return in_array($routeName, $allowed, true);
     }
 }
 
-if (!function_exists('demo_restricted_tooltip')) {
+if (! function_exists('demo_restricted_tooltip')) {
     /**
      * Tooltip text shown on sidebar links that demo users cannot access.
      */
     function demo_restricted_tooltip(): string
     {
-        return "Demo user have no permission. This feature is not available for demo accounts. You can see it in the menu but cannot access it. Contact your administrator for full access.";
+        return 'Demo user have no permission. This feature is not available for demo accounts. You can see it in the menu but cannot access it. Contact your administrator for full access.';
     }
 }
-if (!function_exists('format_factor')) {
+if (! function_exists('format_factor')) {
     /**
      * Render an emission factor readably without rounding it away.
      *
