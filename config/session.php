@@ -73,7 +73,16 @@ return [
     |
     */
 
-    'connection' => env('SESSION_CONNECTION'),
+    /*
+     * Central, not null. A null connection follows the tenant switch, which
+     * would put each tenant's sessions in their own database and leave the
+     * central domain — where people sign in — with nowhere to write.
+     *
+     * Sessions are ephemeral state rather than client data, so a shared table
+     * does not weaken the isolation promise. Moving SESSION_DRIVER to redis
+     * removes the question entirely and is the intended end state.
+     */
+    'connection' => env('SESSION_CONNECTION', env('DB_CONNECTION', 'mysql')),
 
     /*
     |--------------------------------------------------------------------------

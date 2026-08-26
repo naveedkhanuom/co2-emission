@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -16,22 +16,22 @@ return new class extends Migration
         Schema::table('facilities', function (Blueprint $table) {
             $table->unsignedBigInteger('company_id')->nullable()->after('id');
             $table->index('company_id');
-            
+
             if (Schema::hasTable('companies')) {
                 $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             }
         });
-        
+
         // Add company_id to departments table
         Schema::table('departments', function (Blueprint $table) {
             $table->unsignedBigInteger('company_id')->nullable()->after('id');
             $table->index('company_id');
-            
+
             if (Schema::hasTable('companies')) {
                 $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             }
         });
-        
+
         // Update existing records to assign to first company (if exists)
         if (Schema::hasTable('companies')) {
             $firstCompany = DB::table('companies')->first();
@@ -52,7 +52,7 @@ return new class extends Migration
             $table->dropIndex(['company_id']);
             $table->dropColumn('company_id');
         });
-        
+
         Schema::table('facilities', function (Blueprint $table) {
             $table->dropForeign(['company_id']);
             $table->dropIndex(['company_id']);

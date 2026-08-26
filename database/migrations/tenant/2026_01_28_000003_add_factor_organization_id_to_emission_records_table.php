@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('emission_records', 'factor_organization_id')) {
+        if (! Schema::hasColumn('emission_records', 'factor_organization_id')) {
             Schema::table('emission_records', function (Blueprint $table) {
                 $table->unsignedBigInteger('factor_organization_id')->nullable()->after('emission_factor');
             });
@@ -40,4 +40,3 @@ return new class extends Migration
         }
     }
 };
-

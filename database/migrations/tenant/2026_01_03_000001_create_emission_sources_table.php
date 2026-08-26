@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::dropIfExists('emission_sources');
-        
+
         Schema::create('emission_sources', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -30,4 +30,3 @@ return new class extends Migration
         Schema::dropIfExists('emission_sources');
     }
 };
-

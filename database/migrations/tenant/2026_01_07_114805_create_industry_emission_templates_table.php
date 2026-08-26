@@ -25,7 +25,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->integer('priority')->default(0)->comment('Display order');
             $table->timestamps();
-            
+
             $table->index(['industry_type', 'scope']);
             $table->index(['industry_type', 'is_active']);
         });

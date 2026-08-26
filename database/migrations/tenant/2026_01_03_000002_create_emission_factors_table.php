@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::dropIfExists('emission_factors');
-        
+
         Schema::create('emission_factors', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('emission_source_id');
@@ -36,4 +36,3 @@ return new class extends Migration
         Schema::dropIfExists('emission_factors');
     }
 };
-

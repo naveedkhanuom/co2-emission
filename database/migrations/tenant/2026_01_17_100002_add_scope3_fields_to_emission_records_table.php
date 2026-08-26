@@ -15,21 +15,21 @@ return new class extends Migration
             // Add Scope 3 specific fields
             $table->foreignId('scope3_category_id')->nullable()->after('scope')
                 ->constrained('scope3_categories')->onDelete('set null');
-            
+
             $table->foreignId('supplier_id')->nullable()->after('scope3_category_id')
                 ->constrained('suppliers')->onDelete('set null');
-            
+
             $table->enum('calculation_method', ['activity-based', 'spend-based', 'hybrid'])
                 ->nullable()->after('emission_factor');
-            
+
             $table->enum('data_quality', ['primary', 'secondary', 'estimated'])
                 ->default('estimated')->after('calculation_method');
-            
+
             $table->decimal('spend_amount', 15, 2)->nullable()->after('activity_data');
             $table->string('spend_currency', 3)->default('USD')->after('spend_amount');
-            
+
             $table->json('supporting_documents')->nullable()->after('notes');
-            
+
             // Add indexes
             $table->index('scope3_category_id');
             $table->index('supplier_id');
@@ -53,7 +53,7 @@ return new class extends Migration
                 'data_quality',
                 'spend_amount',
                 'spend_currency',
-                'supporting_documents'
+                'supporting_documents',
             ]);
         });
     }

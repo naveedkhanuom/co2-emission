@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::dropIfExists('reports');
-        
+
         Schema::create('reports', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
@@ -35,7 +35,7 @@ return new class extends Migration
             if (Schema::hasTable('users')) {
                 $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
             }
-            
+
             // Indexes
             $table->index('company_id');
             $table->index('status');

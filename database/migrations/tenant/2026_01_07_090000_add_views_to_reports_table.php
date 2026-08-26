@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('reports', function (Blueprint $table) {
-            if (!Schema::hasColumn('reports', 'views_count')) {
+            if (! Schema::hasColumn('reports', 'views_count')) {
                 $table->unsignedInteger('views_count')->default(0)->after('type');
             }
-            if (!Schema::hasColumn('reports', 'last_viewed_at')) {
+            if (! Schema::hasColumn('reports', 'last_viewed_at')) {
                 $table->timestamp('last_viewed_at')->nullable()->after('views_count');
             }
         });
@@ -36,4 +36,3 @@ return new class extends Migration
         });
     }
 };
-

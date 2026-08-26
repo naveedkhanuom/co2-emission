@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::table('companies', function (Blueprint $table) {
             $table->string('code', 50)->unique()->nullable()->after('name')->comment('Company code/identifier');
             $table->enum('industry_type', [
-                'manufacturing', 'energy', 'transportation', 'agriculture', 
-                'construction', 'retail', 'healthcare', 'education', 
-                'technology', 'finance', 'hospitality', 'mining', 
-                'chemical', 'textile', 'food_beverage', 'other'
+                'manufacturing', 'energy', 'transportation', 'agriculture',
+                'construction', 'retail', 'healthcare', 'education',
+                'technology', 'finance', 'hospitality', 'mining',
+                'chemical', 'textile', 'food_beverage', 'other',
             ])->nullable()->change();
             $table->string('tax_id', 100)->nullable()->after('industry_type');
             $table->string('registration_number', 100)->nullable()->after('tax_id');
@@ -47,7 +47,7 @@ return new class extends Migration
                 'code', 'tax_id', 'registration_number', 'website', 'logo',
                 'size', 'employee_count', 'annual_revenue', 'currency',
                 'timezone', 'fiscal_year_start', 'reporting_standards',
-                'scopes_enabled', 'is_active', 'subscription_expires_at', 'notes'
+                'scopes_enabled', 'is_active', 'subscription_expires_at', 'notes',
             ]);
         });
     }

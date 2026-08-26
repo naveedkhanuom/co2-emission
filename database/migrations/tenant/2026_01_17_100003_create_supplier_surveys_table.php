@@ -35,7 +35,7 @@ return new class extends Migration
             // created_by can be null if user deleted
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            
+
             $table->index('company_id');
             $table->index('supplier_id');
             $table->index('status');

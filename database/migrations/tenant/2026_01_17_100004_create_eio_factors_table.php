@@ -29,7 +29,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->index('sector_code');
             $table->index('country');
             $table->index('is_active');

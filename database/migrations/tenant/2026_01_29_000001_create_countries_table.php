@@ -8,18 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('factor_organizations', function (Blueprint $table) {
+        Schema::create('countries', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 30)->unique(); // e.g. DEFRA, EPA, IPCC
-            $table->string('name', 100);
-            $table->string('url')->nullable();
+            $table->string('code', 10)->unique(); // e.g. UAE, US, UK
+            $table->string('name');               // e.g. United Arab Emirates
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('factor_organizations');
+        Schema::dropIfExists('countries');
     }
 };
-

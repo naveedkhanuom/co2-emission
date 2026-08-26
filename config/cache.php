@@ -41,8 +41,13 @@ return [
         'database' => [
             'driver' => 'database',
             'table' => env('DB_CACHE_TABLE', 'cache'),
-            'connection' => env('DB_CACHE_CONNECTION', null),
-            'lock_connection' => env('DB_CACHE_LOCK_CONNECTION', null),
+
+            // Central, for the same reason as the queue in config/queue.php:
+            // a null connection follows the tenant switch. Per-tenant cache
+            // separation is handled by CacheTenancyBootstrapper tagging keys,
+            // not by moving the cache table into each tenant's database.
+            'connection' => env('DB_CACHE_CONNECTION', env('DB_CONNECTION', 'mysql')),
+            'lock_connection' => env('DB_CACHE_LOCK_CONNECTION', env('DB_CONNECTION', 'mysql')),
         ],
 
         'file' => [

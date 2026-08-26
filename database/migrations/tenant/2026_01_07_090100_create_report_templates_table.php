@@ -11,26 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('export_jobs', function (Blueprint $table) {
+        Schema::create('report_templates', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('format', ['pdf', 'excel', 'csv', 'pptx', 'png'])->default('excel');
-            $table->enum('status', ['pending', 'processing', 'completed', 'failed'])->default('pending');
-            $table->string('file_path')->nullable();
-            $table->string('file_size')->nullable(); // e.g., "24.5 MB"
-            $table->json('filters')->nullable(); // Export filters/parameters
-            $table->text('error_message')->nullable();
+            $table->string('category')->default('executive'); // executive, compliance, facility, stakeholder, periodic, target-tracking
+            $table->json('formats')->nullable(); // ['pdf', 'excel', 'pptx', 'web']
+            $table->json('sections')->nullable(); // Template structure/sections
+            $table->boolean('is_active')->default(true);
             $table->unsignedBigInteger('created_by')->nullable();
-            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
             if (Schema::hasTable('users')) {
                 $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
             }
 
-            $table->index('status');
-            $table->index('created_at');
+            $table->index('category');
+            $table->index('is_active');
         });
     }
 
@@ -39,7 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('export_jobs');
+        Schema::dropIfExists('report_templates');
     }
 };
-

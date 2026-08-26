@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('emission_factors', function (Blueprint $table) {
-            if (!Schema::hasColumn('emission_factors', 'country_id')) {
+            if (! Schema::hasColumn('emission_factors', 'country_id')) {
                 $table->unsignedBigInteger('country_id')->nullable()->after('organization_id');
                 $table->index(['emission_source_id', 'organization_id', 'country_id'], 'emission_factors_source_org_country_idx');
             }
@@ -34,12 +34,17 @@ return new class extends Migration
         if (Schema::hasTable('emission_factors')) {
             Schema::table('emission_factors', function (Blueprint $table) {
                 if (Schema::hasColumn('emission_factors', 'country_id')) {
-                    try { $table->dropForeign(['country_id']); } catch (\Throwable $e) {}
-                    try { $table->dropIndex('emission_factors_source_org_country_idx'); } catch (\Throwable $e) {}
+                    try {
+                        $table->dropForeign(['country_id']);
+                    } catch (\Throwable $e) {
+                    }
+                    try {
+                        $table->dropIndex('emission_factors_source_org_country_idx');
+                    } catch (\Throwable $e) {
+                    }
                     $table->dropColumn('country_id');
                 }
             });
         }
     }
 };
-

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Drop table if it exists (in case of previous failed migration)
         Schema::dropIfExists('utility_bills');
-        
+
         Schema::create('utility_bills', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id')->nullable();
@@ -46,4 +46,3 @@ return new class extends Migration
         Schema::dropIfExists('utility_bills');
     }
 };
-

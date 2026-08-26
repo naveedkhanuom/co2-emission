@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::dropIfExists('sites');
-        
+
         Schema::create('sites', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id')->nullable();
@@ -38,4 +38,3 @@ return new class extends Migration
         Schema::dropIfExists('sites');
     }
 };
-

@@ -29,7 +29,7 @@ return new class extends Migration
             $table->timestamp('last_data_submission')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             $table->index('company_id');
             $table->index('status');
             $table->index('data_quality');

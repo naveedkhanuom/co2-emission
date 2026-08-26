@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('type', 50)->default('string')->comment('string, integer, boolean, json');
             $table->text('description')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['company_id', 'key']);
             $table->index('company_id');
         });

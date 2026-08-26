@@ -31,7 +31,7 @@ return new class extends Migration
             $table->timestamps();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
-            
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
             $table->index('status');
             $table->index('import_type');
