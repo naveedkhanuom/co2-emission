@@ -151,6 +151,13 @@ class TenancyServiceProvider extends ServiceProvider
             Middleware\InitializeTenancyByDomainOrSubdomain::class,
             Middleware\InitializeTenancyByPath::class,
             Middleware\InitializeTenancyByRequestData::class,
+
+            // Last of the tenancy middleware, so a tenant is bound by the time
+            // it reads one — but still ahead of Authenticate, which Laravel
+            // prioritises. Left unprioritised, auth ran first and a suspended
+            // tenant's protected routes answered with a redirect to login
+            // rather than a refusal.
+            \App\Http\Middleware\EnsureTenantIsActive::class,
         ];
 
         foreach (array_reverse($tenancyMiddleware) as $middleware) {
