@@ -9,9 +9,23 @@ use App\Models\ReportingPeriod;
 use App\Services\EmissionEnrichmentService;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class EmissionsImport implements ToModel, WithHeadingRow
+/**
+ * Reads in chunks so a large spreadsheet does not have to fit in memory all at
+ * once — the whole file used to be materialised before the first row was
+ * processed, so a big upload exhausted memory instead of failing cleanly.
+ *
+ * Deliberately NOT WithBatchInserts: batch inserts bypass Eloquent model events,
+ * which would silence the Auditable trail on every imported record. Rows are an
+ * auditable artefact here, so the per-model insert is worth the cost.
+ *
+ * Deliberately NOT ShouldQueue: chunk jobs are serialised copies of this object,
+ * so the counters and caches below would reset between chunks and the import
+ * would under-report what it did.
+ */
+class EmissionsImport implements ToModel, WithChunkReading, WithHeadingRow
 {
     protected bool $overwrite;
 
@@ -51,6 +65,17 @@ class EmissionsImport implements ToModel, WithHeadingRow
     public function setImportHistoryId(int $id)
     {
         $this->importHistoryId = $id;
+    }
+
+    /**
+     * Rows held in memory at a time.
+     *
+     * Chunks run sequentially against this same instance, so the counters and
+     * the facility/department caches carry across them.
+     */
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function getProcessedCount(): int

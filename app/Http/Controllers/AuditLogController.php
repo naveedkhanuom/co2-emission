@@ -13,6 +13,13 @@ class AuditLogController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+
+        // The trail records who altered which emission figure and when. It was
+        // readable by every authenticated user in the company, which is wider
+        // than it should be — this is the administrator's and the assurer's
+        // view. Super Admin and Admin bypass this through Gate::before, so
+        // granting the permission is only needed for other roles.
+        $this->middleware('permission:list-audit-logs');
     }
 
     /**

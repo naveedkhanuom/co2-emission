@@ -21,6 +21,18 @@ readonly class ResolvedFactor
         public string $gwpVersion,
         /** Catalogue revision, so a stored figure stays traceable. */
         public string $catalogueVersion,
+        /** Which catalogue answered: "Scope 1" or "Scope 2". */
+        public string $catalogue = 'Scope 1',
+        /**
+         * True when the underlying factor came from the user rather than the
+         * catalogue — a custom grid region, or the Scope 2 EF override.
+         *
+         * The figure is still verified: checking co2e against activity × this
+         * factor still catches arithmetic errors and stale client bundles. What
+         * it cannot do is vouch for the factor itself, so the provenance has to
+         * say so plainly.
+         */
+        public bool $userSupplied = false,
     ) {}
 
     /**
@@ -31,10 +43,16 @@ readonly class ResolvedFactor
      */
     public function datasetLabel(): string
     {
-        return trim(sprintf(
-            'Built-in Scope 1 catalogue %s%s',
-            $this->catalogueVersion,
-            $this->reference ? ' — '.$this->reference : ''
-        ));
+        $label = sprintf('Built-in %s catalogue %s', $this->catalogue, $this->catalogueVersion);
+
+        if ($this->reference) {
+            $label .= ' — '.$this->reference;
+        }
+
+        if ($this->userSupplied) {
+            $label .= ' (user-supplied factor)';
+        }
+
+        return trim($label);
     }
 }

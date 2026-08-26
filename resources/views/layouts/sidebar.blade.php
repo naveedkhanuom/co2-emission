@@ -462,6 +462,7 @@
                         @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
                     </a>
                 </li>
+                {{-- Organisation --}}
                 @if(auth()->user()?->is_super_admin || auth()->user()?->hasRole('Super Admin'))
                 <li>
                     <a href="{{ route('settings.general') }}" class="{{ request()->routeIs('settings.general') ? 'active' : '' }}">
@@ -470,6 +471,21 @@
                     </a>
                 </li>
                 @endif
+                <li>
+                    @php
+                        $demoRestricted = demo_route_restricted('companies.index');
+                        $userRestricted = ! user_can_see_sidebar_route('companies.index');
+                        $restricted = $demoRestricted || $userRestricted;
+                        $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+                    @endphp
+                    <a href="{{ route('companies.index') }}"
+                       class="{{ request()->routeIs('companies.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+                       @if($title) title="{{ $title }}" @endif>
+                        <i class="fas fa-building"></i>
+                        <span>Companies</span>
+                        @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+                    </a>
+                </li>
                 <li>
                     @php
                         $demoRestricted = demo_route_restricted('facilities.index');
@@ -498,6 +514,21 @@
                         @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
                     </a>
                 </li>
+                <li>
+                    @php
+                        $demoRestricted = demo_route_restricted('countries.index');
+                        $userRestricted = ! user_can_see_sidebar_route('countries.index');
+                        $restricted = $demoRestricted || $userRestricted;
+                        $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
+                    @endphp
+                    <a href="{{ route('countries.index') }}" class="{{ request()->routeIs('countries.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
+                       @if($title) title="{{ $title }}" @endif>
+                        <i class="fas fa-flag"></i>
+                        <span>Countries</span>
+                        @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+                    </a>
+                </li>
+                {{-- Emissions setup --}}
                 <li>
                     @php
                         $demoRestricted = demo_route_restricted('emission_sources.index');
@@ -540,47 +571,7 @@
                         @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
                     </a>
                 </li>
-                <li>
-                    @php
-                        $demoRestricted = demo_route_restricted('countries.index');
-                        $userRestricted = ! user_can_see_sidebar_route('countries.index');
-                        $restricted = $demoRestricted || $userRestricted;
-                        $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
-                    @endphp
-                    <a href="{{ route('countries.index') }}" class="{{ request()->routeIs('countries.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
-                       @if($title) title="{{ $title }}" @endif>
-                        <i class="fas fa-flag"></i>
-                        <span>Countries</span>
-                        @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ route('notifications.index') }}" class="{{ request()->routeIs('notifications.*') ? 'active' : '' }}">
-                        <i class="fas fa-bell"></i>
-                        <span>Notifications</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Reporting Settings</span>
-                    </a>
-                </li>
-                <li>
-                    @php
-                        $demoRestricted = demo_route_restricted('companies.index');
-                        $userRestricted = ! user_can_see_sidebar_route('companies.index');
-                        $restricted = $demoRestricted || $userRestricted;
-                        $title = $demoRestricted ? demo_restricted_tooltip() : ($userRestricted ? 'You do not have access to this page.' : null);
-                    @endphp
-                    <a href="{{ route('companies.index') }}"
-                       class="{{ request()->routeIs('companies.*') ? 'active' : '' }}{{ $demoRestricted ? ' demo-restricted' : '' }}{{ $userRestricted ? ' user-restricted' : '' }}"
-                       @if($title) title="{{ $title }}" @endif>
-                        <i class="fas fa-building"></i>
-                        <span>Companies</span>
-                        @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
-                    </a>
-                </li>
+                {{-- Access & security --}}
                 <li>
                     @php
                         $demoRestricted = demo_route_restricted('users.index');
@@ -624,6 +615,13 @@
                         <i class="fas fa-clock-rotate-left"></i>
                         <span>Audit Trail</span>
                         @if($restricted)<i class="fas fa-lock ms-1 text-warning" style="font-size: 0.75rem;" @if($title) title="{{ $title }}" @endif></i>@endif
+                    </a>
+                </li>
+                {{-- System --}}
+                <li>
+                    <a href="{{ route('notifications.index') }}" class="{{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                        <i class="fas fa-bell"></i>
+                        <span>Notifications</span>
                     </a>
                 </li>
                 <li>

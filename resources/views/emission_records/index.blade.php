@@ -416,7 +416,12 @@
                                                step="0.01" 
                                                min="0" 
                                                placeholder="0.00">
-                                        <select class="form-select" id="activityUnitSelect" name="activity_unit">
+                                        {{-- name must be activityUnit: the form is submitted with
+                                             new FormData(form), which serialises by name attribute, and
+                                             EmissionRecordController reads activityUnit. Posting
+                                             activity_unit sent the value nowhere, so every Manual Entry
+                                             save silently discarded the unit. --}}
+                                        <select class="form-select" id="activityUnitSelect" name="activityUnit">
                                             <option value="kWh">kWh</option>
                                             <option value="liters">Liters</option>
                                             <option value="m³">m³</option>
@@ -2367,7 +2372,9 @@ function addQuickEntryRow() {
     setSource(d.emission_source);
     if (d.scope === 3 && d.scope3_category_id) { setEl('scope3_category_id', d.scope3_category_id); setEl('scope3CategorySelect', d.scope3_category_id); }
     setEl('calculationMethod', d.calculation_method);
-    if (d.unit) { ensureUnitOption(d.unit); setEl('activityUnitSelect', d.unit); }
+    // The column is activity_unit; there is no `unit` field on an emission
+    // record, so this never repopulated anything when editing.
+    if (d.activity_unit) { ensureUnitOption(d.activity_unit); setEl('activityUnitSelect', d.activity_unit); }
     if (d.activity_data != null) setEl('activityData', d.activity_data, true);
     if (d.emission_factor != null) setEl('emissionFactor', d.emission_factor, true);
     if (typeof updateCalculation === 'function') { try { updateCalculation(); } catch(e){} }

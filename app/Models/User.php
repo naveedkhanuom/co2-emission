@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +11,26 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    // Who can reach a company's inventory, and which pages they may see, is part
+    // of the control environment an assurer reviews — so account changes are
+    // recorded alongside the data changes.
+    use Auditable, HasFactory, HasRoles, Notifiable;
+
+    /**
+     * Never write these into an audit diff.
+     *
+     * The trail is readable by administrators, so it must not become a place
+     * where password hashes and session tokens accumulate — a hash is still
+     * credential material, and the audit table has a far longer life and a wider
+     * audience than the users row it came from.
+     *
+     * @var array<int, string>
+     */
+    protected array $auditExclude = [
+        'password',
+        'remember_token',
+        'email_verified_at',
+    ];
 
     /**
      * The attributes that are mass assignable.

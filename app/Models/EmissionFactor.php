@@ -39,7 +39,7 @@ class EmissionFactor extends Model
     ];
 
     protected $casts = [
-        'factor_value' => 'decimal:6',
+        'factor_value' => 'decimal:10',
         'valid_from' => 'date',
         'valid_to' => 'date',
         'is_active' => 'boolean',

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use App\HasCompanyScope;
 
 class Facilities extends Model
 {
-    use HasCompanyScope;
+    use Auditable, HasCompanyScope;
     
     protected $fillable = [
         'company_id',

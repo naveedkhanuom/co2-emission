@@ -309,7 +309,7 @@ class EmissionRecordController extends Controller
                     'co2eValue'             => 'required|numeric|min:0',
                     'confidenceLevel'       => 'required|in:low,medium,high,estimated',
                     'departmentSelect'      => 'nullable|string|max:100',
-                    'dataSource'            => 'required|in:manual,import,api',
+                    'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
                     'entryNotes'            => 'nullable|string|max:1000',
                     // Scope 3 specific fields
                     'scope3_category_id'    => 'nullable|exists:scope3_categories,id',
@@ -422,12 +422,14 @@ class EmissionRecordController extends Controller
             'emission_source_other' => 'required_if:emissionSourceSelect,__other__|nullable|string|max:255',
             'activityData'          => 'nullable|numeric|min:0',
             'activityUnit'          => 'nullable|string|max:30',
+            'scope2Region'          => 'nullable|string|max:120',
+            'scope2FactorOverride'  => 'nullable|numeric|min:0',
             'emissionFactor'        => 'nullable|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
             'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
             'confidenceLevel'       => 'required|in:low,medium,high,estimated',
             'departmentSelect'      => 'nullable|string|max:100',
-            'dataSource'            => 'required|in:manual,import,api,meter,invoice,estimate',
+            'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
             'entryNotes'            => 'nullable|string|max:1000',
             // Scope 3 specific fields
             'scope3_category_id'    => 'nullable|exists:scope3_categories,id',
@@ -515,7 +517,14 @@ class EmissionRecordController extends Controller
             $resolved = app(BuiltInFactorCatalog::class)->resolve(
                 (int) $request->scopeSelect,
                 $emissionSourceName,
-                $data['activity_unit']
+                $data['activity_unit'],
+                [
+                    // Scope 2 only: the grid region and any hand-entered factor
+                    // exist solely in the entry form, so they have to be passed
+                    // through for the server to price the same activity.
+                    'region' => $request->input('scope2Region'),
+                    'ef_override' => $request->input('scope2FactorOverride'),
+                ]
             );
 
             if ($resolved !== null) {
@@ -579,6 +588,15 @@ class EmissionRecordController extends Controller
             'scope2_method'                   => $request->scope2_method,
         ]);
 
+        // A hand-entered factor did not come from the factor library, even when a
+        // row there happens to hold the same number — enrichment matches on the
+        // value alone, so a typed 0.55 can be attributed to a country dataset it
+        // was never taken from. Restore the honest provenance.
+        if (isset($resolved) && $resolved !== null && $resolved->userSupplied) {
+            $data['factor_dataset'] = $resolved->datasetLabel();
+            $data['emission_factor_id'] = null;
+        }
+
         // Save single entry
         EmissionRecord::create($data);
 
@@ -620,12 +638,13 @@ class EmissionRecordController extends Controller
             'scopeSelect'           => 'required|in:1,2,3',
             'emissionSourceSelect'  => 'required|string|max:100',
             'activityData'          => 'required|numeric|min:0',
+            'activityUnit'          => 'nullable|string|max:30',
             'emissionFactor'        => 'required|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
             'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
             'confidenceLevel'       => 'required|in:low,medium,high,estimated',
             'departmentSelect'      => 'nullable|string|max:100',
-            'dataSource'            => 'required|in:manual,import,api,meter,invoice,estimate',
+            'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
             'entryNotes'            => 'nullable|string|max:1000',
             'status'                => 'nullable|in:active,draft',
             // Scope 3 specific fields
@@ -670,6 +689,13 @@ class EmissionRecordController extends Controller
             'notes'             => $request->entryNotes,
             'status'            => $request->status ?? 'active',
         ];
+
+        // Set the activity unit only when the caller actually supplies one.
+        // Manual Entry has no unit field, so writing null unconditionally would
+        // erase the unit a Scope 1/2 entry recorded — losing what "1000" means.
+        if ($request->filled('activityUnit')) {
+            $data['activity_unit'] = $request->activityUnit;
+        }
 
         // Data quality applies to every scope. Scope 1/2 activity data is
         // metered/invoiced (primary) by default; Scope 3 is typically estimated.
@@ -800,12 +826,13 @@ class EmissionRecordController extends Controller
             'scopeSelect'           => 'required|in:1,2,3',
             'emissionSourceSelect'  => 'required|string|max:100',
             'activityData'          => 'required|numeric|min:0',
+            'activityUnit'          => 'nullable|string|max:30',
             'emissionFactor'        => 'required|numeric|min:0',
             'co2eValue'             => 'required|numeric|min:0',
             'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
             'confidenceLevel'       => 'required|in:low,medium,high,estimated',
             'departmentSelect'      => 'nullable|string|max:100',
-            'dataSource'            => 'required|in:manual,import,api,meter,invoice,estimate',
+            'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
             'entryNotes'            => 'nullable|string|max:1000',
             'status'                => 'nullable|in:active,draft',
             // Scope 3 specific fields
@@ -863,6 +890,13 @@ class EmissionRecordController extends Controller
             'status'            => $request->status ?? $emissionRecord->status,
         ];
 
+        // Set the activity unit only when the caller actually supplies one.
+        // Manual Entry has no unit field, so writing null unconditionally would
+        // erase the unit a Scope 1/2 entry recorded — losing what "1000" means.
+        if ($request->filled('activityUnit')) {
+            $data['activity_unit'] = $request->activityUnit;
+        }
+
         // Data quality applies to every scope. Scope 1/2 activity data is
         // metered/invoiced (primary) by default; Scope 3 is typically estimated.
         // Honour an explicit value when provided.
@@ -877,11 +911,15 @@ class EmissionRecordController extends Controller
             $data['spend_amount'] = $request->spend_amount ?? null;
             $data['spend_currency'] = $request->spend_currency ?? 'USD';
         } else {
-            // Clear Scope 3 fields if scope is not 3
+            // Clear Scope 3 fields if scope is not 3.
+            //
+            // data_quality is deliberately NOT cleared here: it applies to every
+            // scope (see the default set above), the column is not nullable, and
+            // store()/storeOrUpdate() both keep it. Nulling it made every edit of
+            // a Scope 1 or Scope 2 record fail with an integrity violation.
             $data['scope3_category_id'] = null;
             $data['supplier_id'] = null;
             $data['calculation_method'] = null;
-            $data['data_quality'] = null;
             $data['spend_amount'] = null;
             $data['spend_currency'] = 'USD';
         }

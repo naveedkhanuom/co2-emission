@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\HasCompanyScope;
@@ -13,7 +14,7 @@ use App\HasCompanyScope;
  */
 class EnergyAttributeCertificate extends Model
 {
-    use HasFactory, HasCompanyScope;
+    use Auditable, HasCompanyScope, HasFactory;
 
     protected $fillable = [
         'company_id',

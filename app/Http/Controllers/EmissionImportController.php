@@ -61,10 +61,12 @@ class EmissionImportController extends Controller
         $overwrite = (bool) $request->overwrite;
         $file = $request->file('file');
 
-        // Create import history record
-        $importHistory = ImportHistory::create([
+        // Create import history record. startNew() allocates the reference and
+        // retries if a concurrent import claims the same one first — import_id is
+        // globally unique, so the loser of that race would otherwise get a 500 on
+        // a perfectly valid upload.
+        $importHistory = ImportHistory::startNew([
             'company_id' => $companyId,
-            'import_id' => ImportHistory::generateImportId(),
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
             'import_type' => in_array(strtolower($file->getClientOriginalExtension()), ['xlsx', 'xls']) ? 'excel' : 'csv',

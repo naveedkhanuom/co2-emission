@@ -146,13 +146,56 @@ $(document).on('click', '.view-attachments-btn', function() {
   }
 });
 
-function toKwh(qty, label) {
-  if (label === 'MWh' || label === 'MWh (thermal)') return qty * 1000;
-  if (label === 'GJ') return qty * 277.778;
-  if (label === 'MMBtu') return qty * 293.071;
-  if (label === 'Ton-hours') return qty * 3.517;
-  if (label === 'tonnes steam') return qty * 694.4;
-  return qty;
+// kWh contained in one unit, keyed on the canonical unit key (uD.u).
+//
+// This used to switch on the DISPLAY LABEL, which is presentation, not identity:
+// 'kWh' and 'kWh (thermal)' are the same unit under two labels, and 'ton-hr'
+// (Ton-hours, cooling) and 'ton' (tonnes steam) are different units whose labels
+// both start "ton". Any label edit or new unit fell through to the final
+// `return qty` and was silently treated as kWh — for GJ that is a 277x
+// undercount with no error shown.
+//
+// Keep in step with BuiltInFactorCatalog::KWH_PER_UNIT on the server, which
+// prices the same activity.
+var KWH_PER_UNIT = {
+  'kWh':    1,
+  'MWh':    1000,
+  'GJ':     277.778,
+  'MMBtu':  293.071,
+  'ton-hr': 3.517,
+  'ton':    694.4
+};
+
+// Returns null for a unit we cannot convert, so the caller refuses to compute
+// rather than quietly pricing the activity as though it were kWh.
+function toKwh(qty, unitKey) {
+  var perUnit = KWH_PER_UNIT[unitKey];
+  if (perUnit === undefined) {
+    console.error('Scope 2: no kWh conversion for unit "' + unitKey + '" — add it to KWH_PER_UNIT.');
+    return null;
+  }
+  return qty * perUnit;
+}
+
+// The kgCO2/kWh the user supplied by hand, or null when the catalogue value
+// stands. Used by both the on-screen calculation and the submitted payload so
+// the two can never disagree.
+function scope2FactorOverride() {
+  if (!selSrc) return null;
+
+  if (selSrc.isGrid) {
+    var g = gridEF[selRegionIdx];
+    if (g && String(g.region).indexOf('Custom') !== -1) {
+      return parseFloat(document.getElementById('scope2Fcef').value) || 0;
+    }
+    return null;
+  }
+
+  var chk = document.getElementById('scope2ChkEfOvr');
+  if (chk && chk.checked) {
+    return parseFloat(document.getElementById('scope2FefOvr').value) || 0;
+  }
+  return null;
 }
 
 function loadStats() {
@@ -357,19 +400,27 @@ function initScope2() {
     if (!uD) { if (box) box.style.display = 'none'; return 0; }
     var t = 0;
     var label = uD.label || uD.u;
-    var kwhQty = toKwh(qty, label);
+    var kwhQty = toKwh(qty, uD.u);
+
+    // Unconvertible unit: show nothing rather than a number derived from the
+    // wrong conversion.
+    if (kwhQty === null) {
+      if (cf) cf.textContent = 'Cannot convert ' + label + ' to kWh — this unit has no conversion factor.';
+      if (cv) cv.textContent = '0.0000';
+      if (box) box.style.display = 'block';
+      return 0;
+    }
+
+    var override = scope2FactorOverride();
 
     if (selSrc.isGrid && gridEF.length) {
-      var gef = gridEF[selRegionIdx] ? gridEF[selRegionIdx].co2 : 0;
-      if (gridEF[selRegionIdx] && gridEF[selRegionIdx].region && gridEF[selRegionIdx].region.indexOf('Custom') !== -1) {
-        gef = parseFloat(document.getElementById('scope2Fcef').value) || 0;
-      }
+      var gef = override !== null
+        ? override
+        : (gridEF[selRegionIdx] ? gridEF[selRegionIdx].co2 : 0);
       t = (kwhQty * gef) / 1000;
       if (cf) cf.textContent = qty + ' ' + label + ' (' + kwhQty.toFixed(1) + ' kWh) x ' + gef + ' kgCO2/kWh = ' + t.toFixed(4) + ' tCO2e';
     } else if (selSrc.efPerKwh !== undefined) {
-      var ef = selSrc.efPerKwh;
-      var chk = document.getElementById('scope2ChkEfOvr');
-      if (chk && chk.checked) ef = parseFloat(document.getElementById('scope2FefOvr').value) || 0;
+      var ef = override !== null ? override : selSrc.efPerKwh;
       t = (kwhQty * ef) / 1000;
       if (cf) cf.textContent = qty + ' ' + label + ' (' + kwhQty.toFixed(1) + ' kWh) x ' + ef + ' kgCO2e/kWh = ' + t.toFixed(4) + ' tCO2e';
     }
@@ -513,6 +564,20 @@ function initScope2() {
     formData.append('co2eValue', t.toFixed(6));
     formData.append('activityData', document.getElementById('scope2Fqty').value);
     formData.append('activityUnit', (selSrc.units[uIdx] || {}).u || '');
+
+    // The grid region and any hand-entered factor are the two pieces of state
+    // that only exist in this form. Without them the server cannot reproduce
+    // this calculation, and the figure stays unverifiable. Region goes by NAME,
+    // not by index — the index would silently repoint if config/scope2_sources
+    // is ever reordered.
+    if (selSrc.isGrid && gridEF[selRegionIdx]) {
+      formData.append('scope2Region', gridEF[selRegionIdx].region);
+    }
+    var factorOverride = scope2FactorOverride();
+    if (factorOverride !== null) {
+      formData.append('scope2FactorOverride', factorOverride);
+    }
+
     // Scope 2 dual reporting: co2eValue above is location-based (grid). Capture
     // the market-based figure from the contractual instrument alongside it.
     (function() {
@@ -523,7 +588,7 @@ function initScope2() {
       if (selSrc && selSrc.isGrid && mktSel && mktBox && mktBox.style.display !== 'none') {
         var mqty = parseFloat(document.getElementById('scope2Fqty').value) || 0;
         var muD = selSrc.units[uIdx];
-        var mkwh = muD ? toKwh(mqty, (muD.label || muD.u)) : 0;
+        var mkwh = muD ? (toKwh(mqty, muD.u) || 0) : 0;
         if (mktSel.value === 'recs') { mktCo2e = 0; mktMethod = 'market_based'; }
         else if (mktSel.value === 'supplier') {
           var mef = parseFloat(document.getElementById('scope2FmktEf').value) || 0;

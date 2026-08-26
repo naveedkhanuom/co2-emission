@@ -153,6 +153,12 @@ class PermissionSeeder extends Seeder
             'list-boundary',
             'create-boundary',
             'edit-boundary',
+
+            // Audit trail. Read-only by nature, so there is no create/edit/delete
+            // counterpart — the log records who changed which figure, which is
+            // ordinarily an administrator's and an assurer's view, not every
+            // user's. Super Admin and Admin bypass this via Gate::before.
+            'list-audit-logs',
         ];
 
         foreach ($permissions as $name) {

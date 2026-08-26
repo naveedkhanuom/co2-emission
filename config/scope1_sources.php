@@ -249,7 +249,13 @@ return [
             ['u' => 'kg', 'label' => 'Kilograms (kg)'],
             ['u' => 'tonnes', 'label' => 'Tonnes (t)'],
         ], 'isFug' => true, 'gwp' => 1, 'gwpTonnes' => 1000, 'note' => 'Direct CO2, GWP=1'],
-        ['name' => 'Fire Suppression (Halon)', 'desc' => 'Halon systems', 'units' => [['u' => 'kg', 'label' => 'Kilograms (kg)']], 'isFug' => true, 'gwp' => 0, 'note' => 'Halon ODP substance'],
+        // GWP 0 is deliberate, not missing data: halons are Montreal Protocol
+        // substances, outside the Kyoto basket, so the GHG Protocol Corporate
+        // Standard excludes them from the Scope 1 total and asks for them to be
+        // disclosed separately. The note says so because it is shown on the
+        // entry form — otherwise a user releasing halon just sees 0.0000 tCO2e
+        // with no explanation.
+        ['name' => 'Fire Suppression (Halon)', 'desc' => 'Halon systems', 'units' => [['u' => 'kg', 'label' => 'Kilograms (kg)']], 'isFug' => true, 'gwp' => 0, 'note' => 'Montreal Protocol substance — excluded from the Scope 1 total by the GHG Protocol and disclosed separately, so this records 0 tCO2e. Record the quantity released for your ODS disclosure.'],
         ['name' => 'Fire Suppression (HFCs)', 'desc' => 'HFC fire systems', 'units' => [['u' => 'kg', 'label' => 'Kilograms (kg)']], 'isFug' => true, 'gwp' => 3220, 'note' => 'HFC-227ea GWP=3220 AR5'],
         ['name' => 'Methane Leakage', 'desc' => 'Gas pipe leaks', 'units' => [
             ['u' => 'kg', 'label' => 'Kilograms (kg)'],

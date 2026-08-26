@@ -1040,7 +1040,21 @@
             trendChart.render();
             
             // Chart 2: Emissions by Scope (use JSON so locale/decimals never break JS)
-            const scopeSeries = @json([(float)$scope1Emissions, (float)$scope2Emissions, (float)$scope3Emissions]);
+            @php
+                // Built here rather than inline in @json(...): the directive
+                // explodes its argument on commas (CompilesJson::compileJson) and
+                // keeps only the first three parts, so an inline array literal
+                // compiles correctly only by coincidence — exactly three elements
+                // and no trailing comma. A fourth series, or a stray comma, would
+                // drop the closing bracket and take the whole dashboard down with
+                // a PHP parse error.
+                $scopeSeriesData = [
+                    (float) $scope1Emissions,
+                    (float) $scope2Emissions,
+                    (float) $scope3Emissions,
+                ];
+            @endphp
+            const scopeSeries = @json($scopeSeriesData);
             const scopeTotal = {{ (float)$totalEmissions }};
             const scopeOptions = {
                 series: scopeSeries,

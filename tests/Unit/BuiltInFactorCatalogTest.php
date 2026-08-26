@@ -144,14 +144,180 @@ class BuiltInFactorCatalogTest extends TestCase
         $this->assertSame($byKey->value, $byLabel->value);
     }
 
+    // ---------------------------------------------------------------------
+    // Scope 2 — purchased energy
+    // ---------------------------------------------------------------------
+
     /**
-     * Scope 2 depends on the selected grid region and an optional EF override,
-     * neither of which the entry form posts. Until they are plumbed through, the
-     * server cannot reproduce the browser's arithmetic and must not guess.
+     * Grid electricity: kWh-per-unit × the region's kgCO2/kWh ÷ 1000.
+     * UAE (Abu Dhabi / ADWEC) is 0.4041 kgCO2/kWh.
      */
-    public function test_scope_2_is_not_resolved_yet_by_design(): void
+    public function test_a_grid_source_is_priced_at_the_selected_region(): void
     {
-        $this->assertNull($this->catalog->resolve(2, 'Grid Electricity', 'kWh'));
+        $resolved = $this->catalog->resolve(
+            2,
+            'Purchased Electricity (Location-Based)',
+            'kWh',
+            ['region' => 'UAE (Abu Dhabi / ADWEC)']
+        );
+
+        $this->assertNotNull($resolved);
+        $this->assertEqualsWithDelta(1 * 0.4041 / 1000, $resolved->value, 1e-12);
+        $this->assertSame('Scope 2', $resolved->catalogue);
+        $this->assertFalse($resolved->userSupplied);
+    }
+
+    /**
+     * The unit carries the energy conversion: 1 MWh is 1000 kWh.
+     */
+    public function test_the_unit_conversion_is_folded_into_the_factor(): void
+    {
+        $kwh = $this->catalog->resolve(2, 'Purchased Electricity (Location-Based)', 'kWh', ['region' => 'UK']);
+        $mwh = $this->catalog->resolve(2, 'Purchased Electricity (Location-Based)', 'MWh', ['region' => 'UK']);
+
+        $this->assertNotNull($kwh);
+        $this->assertNotNull($mwh);
+        $this->assertEqualsWithDelta($kwh->value * 1000, $mwh->value, 1e-12);
+    }
+
+    /**
+     * Different regions must give different answers — this is the whole reason
+     * the region has to be posted.
+     */
+    public function test_different_regions_give_different_factors(): void
+    {
+        $uk = $this->catalog->resolve(2, 'Purchased Electricity (Location-Based)', 'kWh', ['region' => 'UK']);
+        $india = $this->catalog->resolve(2, 'Purchased Electricity (Location-Based)', 'kWh', ['region' => 'India']);
+
+        $this->assertNotNull($uk);
+        $this->assertNotNull($india);
+        $this->assertGreaterThan($uk->value * 3, $india->value);
+    }
+
+    /**
+     * A grid source with no region has no factor to be priced at. Falling back
+     * to some default region would silently misstate the figure.
+     */
+    public function test_a_grid_source_without_a_region_resolves_to_null(): void
+    {
+        $this->assertNull($this->catalog->resolve(2, 'Purchased Electricity (Location-Based)', 'kWh'));
+    }
+
+    public function test_an_unknown_region_resolves_to_null(): void
+    {
+        $this->assertNull($this->catalog->resolve(
+            2,
+            'Purchased Electricity (Location-Based)',
+            'kWh',
+            ['region' => 'Atlantis']
+        ));
+    }
+
+    /**
+     * The "Custom (enter manually)" grid row carries co2 = 0 as a placeholder.
+     * That means "not stated yet", not "zero emissions", so without an override
+     * it must not resolve — pricing at zero would erase real emissions.
+     */
+    public function test_the_custom_region_without_an_override_resolves_to_null(): void
+    {
+        $this->assertNull($this->catalog->resolve(
+            2,
+            'Purchased Electricity (Location-Based)',
+            'kWh',
+            ['region' => 'Custom (enter manually)']
+        ));
+    }
+
+    public function test_the_custom_region_with_an_override_uses_it(): void
+    {
+        $resolved = $this->catalog->resolve(
+            2,
+            'Purchased Electricity (Location-Based)',
+            'kWh',
+            ['region' => 'Custom (enter manually)', 'ef_override' => 0.55]
+        );
+
+        $this->assertNotNull($resolved);
+        $this->assertEqualsWithDelta(0.55 / 1000, $resolved->value, 1e-12);
+        $this->assertTrue($resolved->userSupplied);
+    }
+
+    /**
+     * Heating and cooling are priced from the source's own efPerKwh, with no
+     * region involved.
+     */
+    public function test_a_non_grid_source_uses_its_own_factor(): void
+    {
+        // District Heating (Gas-Fired): 0.198 kgCO2e/kWh.
+        $resolved = $this->catalog->resolve(2, 'District Heating (Gas-Fired)', 'kWh');
+
+        $this->assertNotNull($resolved);
+        $this->assertEqualsWithDelta(0.198 / 1000, $resolved->value, 1e-12);
+    }
+
+    /**
+     * Cooling in Ton-hours: 3.517 kWh per ton-hour. The key is 'ton-hr', which
+     * must not be confused with 'ton' (tonnes steam, 694.4 kWh) — the two labels
+     * both begin "ton", which is why the conversion is keyed on the unit key.
+     */
+    public function test_ton_hours_and_tonnes_steam_are_different_units(): void
+    {
+        $tonHr = $this->catalog->resolve(2, 'Chilled Water (District)', 'ton-hr');
+        $tonnesSteam = $this->catalog->resolve(2, 'Purchased Steam (Low Pressure)', 'ton');
+
+        $this->assertNotNull($tonHr);
+        $this->assertNotNull($tonnesSteam);
+        $this->assertEqualsWithDelta(3.517 * 0.21 / 1000, $tonHr->value, 1e-12);
+        $this->assertEqualsWithDelta(694.4 * 0.15 / 1000, $tonnesSteam->value, 1e-12);
+    }
+
+    /**
+     * A user-entered factor overrides the catalogue for non-grid sources too,
+     * and must be flagged as user-supplied in the provenance.
+     */
+    public function test_an_override_replaces_a_non_grid_factor_and_is_flagged(): void
+    {
+        $resolved = $this->catalog->resolve(2, 'District Heating (Gas-Fired)', 'kWh', ['ef_override' => 0.05]);
+
+        $this->assertNotNull($resolved);
+        $this->assertEqualsWithDelta(0.05 / 1000, $resolved->value, 1e-12);
+        $this->assertTrue($resolved->userSupplied);
+        $this->assertStringContainsString('user-supplied', $resolved->datasetLabel());
+    }
+
+    /**
+     * A zero-carbon instrument is a real answer, not a failure.
+     */
+    public function test_a_zero_carbon_source_resolves_to_zero(): void
+    {
+        // RECs / GOs / I-RECs: efPerKwh 0.
+        $resolved = $this->catalog->resolve(2, 'RECs / GOs / I-RECs', 'kWh');
+
+        $this->assertNotNull($resolved);
+        $this->assertSame(0.0, $resolved->value);
+    }
+
+    /**
+     * Every Scope 2 entry must price in every unit it offers, given a region for
+     * the grid ones. A gap here is an entry the form can still write an
+     * unverifiable record for.
+     */
+    public function test_every_scope_2_source_resolves_in_every_unit_it_offers(): void
+    {
+        $unresolved = [];
+
+        foreach (['electricity', 'heating', 'cooling'] as $group) {
+            foreach (config("scope2_sources.{$group}", []) as $src) {
+                foreach ($src['units'] ?? [] as $unit) {
+                    $resolved = $this->catalog->resolve(2, $src['name'], $unit['u'], ['region' => 'UK']);
+                    if ($resolved === null) {
+                        $unresolved[] = $src['name'].' / '.$unit['u'];
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $unresolved, 'Scope 2 entries that cannot be priced.');
     }
 
     public function test_scope_3_is_not_resolved(): void

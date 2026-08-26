@@ -232,3 +232,41 @@ if (!function_exists('demo_restricted_tooltip')) {
         return "Demo user have no permission. This feature is not available for demo accounts. You can see it in the menu but cannot access it. Contact your administrator for full access.";
     }
 }
+if (!function_exists('format_factor')) {
+    /**
+     * Render an emission factor readably without rounding it away.
+     *
+     * Factors in this system span roughly 1.96e-7 (biogas per kWh) to 12.2
+     * (PFC-116 per kg), so any fixed number of decimals is wrong at one end:
+     * number_format($factor, 2) printed diesel's 0.0026847 as "0.00", on a
+     * report that shows activity, factor and CO2e side by side — so the
+     * arithmetic visibly failed to reconcile.
+     *
+     * Shows a fixed number of SIGNIFICANT figures instead, so both ends stay
+     * legible, with trailing zeros trimmed and at least two decimals kept so a
+     * column of factors still lines up.
+     */
+    function format_factor($value, int $significant = 4): string
+    {
+        $value = (float) $value;
+
+        if ($value == 0.0) {
+            return '0.00';
+        }
+
+        // Decimals needed to show $significant figures for this magnitude.
+        $magnitude = (int) floor(log10(abs($value)));
+        $decimals = max(2, min(12, $significant - 1 - $magnitude));
+
+        $formatted = number_format($value, $decimals, '.', '');
+
+        // Trim trailing zeros but never below two decimal places.
+        if (str_contains($formatted, '.')) {
+            $formatted = rtrim($formatted, '0');
+            [$whole, $fraction] = array_pad(explode('.', $formatted, 2), 2, '');
+            $formatted = $whole.'.'.str_pad($fraction, 2, '0');
+        }
+
+        return $formatted;
+    }
+}

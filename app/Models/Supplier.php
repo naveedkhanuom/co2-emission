@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\HasCompanyScope;
 
 class Supplier extends Model
 {
-    use HasFactory, HasCompanyScope;
+    use Auditable, HasCompanyScope, HasFactory;
 
     protected $fillable = [
         'company_id',

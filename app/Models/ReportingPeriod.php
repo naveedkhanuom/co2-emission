@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Auditable;
 use App\HasCompanyScope;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,7 +12,10 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ReportingPeriod extends Model
 {
-    use HasCompanyScope;
+    // Locking and unlocking a reporting period is the governance action on this
+    // platform: it declares an inventory final. An assurer asks who unlocked a
+    // signed-off year and when, so the trail has to cover it.
+    use Auditable, HasCompanyScope;
 
     protected $fillable = [
         'company_id',

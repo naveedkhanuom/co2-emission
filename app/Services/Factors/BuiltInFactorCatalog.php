@@ -49,8 +49,33 @@ class BuiltInFactorCatalog
     /** Sub-categories of config/scope1_sources.php that hold source lists. */
     private const SCOPE1_GROUPS = ['stationary', 'mobile', 'fugitive'];
 
-    /** @var array<string, array{src: array, unit: array, group: string}>|null */
+    /** Sub-categories of config/scope2_sources.php that hold source lists. */
+    private const SCOPE2_GROUPS = ['electricity', 'heating', 'cooling'];
+
+    /**
+     * kWh contained in one unit of purchased energy, keyed on the canonical unit
+     * key. Mirrors KWH_PER_UNIT in resources/views/scope2_entry/script.blade.php;
+     * the two must stay in step or the browser and the server will price the same
+     * activity differently.
+     *
+     * Keyed on the unit key, never the display label: 'kWh' and 'kWh (thermal)'
+     * are one unit under two labels, while 'ton' (tonnes steam) and 'ton-hr'
+     * (Ton-hours) are different units whose labels both begin "ton".
+     */
+    private const KWH_PER_UNIT = [
+        'kwh' => 1.0,
+        'mwh' => 1000.0,
+        'gj' => 277.778,
+        'mmbtu' => 293.071,
+        'ton-hr' => 3.517,
+        'ton' => 694.4,
+    ];
+
+    /** @var array<string, array>|null */
     private ?array $index = null;
+
+    /** @var array<string, array>|null */
+    private ?array $scope2Index = null;
 
     /**
      * Resolve tCO2e per unit for an activity, or null when it cannot be derived.
@@ -59,18 +84,26 @@ class BuiltInFactorCatalog
      * a free-text "other" entry, or an ambiguous unit all land here, and the
      * caller must leave the record exactly as it would have been before.
      *
-     * @param  int  $scope  GHG Protocol scope. Only 1 is supported — see below.
+     * @param  int  $scope  GHG Protocol scope. 1 and 2 are supported; 3 is not —
+     *                      its categories are spend- and form-driven and have no
+     *                      single activity × factor shape to derive.
      * @param  string|null  $source  The catalogue source name as entered.
-     * @param  string|null  $unit  Canonical unit key ("liters", "kg", "m3", …).
+     * @param  string|null  $unit  Canonical unit key ("liters", "kg", "kWh", …).
+     * @param  array{region?: string|null, ef_override?: float|int|string|null}  $context
+     *                      Scope 2 only: the selected grid region, and a factor
+     *                      the user entered by hand (custom region or override).
      */
-    public function resolve(int $scope, ?string $source, ?string $unit): ?ResolvedFactor
+    public function resolve(int $scope, ?string $source, ?string $unit, array $context = []): ?ResolvedFactor
     {
-        // Scope 2 is deliberately not handled yet. Its calculation depends on the
-        // selected grid region and an optional per-entry EF override, neither of
-        // which the entry form currently posts — so the server cannot reproduce
-        // the browser's arithmetic and must not guess at it. Wiring those two
-        // inputs through is what unblocks it.
-        if ($scope !== 1 || $source === null || trim($source) === '') {
+        if ($source === null || trim($source) === '') {
+            return null;
+        }
+
+        if ($scope === 2) {
+            return $this->resolveScope2($source, $unit, $context);
+        }
+
+        if ($scope !== 1) {
             return null;
         }
 
@@ -97,14 +130,132 @@ class BuiltInFactorCatalog
     }
 
     /**
+     * Purchased energy: tCO2e per unit = kWh-per-unit × kgCO2e-per-kWh / 1000.
+     *
+     * Mirrors calcCO2e() in resources/views/scope2_entry/script.blade.php. Two
+     * inputs live only in that form and must be passed in:
+     *
+     *  - region       which grid factor an `isGrid` source is priced at, by NAME
+     *                 (an index would repoint if the config were reordered)
+     *  - ef_override  a kgCO2/kWh the user typed, either for the "Custom" grid
+     *                 region or through the EF-override control
+     *
+     * @param  array{region?: string|null, ef_override?: float|int|string|null}  $context
+     */
+    private function resolveScope2(string $source, ?string $unit, array $context): ?ResolvedFactor
+    {
+        $entry = $this->findScope2($source, $unit);
+
+        if ($entry === null) {
+            return null;
+        }
+
+        $src = $entry['src'];
+        $unitKey = (string) ($entry['unit']['u'] ?? '');
+        $kwhPerUnit = self::KWH_PER_UNIT[$this->normalise($unitKey)] ?? null;
+
+        // A unit with no kWh conversion cannot be priced. Refusing is the whole
+        // point: treating it as kWh is the silent 277x undercount this replaced.
+        if ($kwhPerUnit === null) {
+            return null;
+        }
+
+        $override = $context['ef_override'] ?? null;
+        $userSupplied = $override !== null && $override !== '';
+
+        if ($userSupplied) {
+            $ef = (float) $override;
+            $reference = 'User-entered factor '.$ef.' kgCO2e/kWh';
+        } elseif (! empty($src['isGrid'])) {
+            $grid = $this->gridFactor($context['region'] ?? null);
+
+            // A grid source priced without a region, at an unknown region, or at
+            // the "Custom" row with nothing entered, has no factor to use.
+            if ($grid === null) {
+                return null;
+            }
+
+            $ef = (float) $grid['co2'];
+            $reference = sprintf('Grid factor %s — %s', $grid['region'], $grid['src'] ?? 'unspecified');
+        } elseif (array_key_exists('efPerKwh', $src)) {
+            $ef = (float) $src['efPerKwh'];
+            $reference = $src['note'] ?? null;
+        } else {
+            return null;
+        }
+
+        return new ResolvedFactor(
+            value: $kwhPerUnit * $ef / 1000,
+            unit: $unitKey,
+            source: (string) $src['name'],
+            reference: $reference,
+            gwpVersion: Gwp::factorBasis(),
+            catalogueVersion: self::VERSION,
+            catalogue: 'Scope 2',
+            userSupplied: $userSupplied,
+        );
+    }
+
+    /**
+     * The grid row for a region name, or null when it cannot be priced.
+     *
+     * The "Custom (enter manually)" row carries co2 = 0 as a placeholder; without
+     * an accompanying override it means "the user has not said yet", not "zero
+     * emissions", so it resolves to null rather than silently pricing at zero.
+     *
+     * @return array{region: string, co2: float|int, src?: string}|null
+     */
+    private function gridFactor(?string $region): ?array
+    {
+        if ($region === null || trim($region) === '') {
+            return null;
+        }
+
+        $wanted = $this->normalise($region);
+
+        foreach (config('scope2_sources.grid_ef', []) as $row) {
+            if ($this->normalise((string) ($row['region'] ?? '')) !== $wanted) {
+                continue;
+            }
+
+            if (str_contains($this->normalise((string) $row['region']), 'custom')) {
+                return null;
+            }
+
+            return $row;
+        }
+
+        return null;
+    }
+
+    /**
      * Locate a source and the unit row to price it in.
      *
      * @return array{src: array, unit: array, group: string}|null
      */
     private function find(string $source, ?string $unit): ?array
     {
+        return $this->findIn($this->sourceIndex(), $source, $unit);
+    }
+
+    /**
+     * Same lookup against the Scope 2 catalogue.
+     *
+     * @return array{src: array, unit: array, group: string}|null
+     */
+    private function findScope2(string $source, ?string $unit): ?array
+    {
+        return $this->findIn($this->scope2Index(), $source, $unit);
+    }
+
+    /**
+     * @param  array<string, array>  $index
+     * @return array{src: array, unit: array, group: string}|null
+     */
+    private function findIn(array $index, string $source, ?string $unit): ?array
+    {
         $key = $this->normalise($source);
-        $src = $this->sourceIndex()[$key] ?? null;
+        $src = $index[$key] ?? null;
 
         if ($src === null) {
             return null;
@@ -201,6 +352,33 @@ class BuiltInFactorCatalog
         }
 
         return $this->index = $index;
+    }
+
+    /**
+     * Scope 2 sources keyed by normalised name, built once per instance.
+     *
+     * @return array<string, array>
+     */
+    private function scope2Index(): array
+    {
+        if ($this->scope2Index !== null) {
+            return $this->scope2Index;
+        }
+
+        $index = [];
+        $config = config('scope2_sources', []);
+
+        foreach (self::SCOPE2_GROUPS as $group) {
+            foreach ($config[$group] ?? [] as $src) {
+                if (! isset($src['name'])) {
+                    continue;
+                }
+                $src['_group'] = $group;
+                $index[$this->normalise($src['name'])] = $src;
+            }
+        }
+
+        return $this->scope2Index = $index;
     }
 
     private function normalise(string $value): string

@@ -329,7 +329,7 @@
                     <td>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="font-size: 8pt;">{{ $item['factor_unit'] }}</span>
-                            <span class="number">{{ number_format($item['emission_factor'], 2) }}</span>
+                            <span class="number">{{ format_factor($item['emission_factor']) }}</span>
                         </div>
                     </td>
                     <td class="number">{{ number_format($item['co2e'], 2) }}</td>
@@ -381,7 +381,7 @@
                     <td>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="font-size: 8pt;">{{ $item['factor_unit'] }}</span>
-                            <span class="number">{{ number_format($item['emission_factor'], 2) }}</span>
+                            <span class="number">{{ format_factor($item['emission_factor']) }}</span>
                         </div>
                     </td>
                     <td class="number">{{ number_format($item['co2e'], 2) }}</td>
@@ -433,7 +433,7 @@
                     <td>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="font-size: 8pt;">{{ $item['factor_unit'] }}</span>
-                            <span class="number">{{ number_format($item['emission_factor'], 2) }}</span>
+                            <span class="number">{{ format_factor($item['emission_factor']) }}</span>
                         </div>
                     </td>
                     <td class="number">{{ number_format($item['co2e'], 2) }}</td>
@@ -485,7 +485,7 @@
                     <td>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="font-size: 8pt;">{{ $item['factor_unit'] }}</span>
-                            <span class="number">{{ number_format($item['emission_factor'], 2) }}</span>
+                            <span class="number">{{ format_factor($item['emission_factor']) }}</span>
                         </div>
                     </td>
                     <td class="number">{{ number_format($item['co2e'], 2) }}</td>
@@ -538,7 +538,7 @@
                     <td>{{ $item['source'] }} at {{ $item['facility'] }}</td>
                     <td>{{ $item['activity_unit'] }}</td>
                     <td class="number">{{ number_format($item['activity_data'], 2) }}</td>
-                    <td class="number">{{ number_format($item['emission_factor'], 2) }} {{ $item['factor_unit'] }}</td>
+                    <td class="number">{{ format_factor($item['emission_factor']) }} {{ $item['factor_unit'] }}</td>
                     <td class="number">{{ number_format($item['co2e'], 2) }}</td>
                 </tr>
                 @endif
@@ -648,7 +648,7 @@
                             <td>{{ $item['source'] }}@if(isset($item['facility']) && $item['facility']) - {{ $item['facility'] }}@endif</td>
                             <td>{{ $item['activity_unit'] }}</td>
                             <td class="number">{{ number_format($item['activity_data'], 2) }}</td>
-                            <td class="number">{{ number_format($item['emission_factor'], 4) }} {{ $item['factor_unit'] }}</td>
+                            <td class="number">{{ format_factor($item['emission_factor']) }} {{ $item['factor_unit'] }}</td>
                             <td class="number">{{ number_format($item['co2e'], 2) }}</td>
                         </tr>
                         @endif
