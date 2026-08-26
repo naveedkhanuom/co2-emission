@@ -1,0 +1,22 @@
+
+  [41;1m Psy\Exception\ParseErrorException [49;22m
+
+[39;1m  PHP Parse error: Syntax error, unexpected '-', expecting '[' or T_OBJECT_OPERATOR or T_NULLSAFE_OBJECT_OPERATOR on line 1[39;22m
+
+  at [32mvendor\psy\psysh\src\Exception\ParseErrorException.php[39m:[32m44[39m
+     40▕      * @param \PhpParser\Error $e
+     41▕      */
+     42▕     public static function fromParseError(\PhpParser\Error $e): self
+     43▕     {
+  ➜  44▕         return new self($e->getRawMessage(), $e->getAttributes());
+     45▕     }
+     46▕ }
+     47▕
+
+  [33m1   [39m[39;1mvendor\psy\psysh\src\CodeCleaner.php[39;22m:[39;1m488[39;22m
+  [90m    Psy\Exception\ParseErrorException::fromParseError(Object(PhpParser\Error))[39m
+
+  [33m2   [39m[39;1mvendor\psy\psysh\src\CodeCleaner.php[39;22m:[39;1m269[39;22m
+  [90m    Psy\CodeCleaner::parse("<?php $t = App\Models\Tenant::find("acme"); echo "status={$t- subdomain={$t-=".App\Models\Company::count()." users=".App\Models\User::count()."\n"; echo "owner={$u- super=".($u->is_super_admin?"yes":"no")." roles=".$u->getRoleNames()->implode(",")."\n"; echo "roles=".Spatie\Permission\Models\Role::count()." perms=".Spatie\Permission\Models\Permission::count()."\n"; echo "factors=".App\Models\EmissionFactor::count()." sources=".App\Models\EmissionSource::count()." countries=".App\Models\Country::count()."\n"; });
+")[39m
+

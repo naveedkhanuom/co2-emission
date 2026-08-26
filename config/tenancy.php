@@ -204,7 +204,10 @@ return [
      * Parameters used by the tenants:seed command.
      */
     'seeder_parameters' => [
-        '--class' => 'DatabaseSeeder', // root seeder class
-        // '--force' => true, // This needs to be true to seed tenant databases in production
+        // NOT DatabaseSeeder — that one seeds the central database and is
+        // deliberately near-empty. TenantDatabaseSeeder is the per-client set:
+        // roles, permissions, and the shared factor catalogues.
+        '--class' => 'Database\Seeders\TenantDatabaseSeeder',
+        '--force' => true, // Required to seed tenant databases in production.
     ],
 ];

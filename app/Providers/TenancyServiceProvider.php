@@ -27,14 +27,16 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
-                    // Jobs\SeedDatabase::class,
 
-                    // Your own jobs to prepare the tenant.
-                    // Provision API keys, create S3 buckets, anything you want!
+                    // Enabled deliberately: it means no tenant can exist in an
+                    // unseeded state, whichever code path created it. Seeds
+                    // TenantDatabaseSeeder — roles, permissions and the shared
+                    // factor catalogues — per config('tenancy.seeder_parameters').
+                    Jobs\SeedDatabase::class,
 
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
-                })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
+                })->shouldBeQueued(false), // Runs inline. Move to the queue once provisioning is exposed in the UI.
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],

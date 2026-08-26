@@ -2,31 +2,24 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds the CENTRAL database — the tenant registry and your own business.
+ *
+ * Client data does not live here. Everything that used to be in this list now
+ * runs per tenant, inside that tenant's database: see TenantDatabaseSeeder,
+ * which the TenantCreated pipeline calls automatically, and which you can
+ * re-run by hand with:
+ *
+ *     php artisan tenants:seed
+ *     php artisan tenants:seed --tenants=acme
+ */
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        $this->call([
-            PermissionSeeder::class,
-            RoleSeeder::class,
-            DefaultUserSeeder::class,
-            CountriesSeeder::class,
-            Scope3CategoriesSeeder::class,
-            EmissionSourcesSeeder::class,
-            FactorOrganizationsSeeder::class,
-            EmissionFactorsSeeder::class,
-            EioFactorsSeeder::class,
-            // Sector emission-source templates. The Boundary Advisor uses these
-            // as its candidate catalogue and as the no-API-key fallback, so a
-            // fresh install needs them.
-            IndustryEmissionTemplateSeeder::class,
-            ComprehensiveEmissionDataSeeder::class,
-        ]);
+        // Nothing central to seed yet. Plans and platform staff accounts land
+        // here when billing arrives.
     }
 }
