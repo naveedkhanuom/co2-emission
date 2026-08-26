@@ -4,11 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-07 — who may read the change history.
@@ -17,10 +16,8 @@ use Tests\TestCase;
  * readable by every authenticated user in the company; it is now gated behind
  * `list-audit-logs`, with Super Admin and Admin bypassing via Gate::before.
  */
-class AuditLogAccessTest extends TestCase
+class AuditLogAccessTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private Company $company;
 
     protected function setUp(): void

@@ -5,9 +5,8 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-03 end to end.
@@ -19,10 +18,8 @@ use Tests\TestCase;
  * These tests go through the real store() endpoint, so they cover the wiring as
  * well as the arithmetic.
  */
-class Scope1FactorResolutionTest extends TestCase
+class Scope1FactorResolutionTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     /** Diesel (Stationary) per litre, derived from config/scope1_sources.php. */
     private const DIESEL_LITRE_FACTOR = 0.0026847237;
 

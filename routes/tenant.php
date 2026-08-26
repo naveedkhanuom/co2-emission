@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 /*
@@ -11,27 +12,26 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 | Tenant Routes
 |--------------------------------------------------------------------------
 |
-| Routes served on a client's subdomain — acme.example.com. The two
-| middleware below do the work: the first resolves the subdomain to a tenant
-| and swaps the database connection, the second makes sure these routes are
-| unreachable from the central domain, where no tenant is bound.
+| The application, served on a client's subdomain — acme.example.com.
+|
+| InitializeTenancyBySubdomain resolves the subdomain to a tenant and swaps
+| the database connection before anything else runs. PreventAccessFromCentral
+| Domains makes these routes unreachable from the central domain, where no
+| tenant is bound and every query would otherwise hit the central database.
+|
+| routes/web.php is loaded here rather than by bootstrap/app.php, so the whole
+| application inherits both. There is no path by which an app route is served
+| without a tenant.
 |
 | Subdomain identification, not domain: clients are provisioned onto
 | {slug}.{TENANCY_CENTRAL_DOMAINS}, which needs no DNS change per client
 | because the wildcard record already covers it.
 |
-| NOTE: the application's own routes still live in routes/web.php. Moving
-| them under this group is the next step, and depends on the tenant/central
-| migration split landing first — until a tenant database exists there is
-| nothing for these routes to talk to.
-|
 */
 
 Route::middleware([
-    // The `web` group already resolves the tenant, via
-    // InitializeTenancyIfSubdomain prepended in bootstrap/app.php. Repeating
-    // an initializer here would boot tenancy twice for one request.
     'web',
+    InitializeTenancyBySubdomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
     /**
@@ -48,4 +48,6 @@ Route::middleware([
             'database' => DB::connection()->getDatabaseName(),
         ]);
     })->name('tenant.health');
+
+    require __DIR__.'/web.php';
 });

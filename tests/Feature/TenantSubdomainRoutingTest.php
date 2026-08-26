@@ -79,19 +79,36 @@ class TenantSubdomainRoutingTest extends TestCase
         $this->get('http://nosuchclient.'.$this->centralDomain().'/tenant-health');
     }
 
-    /**
-     * Transitional: the central domain still serves the application, because
-     * the existing inventory has not been split into tenants yet. When that
-     * migration lands this expectation flips to a redirect or a 404.
-     */
-    public function test_the_central_domain_still_serves_the_application(): void
+    public function test_the_central_domain_serves_only_its_own_landing_page(): void
     {
-        $this->get('http://'.$this->centralDomain().'/login')->assertOk();
+        $this->get('http://'.$this->centralDomain().'/')
+            ->assertOk()
+            ->assertSee('Sign in at your organisation', false);
     }
 
-    public function test_tenant_only_routes_are_unreachable_from_the_central_domain(): void
+    /**
+     * The application is loaded by routes/tenant.php, behind subdomain
+     * identification. None of it may be reachable on the central domain —
+     * not the app, and not the login screen that would grant access to it.
+     *
+     * @dataProvider applicationRoutes
+     */
+    public function test_application_routes_are_unreachable_from_the_central_domain(string $path): void
     {
-        $this->get('http://'.$this->centralDomain().'/tenant-health')->assertNotFound();
+        $this->get('http://'.$this->centralDomain().$path)->assertNotFound();
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public static function applicationRoutes(): array
+    {
+        return [
+            'the login screen' => ['/login'],
+            'the dashboard' => ['/home'],
+            'emission records' => ['/emission-records'],
+            'the tenant health probe' => ['/tenant-health'],
+        ];
     }
 
     /**

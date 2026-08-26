@@ -8,8 +8,7 @@ use App\Models\EmissionRecord;
 use App\Models\ReportingPeriod;
 use App\Models\User;
 use App\Support\Gwp;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * The Excel import path, which previously had no test coverage at all.
@@ -26,10 +25,8 @@ use Tests\TestCase;
  *     gwp_version — a figure that states no GWP basis, which CSRD/ESRS E1 and
  *     CDP both require.
  */
-class EmissionImportTest extends TestCase
+class EmissionImportTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private Company $company;
 
     private User $user;

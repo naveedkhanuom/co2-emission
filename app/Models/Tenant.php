@@ -69,6 +69,21 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->status === self::STATUS_ACTIVE;
     }
 
+    /**
+     * Where this tenant's files live on the local disk.
+     *
+     * Must match what FilesystemTenancyBootstrapper computes — it suffixes
+     * storage_path() with config('tenancy.filesystem.suffix_base') plus the
+     * tenant id — because the jobs that create and delete this directory run
+     * OUTSIDE tenant context, where storage_path() is still the central one.
+     */
+    public function storageRoot(): string
+    {
+        $suffix = config('tenancy.filesystem.suffix_base', 'tenant');
+
+        return storage_path($suffix.$this->getTenantKey());
+    }
+
     public const STATUS_PROVISIONING = 'provisioning';
 
     public const STATUS_ACTIVE = 'active';

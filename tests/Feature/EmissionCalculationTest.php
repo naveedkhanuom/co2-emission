@@ -11,8 +11,7 @@ use App\Models\EnergyAttributeCertificate;
 use App\Services\DisclosureReportService;
 use App\Services\EmissionEnrichmentService;
 use App\Support\Gwp;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * The arithmetic every customer's reported figures depend on.
@@ -24,10 +23,8 @@ use Tests\TestCase;
  * here: the spend-based EIO estimate, the per-gas split, Scope 2 dual
  * reporting, and the disclosure totals.
  */
-class EmissionCalculationTest extends TestCase
+class EmissionCalculationTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private EmissionEnrichmentService $enrichment;
 
     protected function setUp(): void

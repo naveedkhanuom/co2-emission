@@ -34,6 +34,12 @@ class TenancyServiceProvider extends ServiceProvider
                     // factor catalogues — per config('tenancy.seeder_parameters').
                     Jobs\SeedDatabase::class,
 
+                    // storage_path() is suffixed per tenant once tenancy
+                    // initialises, but nothing creates the directories. Without
+                    // this the failure surfaces at the first upload or compiled
+                    // view rather than here.
+                    \App\Jobs\CreateTenantStorage::class,
+
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
                 })->shouldBeQueued(false), // Runs inline. Move to the queue once provisioning is exposed in the UI.
@@ -46,6 +52,10 @@ class TenancyServiceProvider extends ServiceProvider
             Events\TenantDeleted::class => [
                 JobPipeline::make([
                     Jobs\DeleteDatabase::class,
+
+                    // A deleted client should not still be on disk when they
+                    // ask whether their data is gone.
+                    \App\Jobs\DeleteTenantStorage::class,
                 ])->send(function (Events\TenantDeleted $event) {
                     return $event->tenant;
                 })->shouldBeQueued(false), // `false` by default, but you probably want to make this `true` for production.
@@ -135,12 +145,6 @@ class TenancyServiceProvider extends ServiceProvider
         $tenancyMiddleware = [
             // Even higher priority than the initialization middleware
             Middleware\PreventAccessFromCentralDomains::class,
-
-            // Listed explicitly rather than relying on the priority map
-            // noticing it extends InitializeTenancyBySubdomain. It must run
-            // before SetCompanyConnection, which reads the companies table and
-            // would otherwise read it from the central database.
-            \App\Http\Middleware\InitializeTenancyIfSubdomain::class,
 
             Middleware\InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,

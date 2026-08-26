@@ -8,8 +8,7 @@ use App\Models\Company;
 use App\Models\EmissionFactor;
 use App\Models\ReportingPeriod;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-05 — what the change history covers.
@@ -20,10 +19,8 @@ use Tests\TestCase;
  * user accounts, the company boundary, and the settings and instruments that
  * feed the calculation.
  */
-class AuditCoverageTest extends TestCase
+class AuditCoverageTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     /**
      * The models an assurer would expect to find in the trail.
      *

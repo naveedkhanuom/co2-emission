@@ -5,9 +5,8 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\ImportHistory;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-11 — allocating import references.
@@ -18,10 +17,8 @@ use Tests\TestCase;
  * two concurrent imports both computed the same next number so the second
  * insert failed with a 500 on a valid upload.
  */
-class ImportIdAllocationTest extends TestCase
+class ImportIdAllocationTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private Company $company;
 
     private User $user;

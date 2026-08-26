@@ -6,10 +6,9 @@ use App\Models\Company;
 use App\Models\EmissionFactor;
 use App\Models\EmissionRecord;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-26 — Manual Entry silently discarded the activity unit.
@@ -19,10 +18,8 @@ use Tests\TestCase;
  * FormData(form), which serialises by name attribute, so the value went nowhere
  * — leaving "1000" with no record of 1000 of what, on the primary entry screen.
  */
-class ManualEntryUnitTest extends TestCase
+class ManualEntryUnitTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private Company $company;
 
     protected function setUp(): void
@@ -95,12 +92,12 @@ class ManualEntryUnitTest extends TestCase
         $markup = file_get_contents(resource_path('views/emission_records/index.blade.php'));
 
         $this->assertStringContainsString(
-            "d.activity_unit",
+            'd.activity_unit',
             $markup,
             'The edit form does not repopulate the unit from activity_unit.'
         );
         $this->assertStringNotContainsString(
-            "if (d.unit)",
+            'if (d.unit)',
             $markup,
             'The edit form still reads a `unit` field that does not exist.'
         );

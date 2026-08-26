@@ -6,10 +6,9 @@ use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\Facilities;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * Implicit route-model binding on company-scoped models.
@@ -23,10 +22,8 @@ use Tests\TestCase;
  * resolve the company the same way the middleware does. These tests prove both
  * halves: owners can reach their rows, and other tenants still cannot.
  */
-class TenantRouteBindingTest extends TestCase
+class TenantRouteBindingTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private function makeCompany(string $name): Company
     {
         return Company::create([

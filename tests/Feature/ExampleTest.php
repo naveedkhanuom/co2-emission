@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
-class ExampleTest extends TestCase
+class ExampleTest extends TenantTestCase
 {
     /**
      * The root route redirects to login. This is a multi-tenant B2B app with

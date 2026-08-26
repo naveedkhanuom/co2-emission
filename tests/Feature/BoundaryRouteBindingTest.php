@@ -6,9 +6,8 @@ use App\Models\BoundaryAssessment;
 use App\Models\BoundaryItem;
 use App\Models\Company;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * Regression guard for a tenancy trap.
@@ -25,10 +24,8 @@ use Tests\TestCase;
  *
  * Wrapped in a transaction: this suite runs against the configured database.
  */
-class BoundaryRouteBindingTest extends TestCase
+class BoundaryRouteBindingTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private function makeCompany(string $name): Company
     {
         return Company::create([

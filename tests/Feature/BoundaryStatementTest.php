@@ -9,9 +9,8 @@ use App\Models\Scope3Category;
 use App\Models\User;
 use App\Services\Boundary\BoundaryStatementService;
 use App\Services\DisclosureReportService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * The Boundary Statement — the artefact an assurer reads.
@@ -21,10 +20,8 @@ use Tests\TestCase;
  * must carry a written justification. Both must hold in the rendered document,
  * not just in the database.
  */
-class BoundaryStatementTest extends TestCase
+class BoundaryStatementTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private function makeCompany(): Company
     {
         return Company::create([

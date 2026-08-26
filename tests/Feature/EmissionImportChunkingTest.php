@@ -7,10 +7,9 @@ use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\ReportingPeriod;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Facades\Excel;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-12 — the import reads in chunks rather than materialising the whole file.
@@ -19,10 +18,8 @@ use Tests\TestCase;
  * a real file on disk, so it covers the reader wiring and not just model().
  * That path had no coverage at all.
  */
-class EmissionImportChunkingTest extends TestCase
+class EmissionImportChunkingTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private Company $company;
 
     private string $csvPath;

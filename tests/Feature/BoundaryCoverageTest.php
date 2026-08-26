@@ -8,8 +8,7 @@ use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\Scope3Category;
 use App\Services\Boundary\BoundaryCoverageService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * Boundary coverage — "14 of 19 things you said you'd measure have data".
@@ -19,10 +18,8 @@ use Tests\TestCase;
  * not exist: that table identifies its source by NAME. A test that stubbed the
  * database would not have caught it, so these use real rows.
  */
-class BoundaryCoverageTest extends TestCase
+class BoundaryCoverageTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private BoundaryCoverageService $coverage;
 
     protected function setUp(): void

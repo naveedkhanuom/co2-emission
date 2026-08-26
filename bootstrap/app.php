@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\DemoRestrictAccess;
-use App\Http\Middleware\InitializeTenancyIfSubdomain;
 use App\Http\Middleware\RestrictSidebarAccess;
 use App\Http\Middleware\SetCompanyConnection;
 use Illuminate\Foundation\Application;
@@ -10,7 +9,11 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
+        // The CENTRAL domain gets only routes/central.php. The application
+        // itself is in routes/web.php, which routes/tenant.php loads behind
+        // subdomain identification — so the app is reachable only on a
+        // client's own address, never on the central domain.
+        web: __DIR__.'/../routes/central.php',
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
@@ -25,21 +28,19 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // 🌐 Global Web Middleware
         //
-        // Tenancy resolves FIRST. It swaps the database connection, and
-        // everything after it — company scoping, demo restrictions, sidebar
-        // rules — must read from the tenant's database rather than the
-        // central one. On a non-subdomain host it is a no-op, which is what
-        // keeps the central app serving while the data migration is pending.
-        $middleware->web(
-            prepend: [
-                InitializeTenancyIfSubdomain::class,
-            ],
-            append: [
-                SetCompanyConnection::class,
-                DemoRestrictAccess::class,
-                RestrictSidebarAccess::class,
-            ],
-        );
+        // Tenancy is NOT here — it is applied in routes/tenant.php, so that
+        // central routes stay genuinely tenant-free rather than relying on a
+        // middleware deciding to no-op.
+        //
+        // These three run after it on tenant routes, which is required:
+        // SetCompanyConnection reads the companies table, and must read the
+        // tenant's rather than the central one. On central routes there is no
+        // authenticated user, so each of them returns early.
+        $middleware->web([
+            SetCompanyConnection::class,
+            DemoRestrictAccess::class,
+            RestrictSidebarAccess::class,
+        ]);
 
         // ✅ Exclude Zoho webhook from CSRF
         $middleware->validateCsrfTokens(except: [

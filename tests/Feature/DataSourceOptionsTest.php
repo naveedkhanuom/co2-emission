@@ -5,10 +5,9 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-10 — every data source the entry forms offer must be storable.
@@ -19,10 +18,8 @@ use Tests\TestCase;
  * ENUM('manual','import','api','supplier-survey') and sql_mode includes
  * STRICT_TRANS_TABLES — so three of the four options failed on save.
  */
-class DataSourceOptionsTest extends TestCase
+class DataSourceOptionsTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private Company $company;
 
     protected function setUp(): void

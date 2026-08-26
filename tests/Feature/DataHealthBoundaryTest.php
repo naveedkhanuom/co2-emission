@@ -7,9 +7,8 @@ use App\Models\BoundaryItem;
 use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * Boundary coverage on the Data Health page.
@@ -19,10 +18,8 @@ use Tests\TestCase;
  * to measure — so it is the number that turns the boundary from a one-off
  * wizard into a recurring work queue.
  */
-class DataHealthBoundaryTest extends TestCase
+class DataHealthBoundaryTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private function makeCompany(): Company
     {
         return Company::create([

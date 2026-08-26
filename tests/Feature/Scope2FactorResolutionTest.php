@@ -5,9 +5,8 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Spatie\Permission\PermissionRegistrar;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * GHG-03b — Scope 2 factor derivation end to end, plus GHG-09.
@@ -16,10 +15,8 @@ use Tests\TestCase;
  * is priced at, and any factor the user typed by hand. Both live only in the
  * entry form, so both are posted and asserted here.
  */
-class Scope2FactorResolutionTest extends TestCase
+class Scope2FactorResolutionTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     /** UAE (Abu Dhabi / ADWEC) grid factor, kgCO2/kWh. */
     private const ADWEC = 0.4041;
 

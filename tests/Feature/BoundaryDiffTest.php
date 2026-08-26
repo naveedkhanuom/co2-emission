@@ -7,8 +7,7 @@ use App\Models\BoundaryItem;
 use App\Models\Company;
 use App\Models\Scope3Category;
 use App\Services\Boundary\BoundaryDiffService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
 /**
  * Year-on-year boundary comparison.
@@ -18,10 +17,8 @@ use Tests\TestCase;
  * leaving the inventory shows up only as an unexplained jump in the totals —
  * which is precisely the finding an assurer raises.
  */
-class BoundaryDiffTest extends TestCase
+class BoundaryDiffTest extends TenantTestCase
 {
-    use DatabaseTransactions;
-
     private BoundaryDiffService $diff;
 
     protected function setUp(): void
