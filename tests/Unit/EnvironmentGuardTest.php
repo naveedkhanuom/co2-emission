@@ -56,6 +56,72 @@ class EnvironmentGuardTest extends TestCase
     }
 
     /**
+     * @return array<string, array{0: string}>
+     */
+    public static function sharedSessionDomains(): array
+    {
+        return [
+            'the central domain itself' => ['example.test'],
+            'the central domain with a leading dot' => ['.example.test'],
+            'a parent of the central domain' => ['.test'],
+        ];
+    }
+
+    /**
+     * @dataProvider sharedSessionDomains
+     */
+    public function test_a_session_cookie_spanning_tenant_subdomains_is_refused(string $sessionDomain): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/SESSION_DOMAIN/');
+
+        EnvironmentGuard::assertSessionCookieIsNotSharedAcrossTenants($sessionDomain, ['example.test']);
+    }
+
+    public function test_an_unset_session_domain_is_allowed(): void
+    {
+        EnvironmentGuard::assertSessionCookieIsNotSharedAcrossTenants(null, ['example.test']);
+        EnvironmentGuard::assertSessionCookieIsNotSharedAcrossTenants('', ['example.test']);
+
+        $this->assertTrue(true, 'Unset means the cookie is scoped to the exact host, which is correct.');
+    }
+
+    /**
+     * A cookie pinned to one specific tenant host reaches only that tenant, so
+     * it does not span anything and must not be refused.
+     */
+    public function test_a_session_domain_pinned_to_a_single_tenant_host_is_allowed(): void
+    {
+        EnvironmentGuard::assertSessionCookieIsNotSharedAcrossTenants('acme.example.test', ['example.test']);
+
+        $this->assertTrue(true, 'A single tenant host is not shared.');
+    }
+
+    /**
+     * The guard is actually wired into the boot path — a guard nobody calls is
+     * worth nothing, so this boots the real provider rather than trusting that
+     * the call site exists.
+     */
+    public function test_the_provider_refuses_to_boot_with_a_shared_session_cookie(): void
+    {
+        $originalDomain = config('session.domain');
+        $originalCentral = config('tenancy.central_domains');
+
+        try {
+            config(['session.domain' => '.example.test']);
+            config(['tenancy.central_domains' => ['example.test']]);
+
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessageMatches('/SESSION_DOMAIN/');
+
+            (new \App\Providers\AppServiceProvider($this->app))->boot();
+        } finally {
+            config(['session.domain' => $originalDomain]);
+            config(['tenancy.central_domains' => $originalCentral]);
+        }
+    }
+
+    /**
      * The guard is actually wired into the boot path — a guard nobody calls is
      * worth nothing, so this boots the real provider rather than trusting that
      * the call site exists.

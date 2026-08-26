@@ -136,6 +136,12 @@ class TenancyServiceProvider extends ServiceProvider
             // Even higher priority than the initialization middleware
             Middleware\PreventAccessFromCentralDomains::class,
 
+            // Listed explicitly rather than relying on the priority map
+            // noticing it extends InitializeTenancyBySubdomain. It must run
+            // before SetCompanyConnection, which reads the companies table and
+            // would otherwise read it from the central database.
+            \App\Http\Middleware\InitializeTenancyIfSubdomain::class,
+
             Middleware\InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,
             Middleware\InitializeTenancyByDomainOrSubdomain::class,

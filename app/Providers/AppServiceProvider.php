@@ -42,6 +42,11 @@ class AppServiceProvider extends ServiceProvider
             (bool) config('app.debug')
         );
 
+        EnvironmentGuard::assertSessionCookieIsNotSharedAcrossTenants(
+            config('session.domain'),
+            (array) config('tenancy.central_domains', [])
+        );
+
         Gate::before(function ($user, $ability) {
             // Super Admin and Admin have full access to everything
             if ($user->hasRole('Super Admin') || $user->hasRole('Admin')) {
