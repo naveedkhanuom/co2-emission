@@ -9,6 +9,21 @@
         Each has its own database and its own address.
     </p>
 
+    @if ($credentials = session('credentials'))
+        <div class="card" style="border-color: var(--ok);">
+            <h2 style="color: var(--ok);">“{{ $credentials['subdomain'] }}” is ready</h2>
+            <p style="margin-top: 0;">
+                <strong>Copy these now.</strong> The password is not stored anywhere and cannot be
+                shown again. Send it over a channel you trust and have them change it.
+            </p>
+            <table style="max-width: 34rem;">
+                <tr><th style="width: 8rem;">Sign in at</th><td class="mono">{{ $credentials['url'] }}</td></tr>
+                <tr><th>Email</th><td class="mono">{{ $credentials['email'] }}</td></tr>
+                <tr><th>Password</th><td class="mono"><strong>{{ $credentials['password'] }}</strong></td></tr>
+            </table>
+        </div>
+    @endif
+
     <div class="card">
         <h2>Onboard a client</h2>
         <form method="POST" action="{{ route('platform.tenants.store') }}">

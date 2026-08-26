@@ -43,6 +43,7 @@ class ProvisionTenant extends Command
         {--company= : The first company inside the account. Defaults to the account name}
         {--owner-name= : Full name of the account owner}
         {--owner-email= : Email the account owner signs in with}
+        {--owner-password= : The owner password. Generated and shown once if omitted}
         {--plan= : Plan identifier, recorded on the tenant for billing}';
 
     protected $description = 'Provision a new client account: database, subdomain, first company and owner';
@@ -68,7 +69,12 @@ class ProvisionTenant extends Command
             return self::FAILURE;
         }
 
-        $password = Str::password(16);
+        // The caller may supply the password so it knows what it is. The
+        // back-office needs that: it invokes this command in-process, and a
+        // password generated in here would only reach the command's output
+        // buffer — which the caller discards, leaving an account nobody can
+        // sign into.
+        $password = (string) ($this->option('owner-password') ?: Str::password(16));
         $tenant = null;
 
         try {

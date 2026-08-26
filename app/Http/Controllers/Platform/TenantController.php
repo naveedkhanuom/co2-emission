@@ -73,6 +73,12 @@ class TenantController extends Controller
 
         $subdomain = Str::lower(trim($validated['subdomain']));
 
+        // Generated here, not inside the command, so we know what it is. The
+        // command only prints it to its own output buffer, which is discarded
+        // on success — provisioning from this screen used to leave an account
+        // whose password nobody had.
+        $password = Str::password(16);
+
         try {
             $exitCode = Artisan::call('tenant:provision', array_filter([
                 'subdomain' => $subdomain,
@@ -80,6 +86,7 @@ class TenantController extends Controller
                 '--company' => $validated['company'] ?? null,
                 '--owner-name' => $validated['owner_name'] ?? null,
                 '--owner-email' => $validated['owner_email'],
+                '--owner-password' => $password,
             ]));
         } catch (Throwable $e) {
             Log::error('Tenant provisioning failed from the back-office', [
@@ -98,8 +105,12 @@ class TenantController extends Controller
 
         return redirect()
             ->route('platform.tenants.index')
-            ->with('status', "Account \"{$subdomain}\" is ready. Its owner password was printed to the provisioning log and is not stored — reset it if you need to hand it over.")
-            ->with('provisioned', $subdomain);
+            ->with('credentials', [
+                'subdomain' => $subdomain,
+                'url' => 'http://'.$subdomain.'.'.(config('tenancy.central_domains')[0] ?? 'localhost').'/login',
+                'email' => $validated['owner_email'],
+                'password' => $password,
+            ]);
     }
 
     public function suspend(Request $request, string $tenant): RedirectResponse
