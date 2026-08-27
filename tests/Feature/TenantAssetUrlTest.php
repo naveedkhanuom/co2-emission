@@ -53,7 +53,7 @@ class TenantAssetUrlTest extends TenantTestCase
      * client's storage, where the public/storage symlink cannot see it, so it
      * has to go through the tenant asset route.
      */
-    public function test_a_clients_uploaded_logo_lands_in_their_storage_and_points_at_the_tenant_route(): void
+    public function test_a_clients_uploaded_logo_is_served_from_their_own_storage(): void
     {
         $disk = Storage::disk('public');
         $disk->put('app/branding.png', 'not-really-a-png');
@@ -72,22 +72,56 @@ class TenantAssetUrlTest extends TenantTestCase
             $url = app_logo_url();
 
             $this->assertStringContainsString(
-                '/tenancy/assets/public/app/branding.png',
+                '/tenancy/assets/app/branding.png',
                 $url,
                 'A tenant-uploaded logo must be served from the tenant asset route.'
             );
 
-            // NOT asserted here: that fetching this URL returns the file.
-            // It does not — stancl's asset controller answers 404 for a file
-            // that demonstrably exists at the path it computes, verified
-            // against a live request rather than only in the harness. Nothing
-            // uses tenant-uploaded branding yet, so this is recorded as an
-            // open gap rather than papered over with a passing assertion
-            // that proves less than it appears to.
+            // The asset route reads storage_path("app/public/{$path}"), which
+            // is the public disk's own root — so the stored path goes through
+            // unchanged. An earlier version prefixed it with 'public/',
+            // producing app/public/public/... and a 404 that looked like a
+            // package fault. Fetching it is the assertion that catches that.
+            $this->get($url)->assertOk();
         } finally {
             Setting::set('app_logo', null);
             Storage::disk('public')->delete('app/branding.png');
         }
+    }
+
+    /**
+     * The same resolution the sidebar uses for a COMPANY's logo. It is the
+     * one other place that generated /storage/ URLs, which inside a tenant
+     * point at central storage where the file has never been.
+     */
+    public function test_a_stored_file_resolves_to_the_tenant_route(): void
+    {
+        $disk = Storage::disk('public');
+        $disk->put('company_logos/acme.png', 'not-really-a-png');
+
+        try {
+            $url = stored_file_url('company_logos/acme.png');
+
+            $this->assertStringContainsString('/tenancy/assets/company_logos/acme.png', $url);
+            $this->assertStringNotContainsString('/storage/', $url);
+
+            $this->get($url)->assertOk();
+        } finally {
+            $disk->delete('company_logos/acme.png');
+        }
+    }
+
+    public function test_a_full_url_is_left_alone(): void
+    {
+        $cdn = 'https://cdn.example.com/logo.avif';
+
+        $this->assertSame($cdn, stored_file_url($cdn));
+    }
+
+    public function test_nothing_stored_resolves_to_nothing(): void
+    {
+        $this->assertNull(stored_file_url(null));
+        $this->assertNull(stored_file_url(''));
     }
 
     public function test_the_default_is_returned_when_no_logo_is_set(): void

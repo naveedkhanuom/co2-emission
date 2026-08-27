@@ -7,11 +7,11 @@
         $__company = current_company();
         $__logo = $__company?->logo;
         $__defaultLogo = 'https://cdn.prod.website-files.com/68ce511f0ec3dbdca3e16b5b/68ce5272a15164172603c206_logo%20green.avif';
-        $__logoUrl = $__logo
-            ? (\Illuminate\Support\Str::startsWith($__logo, ['http://', 'https://'])
-                ? $__logo
-                : \Illuminate\Support\Facades\Storage::disk('public')->url($__logo))
-            : (app_logo_url() ?? $__defaultLogo); // company logo -> global app logo -> default
+        // stored_file_url() handles both the full-URL case and the tenant one:
+        // inside a client's workspace an uploaded logo lives in their own
+        // storage, which the public/storage symlink cannot reach.
+        $__logoUrl = stored_file_url($__logo)
+            ?? (app_logo_url() ?? $__defaultLogo); // company logo -> account logo -> default
     @endphp
     <div class="sidebar-brand">
         <img

@@ -51,6 +51,39 @@ if (! function_exists('current_company')) {
     }
 }
 
+if (! function_exists('stored_file_url')) {
+    /**
+     * URL for a file on the public disk, correct inside a tenant.
+     *
+     * Storage::url() returns /storage/..., which the public/storage symlink
+     * resolves to the CENTRAL storage directory. A client's uploads live in
+     * storage/tenant{id}/app/public, where that symlink cannot reach — so
+     * inside a tenant the URL has to go through stancl's asset route instead.
+     *
+     * That route reads storage_path("app/public/{$path}"), which is the
+     * public disk's own root, so the stored path is passed through unchanged.
+     *
+     * A value that is already a full URL is returned as-is, for logos held
+     * on a CDN rather than uploaded.
+     */
+    function stored_file_url(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (\Illuminate\Support\Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        if (function_exists('tenancy') && tenancy()->initialized) {
+            return tenant_asset($path);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+    }
+}
+
 if (! function_exists('app_logo_url')) {
     /**
      * Resolve the global app logo (General Settings) to a URL. An uploaded logo
@@ -65,31 +98,7 @@ if (! function_exists('app_logo_url')) {
             return $default; // settings table not migrated yet, etc.
         }
 
-        if (! $logo) {
-            return $default;
-        }
-
-        if (\Illuminate\Support\Str::startsWith($logo, ['http://', 'https://'])) {
-            return $logo;
-        }
-
-        /*
-         * Inside a tenant, the public disk points at storage/tenant{id}/app/
-         * public — but Storage::url() still returns /storage/..., which the
-         * public/storage symlink resolves to the CENTRAL storage directory.
-         * A client's own uploaded logo lives in neither place the symlink can
-         * see, so it 404s.
-         *
-         * tenant_asset() goes through stancl's asset route, which reads from
-         * the current tenant's storage. The 'public/' prefix is because that
-         * route serves relative to the tenant's app/ directory, while the
-         * stored path is relative to the public disk one level inside it.
-         */
-        if (function_exists('tenancy') && tenancy()->initialized) {
-            return tenant_asset('public/'.$logo);
-        }
-
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($logo);
+        return stored_file_url($logo) ?? $default;
     }
 }
 
