@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use App\Auditable;
-use Illuminate\Database\Eloquent\Model;
 use App\HasCompanyScope;
+use Illuminate\Database\Eloquent\Model;
 
 class Facilities extends Model
 {
     use Auditable, HasCompanyScope;
-    
+
     protected $fillable = [
         'company_id',
         'name',
@@ -31,6 +31,33 @@ class Facilities extends Model
     protected $casts = [
         'mrv_enabled' => 'boolean',
     ];
+
+    /**
+     * Keep the denormalised name on emission records in step with this row.
+     *
+     * Emission records carry both facility_id and the facility name that was
+     * typed at the time, because reporting and analytics still group by the
+     * name. Renaming a facility used to leave every historical record filed
+     * under the old spelling, with nothing linking them back — the rename
+     * silently split one site into two.
+     *
+     * Cascades by facility_id, never by matching the old name: a record with
+     * no id was never linked to this facility, and renaming it here would be
+     * a guess rather than a correction.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (self $facility) {
+            if (! $facility->wasChanged('name')) {
+                return;
+            }
+
+            EmissionRecord::withoutGlobalScope('company')
+                ->where('company_id', $facility->company_id)
+                ->where('facility_id', $facility->id)
+                ->update(['facility' => $facility->name]);
+        });
+    }
 
     public function company()
     {

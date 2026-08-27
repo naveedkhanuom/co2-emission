@@ -15,7 +15,14 @@ class EmissionRecord extends Model
         'entry_date',
         'company_id',
         'site_id',
+
+        // facility/department are the names typed at the time; facility_id and
+        // department_id are the identity. The names are kept in step with the
+        // rows they point at — see the Facilities and Department models — so a
+        // rename no longer orphans the history filed under the old spelling.
         'facility',
+        'facility_id',
+        'department_id',
         'scope',
         'scope3_category_id',
         'supplier_id',
@@ -73,6 +80,50 @@ class EmissionRecord extends Model
         'supporting_documents' => 'array',
     ];
 
+    /**
+     * Resolve facility_id / department_id from the names being saved.
+     *
+     * Done on the model rather than in the controllers because records arrive
+     * from five different places — the entry pages, quick add, the spreadsheet
+     * import, AI document extraction, and supplier surveys — and a link that
+     * only some of them set is worse than none, since the gaps are invisible.
+     *
+     * An id the caller set explicitly always wins; this only fills a blank.
+     * A name that matches no facility leaves the id null, which is honest:
+     * the record keeps the name someone typed and is visibly unlinked.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $record) {
+            // HasCompanyScope stamps company_id on `creating`, which fires
+            // after this, so a new record may not carry one yet.
+            $companyId = $record->company_id
+                ?: (function_exists('current_company_id') ? current_company_id() : null);
+
+            if (! $companyId) {
+                return;
+            }
+
+            if (! $record->isDirty('facility_id') && filled($record->facility)) {
+                $record->facility_id = Facilities::withoutGlobalScope('company')
+                    ->where('company_id', $companyId)
+                    ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($record->facility))])
+                    ->orderBy('id')
+                    ->value('id');
+            }
+
+            if (! $record->isDirty('department_id') && filled($record->department)) {
+                $record->department_id = Department::withoutGlobalScope('company')
+                    ->where('company_id', $companyId)
+                    ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($record->department))])
+                    // A department name is only unambiguous within a facility,
+                    // so prefer the one under this record's facility.
+                    ->orderByRaw('(facility_id <=> ?) DESC, id', [$record->facility_id])
+                    ->value('id');
+            }
+        });
+    }
+
     // Relationships
     public function company()
     {
@@ -82,6 +133,22 @@ class EmissionRecord extends Model
     public function site()
     {
         return $this->belongsTo(Site::class);
+    }
+
+    /**
+     * The facility this record belongs to, by identity rather than by name.
+     *
+     * Null on records whose facility name matched nothing when the ids were
+     * backfilled — `emissions:link-facilities --report` lists them.
+     */
+    public function facilityRecord(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Facilities::class, 'facility_id');
+    }
+
+    public function departmentRecord(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
     }
 
     public function user()
