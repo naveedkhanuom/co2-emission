@@ -33,6 +33,12 @@ readonly class ResolvedFactor
          * say so plainly.
          */
         public bool $userSupplied = false,
+        /**
+         * Set when the value came from the tenant's own factor library rather
+         * than the built-in config catalogue. Scope 3 is resolved that way:
+         * its factors are seeded reference data, not a config file.
+         */
+        public ?int $emissionFactorId = null,
     ) {}
 
     /**
@@ -43,6 +49,16 @@ readonly class ResolvedFactor
      */
     public function datasetLabel(): string
     {
+        if ($this->emissionFactorId !== null) {
+            $label = sprintf('Factor library #%d', $this->emissionFactorId);
+
+            if ($this->reference) {
+                $label .= ' — '.$this->reference;
+            }
+
+            return trim($label);
+        }
+
         $label = sprintf('Built-in %s catalogue %s', $this->catalogue, $this->catalogueVersion);
 
         if ($this->reference) {

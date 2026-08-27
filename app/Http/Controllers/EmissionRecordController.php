@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
+use App\Models\Country;
 use App\Models\EmissionRecord;
 use App\Models\EmissionSource;
-use App\Models\EmissionFactor;
 use App\Models\FactorOrganization;
-use App\Models\Company;
 use App\Models\Site;
-use App\Models\Country;
 use App\Services\Factors\BuiltInFactorCatalog;
-use Illuminate\Http\Request;
+use App\Services\Factors\LibraryFactorCatalog;
 use DataTables;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -33,20 +33,20 @@ class EmissionRecordController extends Controller
      */
     private function storeSupportingDocuments(Request $request, int|string|null $companyId): array
     {
-        if (!$request->hasFile('supporting_documents')) {
+        if (! $request->hasFile('supporting_documents')) {
             return [];
         }
 
         $files = $request->file('supporting_documents');
-        if (!is_array($files)) {
+        if (! is_array($files)) {
             $files = [$files];
         }
 
         $stored = [];
-        $folder = 'supporting-documents/' . ($companyId ?: 'unknown') . '/' . now()->format('Y/m');
+        $folder = 'supporting-documents/'.($companyId ?: 'unknown').'/'.now()->format('Y/m');
 
         foreach ($files as $file) {
-            if (!$file) {
+            if (! $file) {
                 continue;
             }
             $stored[] = $file->storePublicly($folder, 'public');
@@ -66,19 +66,20 @@ class EmissionRecordController extends Controller
         }
 
         $docs = $emissionRecord->supporting_documents;
-        if (!is_array($docs) || !isset($docs[$index])) {
+        if (! is_array($docs) || ! isset($docs[$index])) {
             abort(404, 'Document not found.');
         }
 
         $path = $docs[$index];
-        if (!Storage::disk('public')->exists($path)) {
+        if (! Storage::disk('public')->exists($path)) {
             abort(404, 'File not found.');
         }
 
         $fullPath = Storage::disk('public')->path($path);
         $name = basename($path);
+
         return response()->file($fullPath, [
-            'Content-Disposition' => 'inline; filename="' . addslashes($name) . '"',
+            'Content-Disposition' => 'inline; filename="'.addslashes($name).'"',
         ]);
     }
 
@@ -104,7 +105,7 @@ class EmissionRecordController extends Controller
      */
     protected function assertPeriodOpen($entryDate, ?int $companyId): void
     {
-        if (!$entryDate || !$companyId) {
+        if (! $entryDate || ! $companyId) {
             return;
         }
 
@@ -123,6 +124,7 @@ class EmissionRecordController extends Controller
             );
         }
     }
+
     public function index()
     {
         // Load emission sources grouped by scope for dynamic dropdowns
@@ -158,14 +160,14 @@ class EmissionRecordController extends Controller
         $emissionFactorsMap = [];
         $allSources = EmissionSource::with(['emissionFactors' => function ($q) {
             $q->orderByRaw("CASE WHEN COALESCE(region,'default') = 'default' THEN 1 ELSE 0 END")
-              ->orderBy('id', 'desc');
+                ->orderBy('id', 'desc');
         }, 'emissionFactors.country'])->get();
 
         foreach ($allSources as $source) {
             foreach ($source->emissionFactors as $factor) {
                 $orgId = $factor->organization_id ?: 0;
                 $key = (string) $orgId;
-                if (!isset($emissionFactorsMap[$source->name][$key])) {
+                if (! isset($emissionFactorsMap[$source->name][$key])) {
                     $emissionFactorsMap[$source->name][$key] = [];
                 }
                 $emissionFactorsMap[$source->name][$key][] = [
@@ -210,18 +212,18 @@ class EmissionRecordController extends Controller
     {
         // Load emission sources grouped by scope
         // Get sources specific to each scope, plus any sources without a scope (general sources)
-        $scope1Sources = EmissionSource::where(function($query) {
+        $scope1Sources = EmissionSource::where(function ($query) {
             $query->where('scope', 1)->orWhereNull('scope');
         })->with('emissionFactors')->orderBy('name')->get();
-        
-        $scope2Sources = EmissionSource::where(function($query) {
+
+        $scope2Sources = EmissionSource::where(function ($query) {
             $query->where('scope', 2)->orWhereNull('scope');
         })->with('emissionFactors')->orderBy('name')->get();
-        
-        $scope3Sources = EmissionSource::where(function($query) {
+
+        $scope3Sources = EmissionSource::where(function ($query) {
             $query->where('scope', 3)->orWhereNull('scope');
         })->with('emissionFactors')->orderBy('name')->get();
-        
+
         $factorOrganizations = FactorOrganization::orderBy('name')->get();
         $defaultOrganizationId = FactorOrganization::where('code', 'IPCC')->value('id') ?: $factorOrganizations->first()?->id;
 
@@ -239,7 +241,7 @@ class EmissionRecordController extends Controller
                 ];
             }
         }
-        
+
         return view('scope_entry.index', [
             'scope1Sources' => $scope1Sources,
             'scope2Sources' => $scope2Sources,
@@ -266,7 +268,6 @@ class EmissionRecordController extends Controller
             ->make(true);
     }
 
-
     /**
      * Quick Add (AI): parse a plain-language activity into a pre-filled draft
      * (scope, source, quantity/unit, runtime-estimated factor, CO2e). The result
@@ -280,7 +281,7 @@ class EmissionRecordController extends Controller
 
         return response()->json([
             'status' => true,
-            'data'   => $service->parse($validated['description']),
+            'data' => $service->parse($validated['description']),
         ]);
     }
 
@@ -300,53 +301,53 @@ class EmissionRecordController extends Controller
             // Validate each entry
             foreach ($entries as $index => $data) {
                 $validator = Validator::make($data, [
-                    'entryDate'             => 'required|date',
-                    'facilitySelect'        => 'required|string|max:50',
-                    'siteSelect'            => 'nullable|exists:sites,id',
-                    'scopeSelect'           => 'required|in:1,2,3',
-                    'emissionSourceSelect'  => 'required|string|max:100',
+                    'entryDate' => 'required|date',
+                    'facilitySelect' => 'required|string|max:50',
+                    'siteSelect' => 'nullable|exists:sites,id',
+                    'scopeSelect' => 'required|in:1,2,3',
+                    'emissionSourceSelect' => 'required|string|max:100',
                     'emission_source_other' => 'required_if:emissionSourceSelect,__other__|nullable|string|max:255',
-                    'co2eValue'             => 'required|numeric|min:0',
-                    'confidenceLevel'       => 'required|in:low,medium,high,estimated',
-                    'departmentSelect'      => 'nullable|string|max:100',
-                    'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
-                    'entryNotes'            => 'nullable|string|max:1000',
+                    'co2eValue' => 'required|numeric|min:0',
+                    'confidenceLevel' => 'required|in:low,medium,high,estimated',
+                    'departmentSelect' => 'nullable|string|max:100',
+                    'dataSource' => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
+                    'entryNotes' => 'nullable|string|max:1000',
                     // Scope 3 specific fields
-                    'scope3_category_id'    => 'nullable|exists:scope3_categories,id',
-                    'supplier_id'           => 'nullable|exists:suppliers,id',
-                    'calculation_method'    => 'nullable|in:activity-based,spend-based,hybrid',
-                    'data_quality'          => 'nullable|in:primary,secondary,estimated',
-                    'spend_amount'          => 'nullable|numeric|min:0',
-                    'spend_currency'        => 'nullable|string|size:3',
-                    'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
+                    'scope3_category_id' => 'nullable|exists:scope3_categories,id',
+                    'supplier_id' => 'nullable|exists:suppliers,id',
+                    'calculation_method' => 'nullable|in:activity-based,spend-based,hybrid',
+                    'data_quality' => 'nullable|in:primary,secondary,estimated',
+                    'spend_amount' => 'nullable|numeric|min:0',
+                    'spend_currency' => 'nullable|string|size:3',
+                    'factor_organization_id' => 'nullable|exists:factor_organizations,id',
                 ]);
 
                 if ($validator->fails()) {
                     return response()->json([
                         'status' => false,
-                        'errors' => ['row' => $index + 1, 'messages' => $validator->errors()]
+                        'errors' => ['row' => $index + 1, 'messages' => $validator->errors()],
                     ], 422);
                 }
             }
 
             // Validate sites and suppliers belong to current company if provided
             foreach ($entries as $index => $data) {
-                if (!empty($data['siteSelect'])) {
+                if (! empty($data['siteSelect'])) {
                     $site = Site::find($data['siteSelect']);
-                    if (!$site || $site->company_id != $companyId) {
+                    if (! $site || $site->company_id != $companyId) {
                         return response()->json([
                             'status' => false,
-                            'errors' => ['row' => $index + 1, 'messages' => ['siteSelect' => ['The selected site does not belong to your company.']]]
+                            'errors' => ['row' => $index + 1, 'messages' => ['siteSelect' => ['The selected site does not belong to your company.']]],
                         ], 422);
                     }
                 }
-                
-                if (!empty($data['supplier_id'])) {
+
+                if (! empty($data['supplier_id'])) {
                     $supplier = \App\Models\Supplier::find($data['supplier_id']);
-                    if (!$supplier || $supplier->company_id != $companyId) {
+                    if (! $supplier || $supplier->company_id != $companyId) {
                         return response()->json([
                             'status' => false,
-                            'errors' => ['row' => $index + 1, 'messages' => ['supplier_id' => ['The selected supplier does not belong to your company.']]]
+                            'errors' => ['row' => $index + 1, 'messages' => ['supplier_id' => ['The selected supplier does not belong to your company.']]],
                         ], 422);
                     }
                 }
@@ -365,22 +366,22 @@ class EmissionRecordController extends Controller
                 }
 
                 $entryData = [
-                    'company_id'        => $companyId,
-                    'entry_date'        => $data['entryDate'],
-                    'facility'          => $data['facilitySelect'],
-                    'site_id'           => !empty($data['siteSelect']) ? $data['siteSelect'] : null,
-                    'scope'             => $data['scopeSelect'],
-                    'emission_source'   => $emissionSourceName,
-                    'co2e_value'        => $data['co2eValue'],
+                    'company_id' => $companyId,
+                    'entry_date' => $data['entryDate'],
+                    'facility' => $data['facilitySelect'],
+                    'site_id' => ! empty($data['siteSelect']) ? $data['siteSelect'] : null,
+                    'scope' => $data['scopeSelect'],
+                    'emission_source' => $emissionSourceName,
+                    'co2e_value' => $data['co2eValue'],
                     'factor_organization_id' => $data['factor_organization_id'] ?? null,
-                    'confidence_level'  => $data['confidenceLevel'] ?? 'medium',
-                    'department'        => $data['departmentSelect'] ?? null,
-                    'data_source'       => $data['dataSource'] ?? 'manual',
-                    'notes'             => $data['entryNotes'] ?? null,
-                    'created_by'        => auth()->id(),
-                    'status'            => $status,
+                    'confidence_level' => $data['confidenceLevel'] ?? 'medium',
+                    'department' => $data['departmentSelect'] ?? null,
+                    'data_source' => $data['dataSource'] ?? 'manual',
+                    'notes' => $data['entryNotes'] ?? null,
+                    'created_by' => auth()->id(),
+                    'status' => $status,
                 ];
-                
+
                 // Data quality applies to every scope. Scope 1/2 activity data
                 // is metered/invoiced (primary) by default; Scope 3 is typically
                 // estimated. Honour an explicit value when provided.
@@ -397,10 +398,10 @@ class EmissionRecordController extends Controller
                 }
 
                 $entryData = app(\App\Services\EmissionEnrichmentService::class)->enrich($entryData, [
-                    'emission_factor_id'              => $data['emission_factor_id'] ?? null,
+                    'emission_factor_id' => $data['emission_factor_id'] ?? null,
                     'energy_attribute_certificate_id' => $data['energy_attribute_certificate_id'] ?? null,
-                    'market_based_co2e'               => $data['market_based_co2e'] ?? null,
-                    'scope2_method'                   => $data['scope2_method'] ?? null,
+                    'market_based_co2e' => $data['market_based_co2e'] ?? null,
+                    'scope2_method' => $data['scope2_method'] ?? null,
                 ]);
 
                 EmissionRecord::create($entryData);
@@ -408,52 +409,52 @@ class EmissionRecordController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => count($entries) . ' records saved successfully'
+                'message' => count($entries).' records saved successfully',
             ]);
         }
 
         // Single entry validation (activity/factor optional when user enters total CO2e only)
         $validator = Validator::make($request->all(), [
-            'entryDate'             => 'required|date',
-            'facilitySelect'        => 'required|string|max:50',
-            'siteSelect'            => 'nullable|exists:sites,id',
-            'scopeSelect'           => 'required|in:1,2,3',
-            'emissionSourceSelect'  => 'required|string|max:100',
+            'entryDate' => 'required|date',
+            'facilitySelect' => 'required|string|max:50',
+            'siteSelect' => 'nullable|exists:sites,id',
+            'scopeSelect' => 'required|in:1,2,3',
+            'emissionSourceSelect' => 'required|string|max:100',
             'emission_source_other' => 'required_if:emissionSourceSelect,__other__|nullable|string|max:255',
-            'activityData'          => 'nullable|numeric|min:0',
-            'activityUnit'          => 'nullable|string|max:30',
-            'scope2Region'          => 'nullable|string|max:120',
-            'scope2FactorOverride'  => 'nullable|numeric|min:0',
-            'emissionFactor'        => 'nullable|numeric|min:0',
-            'co2eValue'             => 'required|numeric|min:0',
-            'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
-            'confidenceLevel'       => 'required|in:low,medium,high,estimated',
-            'departmentSelect'      => 'nullable|string|max:100',
-            'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
-            'entryNotes'            => 'nullable|string|max:1000',
+            'activityData' => 'nullable|numeric|min:0',
+            'activityUnit' => 'nullable|string|max:30',
+            'scope2Region' => 'nullable|string|max:120',
+            'scope2FactorOverride' => 'nullable|numeric|min:0',
+            'emissionFactor' => 'nullable|numeric|min:0',
+            'co2eValue' => 'required|numeric|min:0',
+            'factor_organization_id' => 'nullable|exists:factor_organizations,id',
+            'confidenceLevel' => 'required|in:low,medium,high,estimated',
+            'departmentSelect' => 'nullable|string|max:100',
+            'dataSource' => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
+            'entryNotes' => 'nullable|string|max:1000',
             // Scope 3 specific fields
-            'scope3_category_id'    => 'nullable|exists:scope3_categories,id',
-            'supplier_id'           => 'nullable|exists:suppliers,id',
-            'calculation_method'    => 'nullable|in:activity-based,spend-based,hybrid',
-            'data_quality'          => 'nullable|in:primary,secondary,estimated',
-            'spend_amount'          => 'nullable|numeric|min:0',
-            'spend_currency'        => 'nullable|string|size:3',
-            'sector_code'           => 'nullable|string|max:50',
-            'country'               => 'nullable|string|max:3',
+            'scope3_category_id' => 'nullable|exists:scope3_categories,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'calculation_method' => 'nullable|in:activity-based,spend-based,hybrid',
+            'data_quality' => 'nullable|in:primary,secondary,estimated',
+            'spend_amount' => 'nullable|numeric|min:0',
+            'spend_currency' => 'nullable|string|size:3',
+            'sector_code' => 'nullable|string|max:50',
+            'country' => 'nullable|string|max:3',
             // Factor locking + Scope 2 dual reporting
-            'emission_factor_id'             => 'nullable|integer|exists:emission_factors,id',
-            'energy_attribute_certificate_id'=> 'nullable|integer|exists:energy_attribute_certificates,id',
-            'market_based_co2e'              => 'nullable|numeric|min:0',
-            'scope2_method'                  => 'nullable|in:location_based,market_based',
+            'emission_factor_id' => 'nullable|integer|exists:emission_factors,id',
+            'energy_attribute_certificate_id' => 'nullable|integer|exists:energy_attribute_certificates,id',
+            'market_based_co2e' => 'nullable|numeric|min:0',
+            'scope2_method' => 'nullable|in:location_based,market_based',
             // Supporting documents
-            'supporting_documents'      => 'nullable|array',
-            'supporting_documents.*'    => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
+            'supporting_documents' => 'nullable|array',
+            'supporting_documents.*' => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -466,10 +467,10 @@ class EmissionRecordController extends Controller
         // Validate site belongs to current company if provided
         if ($request->siteSelect) {
             $site = Site::find($request->siteSelect);
-            if (!$site || $site->company_id != $companyId) {
+            if (! $site || $site->company_id != $companyId) {
                 return response()->json([
                     'status' => false,
-                    'errors' => ['siteSelect' => ['The selected site does not belong to your company.']]
+                    'errors' => ['siteSelect' => ['The selected site does not belong to your company.']],
                 ], 422);
             }
         }
@@ -487,23 +488,23 @@ class EmissionRecordController extends Controller
 
         // Prepare data array (activity_data and emission_factor may be null when user entered total CO2e only)
         $data = [
-            'company_id'        => $companyId,
-            'entry_date'        => $request->entryDate,
-            'facility'          => $request->facilitySelect,
-            'site_id'           => $request->siteSelect ?: null,
-            'scope'             => $request->scopeSelect,
-            'emission_source'   => $emissionSourceName,
-            'activity_data'     => $request->filled('activityData') ? $request->activityData : null,
-            'activity_unit'     => $request->filled('activityUnit') ? $request->activityUnit : null,
-            'emission_factor'   => $request->filled('emissionFactor') ? $request->emissionFactor : null,
+            'company_id' => $companyId,
+            'entry_date' => $request->entryDate,
+            'facility' => $request->facilitySelect,
+            'site_id' => $request->siteSelect ?: null,
+            'scope' => $request->scopeSelect,
+            'emission_source' => $emissionSourceName,
+            'activity_data' => $request->filled('activityData') ? $request->activityData : null,
+            'activity_unit' => $request->filled('activityUnit') ? $request->activityUnit : null,
+            'emission_factor' => $request->filled('emissionFactor') ? $request->emissionFactor : null,
             'factor_organization_id' => $request->factor_organization_id,
-            'co2e_value'        => $request->co2eValue,
-            'confidence_level'  => $request->confidenceLevel,
-            'department'        => $request->departmentSelect ?: null,
-            'data_source'       => $request->dataSource,
-            'notes'             => $request->entryNotes,
-            'created_by'        => auth()->id(),
-            'status'            => $status,
+            'co2e_value' => $request->co2eValue,
+            'confidence_level' => $request->confidenceLevel,
+            'department' => $request->departmentSelect ?: null,
+            'data_source' => $request->dataSource,
+            'notes' => $request->entryNotes,
+            'created_by' => auth()->id(),
+            'status' => $status,
         ];
 
         // The Scope 1 entry page computes CO2e in the browser and posts only the
@@ -514,8 +515,10 @@ class EmissionRecordController extends Controller
         // Only fills a gap: a factor the caller supplied is never overwritten,
         // and an unresolvable source leaves the record exactly as it was before.
         if (empty($data['emission_factor'])) {
+            $scope = (int) $request->scopeSelect;
+
             $resolved = app(BuiltInFactorCatalog::class)->resolve(
-                (int) $request->scopeSelect,
+                $scope,
                 $emissionSourceName,
                 $data['activity_unit'],
                 [
@@ -526,6 +529,27 @@ class EmissionRecordController extends Controller
                     'ef_override' => $request->input('scope2FactorOverride'),
                 ]
             );
+
+            // The built-in catalogue is config, and config only covers Scope 1
+            // and 2. Scope 3's factors are seeded reference data in the
+            // client's own library, so fall through to that — otherwise a
+            // Scope 3 entry stores the browser's total with nothing beside it
+            // for EmissionFigureVerifier to check.
+            //
+            // Scope 3 ONLY, deliberately. Scope 2 is priced by grid region,
+            // and the library's generic electricity row is not that region's
+            // factor: falling back to it would price UAE electricity at a
+            // global average and then flag the client's correct regional
+            // figure as an error. Scope 2 without a region is meant to save
+            // unverified, which is honest. Scope 1 is already covered by the
+            // config catalogue's 244 sources.
+            if ($scope === 3) {
+                $resolved ??= app(LibraryFactorCatalog::class)->resolve(
+                    $scope,
+                    $emissionSourceName,
+                    $data['activity_unit']
+                );
+            }
 
             if ($resolved !== null) {
                 $data['emission_factor'] = $resolved->value;
@@ -546,7 +570,7 @@ class EmissionRecordController extends Controller
             $data['calculation_method'] = $request->calculation_method ?? 'activity-based';
             $data['spend_amount'] = $request->spend_amount ?? null;
             $data['spend_currency'] = $request->spend_currency ?? 'USD';
-            
+
             // Spend-based: compute the EIO estimate server-side and treat it as
             // authoritative. calculateFromSpend already returns tonnes, normalised
             // for the factor's unit and currency.
@@ -562,30 +586,30 @@ class EmissionRecordController extends Controller
                 }
             }
         }
-        
+
         // Validate supplier belongs to current company if provided
         if ($request->supplier_id) {
             $supplier = \App\Models\Supplier::find($request->supplier_id);
-            if (!$supplier || $supplier->company_id != $companyId) {
+            if (! $supplier || $supplier->company_id != $companyId) {
                 return response()->json([
                     'status' => false,
-                    'errors' => ['supplier_id' => ['The selected supplier does not belong to your company.']]
+                    'errors' => ['supplier_id' => ['The selected supplier does not belong to your company.']],
                 ], 422);
             }
         }
-        
+
         // Save documents (if any)
         $storedDocs = $this->storeSupportingDocuments($request, $companyId);
-        if (!empty($storedDocs)) {
+        if (! empty($storedDocs)) {
             $data['supporting_documents'] = $storedDocs;
         }
 
         // Enrich with factor lock, gas split, GWP snapshot and Scope 2 market-based figure.
         $data = app(\App\Services\EmissionEnrichmentService::class)->enrich($data, [
-            'emission_factor_id'              => $request->emission_factor_id,
+            'emission_factor_id' => $request->emission_factor_id,
             'energy_attribute_certificate_id' => $request->energy_attribute_certificate_id,
-            'market_based_co2e'               => $request->market_based_co2e,
-            'scope2_method'                   => $request->scope2_method,
+            'market_based_co2e' => $request->market_based_co2e,
+            'scope2_method' => $request->scope2_method,
         ]);
 
         // A hand-entered factor did not come from the factor library, even when a
@@ -601,12 +625,10 @@ class EmissionRecordController extends Controller
         EmissionRecord::create($data);
 
         return response()->json([
-            'status'  => true,
-            'message' => 'Emission record saved successfully'
+            'status' => true,
+            'message' => 'Emission record saved successfully',
         ]);
     }
-
-
 
     public function show(EmissionRecord $emissionRecord)
     {
@@ -631,63 +653,63 @@ class EmissionRecordController extends Controller
     public function storeOrUpdate(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'id'                    => 'nullable|exists:emission_records,id',
-            'entryDate'             => 'required|date',
-            'facilitySelect'        => 'required|string|max:50',
-            'siteSelect'            => 'nullable|exists:sites,id',
-            'scopeSelect'           => 'required|in:1,2,3',
-            'emissionSourceSelect'  => 'required|string|max:100',
-            'activityData'          => 'required|numeric|min:0',
-            'activityUnit'          => 'nullable|string|max:30',
-            'emissionFactor'        => 'required|numeric|min:0',
-            'co2eValue'             => 'required|numeric|min:0',
-            'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
-            'confidenceLevel'       => 'required|in:low,medium,high,estimated',
-            'departmentSelect'      => 'nullable|string|max:100',
-            'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
-            'entryNotes'            => 'nullable|string|max:1000',
-            'status'                => 'nullable|in:active,draft',
+            'id' => 'nullable|exists:emission_records,id',
+            'entryDate' => 'required|date',
+            'facilitySelect' => 'required|string|max:50',
+            'siteSelect' => 'nullable|exists:sites,id',
+            'scopeSelect' => 'required|in:1,2,3',
+            'emissionSourceSelect' => 'required|string|max:100',
+            'activityData' => 'required|numeric|min:0',
+            'activityUnit' => 'nullable|string|max:30',
+            'emissionFactor' => 'required|numeric|min:0',
+            'co2eValue' => 'required|numeric|min:0',
+            'factor_organization_id' => 'nullable|exists:factor_organizations,id',
+            'confidenceLevel' => 'required|in:low,medium,high,estimated',
+            'departmentSelect' => 'nullable|string|max:100',
+            'dataSource' => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
+            'entryNotes' => 'nullable|string|max:1000',
+            'status' => 'nullable|in:active,draft',
             // Scope 3 specific fields
-            'scope3_category_id'    => 'nullable|exists:scope3_categories,id',
-            'supplier_id'           => 'nullable|exists:suppliers,id',
-            'calculation_method'    => 'nullable|in:activity-based,spend-based,hybrid',
-            'data_quality'          => 'nullable|in:primary,secondary,estimated',
-            'spend_amount'          => 'nullable|numeric|min:0',
-            'spend_currency'        => 'nullable|string|size:3',
-            'sector_code'           => 'nullable|string|max:50',
-            'country'               => 'nullable|string|max:3',
+            'scope3_category_id' => 'nullable|exists:scope3_categories,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'calculation_method' => 'nullable|in:activity-based,spend-based,hybrid',
+            'data_quality' => 'nullable|in:primary,secondary,estimated',
+            'spend_amount' => 'nullable|numeric|min:0',
+            'spend_currency' => 'nullable|string|size:3',
+            'sector_code' => 'nullable|string|max:50',
+            'country' => 'nullable|string|max:3',
             // Factor locking + Scope 2 dual reporting
-            'emission_factor_id'             => 'nullable|integer|exists:emission_factors,id',
-            'energy_attribute_certificate_id'=> 'nullable|integer|exists:energy_attribute_certificates,id',
-            'market_based_co2e'              => 'nullable|numeric|min:0',
-            'scope2_method'                  => 'nullable|in:location_based,market_based',
+            'emission_factor_id' => 'nullable|integer|exists:emission_factors,id',
+            'energy_attribute_certificate_id' => 'nullable|integer|exists:energy_attribute_certificates,id',
+            'market_based_co2e' => 'nullable|numeric|min:0',
+            'scope2_method' => 'nullable|in:location_based,market_based',
             // Supporting documents
-            'supporting_documents'      => 'nullable|array',
-            'supporting_documents.*'    => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
+            'supporting_documents' => 'nullable|array',
+            'supporting_documents.*' => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $data = [
-            'entry_date'        => $request->entryDate,
-            'facility'          => $request->facilitySelect,
-            'site_id'           => $request->siteSelect ?: null,
-            'scope'             => $request->scopeSelect,
-            'emission_source'   => $request->emissionSourceSelect,
-            'activity_data'     => $request->activityData,
-            'emission_factor'   => $request->emissionFactor,
+            'entry_date' => $request->entryDate,
+            'facility' => $request->facilitySelect,
+            'site_id' => $request->siteSelect ?: null,
+            'scope' => $request->scopeSelect,
+            'emission_source' => $request->emissionSourceSelect,
+            'activity_data' => $request->activityData,
+            'emission_factor' => $request->emissionFactor,
             'factor_organization_id' => $request->factor_organization_id,
-            'co2e_value'        => $request->co2eValue,
-            'confidence_level'  => $request->confidenceLevel,
-            'department'        => $request->departmentSelect ?: null,
-            'data_source'       => $request->dataSource,
-            'notes'             => $request->entryNotes,
-            'status'            => $request->status ?? 'active',
+            'co2e_value' => $request->co2eValue,
+            'confidence_level' => $request->confidenceLevel,
+            'department' => $request->departmentSelect ?: null,
+            'data_source' => $request->dataSource,
+            'notes' => $request->entryNotes,
+            'status' => $request->status ?? 'active',
         ];
 
         // Set the activity unit only when the caller actually supplies one.
@@ -736,10 +758,10 @@ class EmissionRecordController extends Controller
         // Validate site belongs to current company if provided
         if ($request->siteSelect) {
             $site = Site::find($request->siteSelect);
-            if (!$site || $site->company_id != $companyId) {
+            if (! $site || $site->company_id != $companyId) {
                 return response()->json([
                     'status' => false,
-                    'errors' => ['siteSelect' => ['The selected site does not belong to your company.']]
+                    'errors' => ['siteSelect' => ['The selected site does not belong to your company.']],
                 ], 422);
             }
         }
@@ -747,10 +769,10 @@ class EmissionRecordController extends Controller
         // Validate supplier belongs to current company if provided
         if ($request->supplier_id) {
             $supplier = \App\Models\Supplier::find($request->supplier_id);
-            if (!$supplier || $supplier->company_id != $companyId) {
+            if (! $supplier || $supplier->company_id != $companyId) {
                 return response()->json([
                     'status' => false,
-                    'errors' => ['supplier_id' => ['The selected supplier does not belong to your company.']]
+                    'errors' => ['supplier_id' => ['The selected supplier does not belong to your company.']],
                 ], 422);
             }
         }
@@ -758,40 +780,40 @@ class EmissionRecordController extends Controller
         // Enrich with factor lock, gas split, GWP snapshot and Scope 2 market-based figure.
         $data['company_id'] = $companyId;
         $data = app(\App\Services\EmissionEnrichmentService::class)->enrich($data, [
-            'emission_factor_id'              => $request->emission_factor_id,
+            'emission_factor_id' => $request->emission_factor_id,
             'energy_attribute_certificate_id' => $request->energy_attribute_certificate_id,
-            'market_based_co2e'               => $request->market_based_co2e,
-            'scope2_method'                   => $request->scope2_method,
+            'market_based_co2e' => $request->market_based_co2e,
+            'scope2_method' => $request->scope2_method,
         ]);
 
         if ($request->has('id') && $request->id) {
             // Update existing record
             $record = EmissionRecord::findOrFail($request->id);
-            
+
             // Ensure record belongs to current company
             if ($record->company_id != $companyId) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'You do not have access to this record'
+                    'message' => 'You do not have access to this record',
                 ], 403);
             }
-            
+
             // Store new documents (append)
             $storedDocs = $this->storeSupportingDocuments($request, $companyId);
-            if (!empty($storedDocs)) {
+            if (! empty($storedDocs)) {
                 $existing = $record->supporting_documents ?? [];
-                if (!is_array($existing)) {
+                if (! is_array($existing)) {
                     $existing = [];
                 }
                 $data['supporting_documents'] = array_values(array_unique(array_merge($existing, $storedDocs)));
             }
 
             $record->update($data);
-            
+
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => 'Emission record updated successfully',
-                'data'    => $record
+                'data' => $record,
             ]);
         } else {
             // Create new record
@@ -799,16 +821,16 @@ class EmissionRecordController extends Controller
             $data['created_by'] = auth()->id();
 
             $storedDocs = $this->storeSupportingDocuments($request, $companyId);
-            if (!empty($storedDocs)) {
+            if (! empty($storedDocs)) {
                 $data['supporting_documents'] = $storedDocs;
             }
 
             $record = EmissionRecord::create($data);
-            
+
             return response()->json([
-                'status'  => true,
+                'status' => true,
                 'message' => 'Emission record created successfully',
-                'data'    => $record
+                'data' => $record,
             ]);
         }
     }
@@ -820,74 +842,74 @@ class EmissionRecordController extends Controller
         $this->assertPeriodOpen($request->entryDate, $emissionRecord->company_id);
 
         $validator = Validator::make($request->all(), [
-            'entryDate'             => 'required|date',
-            'facilitySelect'        => 'required|string|max:50',
-            'siteSelect'            => 'nullable|exists:sites,id',
-            'scopeSelect'           => 'required|in:1,2,3',
-            'emissionSourceSelect'  => 'required|string|max:100',
-            'activityData'          => 'required|numeric|min:0',
-            'activityUnit'          => 'nullable|string|max:30',
-            'emissionFactor'        => 'required|numeric|min:0',
-            'co2eValue'             => 'required|numeric|min:0',
-            'factor_organization_id'=> 'nullable|exists:factor_organizations,id',
-            'confidenceLevel'       => 'required|in:low,medium,high,estimated',
-            'departmentSelect'      => 'nullable|string|max:100',
-            'dataSource'            => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
-            'entryNotes'            => 'nullable|string|max:1000',
-            'status'                => 'nullable|in:active,draft',
+            'entryDate' => 'required|date',
+            'facilitySelect' => 'required|string|max:50',
+            'siteSelect' => 'nullable|exists:sites,id',
+            'scopeSelect' => 'required|in:1,2,3',
+            'emissionSourceSelect' => 'required|string|max:100',
+            'activityData' => 'required|numeric|min:0',
+            'activityUnit' => 'nullable|string|max:30',
+            'emissionFactor' => 'required|numeric|min:0',
+            'co2eValue' => 'required|numeric|min:0',
+            'factor_organization_id' => 'nullable|exists:factor_organizations,id',
+            'confidenceLevel' => 'required|in:low,medium,high,estimated',
+            'departmentSelect' => 'nullable|string|max:100',
+            'dataSource' => 'required|in:manual,import,api,supplier-survey,meter,invoice,estimate',
+            'entryNotes' => 'nullable|string|max:1000',
+            'status' => 'nullable|in:active,draft',
             // Scope 3 specific fields
-            'scope3_category_id'    => 'nullable|exists:scope3_categories,id',
-            'supplier_id'           => 'nullable|exists:suppliers,id',
-            'calculation_method'    => 'nullable|in:activity-based,spend-based,hybrid',
-            'data_quality'          => 'nullable|in:primary,secondary,estimated',
-            'spend_amount'          => 'nullable|numeric|min:0',
-            'spend_currency'        => 'nullable|string|size:3',
+            'scope3_category_id' => 'nullable|exists:scope3_categories,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'calculation_method' => 'nullable|in:activity-based,spend-based,hybrid',
+            'data_quality' => 'nullable|in:primary,secondary,estimated',
+            'spend_amount' => 'nullable|numeric|min:0',
+            'spend_currency' => 'nullable|string|size:3',
             // Factor locking + Scope 2 dual reporting
-            'emission_factor_id'             => 'nullable|integer|exists:emission_factors,id',
-            'energy_attribute_certificate_id'=> 'nullable|integer|exists:energy_attribute_certificates,id',
-            'market_based_co2e'              => 'nullable|numeric|min:0',
-            'scope2_method'                  => 'nullable|in:location_based,market_based',
+            'emission_factor_id' => 'nullable|integer|exists:emission_factors,id',
+            'energy_attribute_certificate_id' => 'nullable|integer|exists:energy_attribute_certificates,id',
+            'market_based_co2e' => 'nullable|numeric|min:0',
+            'scope2_method' => 'nullable|in:location_based,market_based',
             // Supporting documents
-            'supporting_documents'      => 'nullable|array',
-            'supporting_documents.*'    => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
+            'supporting_documents' => 'nullable|array',
+            'supporting_documents.*' => 'file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Get current company ID for validation
         $companyId = $this->getCurrentCompanyId();
-        
+
         // Validate supplier belongs to current company if provided
         if ($request->supplier_id) {
             $supplier = \App\Models\Supplier::find($request->supplier_id);
-            if (!$supplier || $supplier->company_id != $companyId) {
+            if (! $supplier || $supplier->company_id != $companyId) {
                 return response()->json([
                     'status' => false,
-                    'errors' => ['supplier_id' => ['The selected supplier does not belong to your company.']]
+                    'errors' => ['supplier_id' => ['The selected supplier does not belong to your company.']],
                 ], 422);
             }
         }
 
         $data = [
-            'entry_date'        => $request->entryDate,
-            'facility'          => $request->facilitySelect,
-            'site_id'           => $request->siteSelect ?: null,
-            'scope'             => $request->scopeSelect,
-            'emission_source'   => $request->emissionSourceSelect,
-            'activity_data'     => $request->activityData,
-            'emission_factor'   => $request->emissionFactor,
+            'entry_date' => $request->entryDate,
+            'facility' => $request->facilitySelect,
+            'site_id' => $request->siteSelect ?: null,
+            'scope' => $request->scopeSelect,
+            'emission_source' => $request->emissionSourceSelect,
+            'activity_data' => $request->activityData,
+            'emission_factor' => $request->emissionFactor,
             'factor_organization_id' => $request->factor_organization_id,
-            'co2e_value'        => $request->co2eValue,
-            'confidence_level'  => $request->confidenceLevel,
-            'department'        => $request->departmentSelect ?: null,
-            'data_source'       => $request->dataSource,
-            'notes'             => $request->entryNotes,
-            'status'            => $request->status ?? $emissionRecord->status,
+            'co2e_value' => $request->co2eValue,
+            'confidence_level' => $request->confidenceLevel,
+            'department' => $request->departmentSelect ?: null,
+            'data_source' => $request->dataSource,
+            'notes' => $request->entryNotes,
+            'status' => $request->status ?? $emissionRecord->status,
         ];
 
         // Set the activity unit only when the caller actually supplies one.
@@ -927,19 +949,19 @@ class EmissionRecordController extends Controller
         // Enrich with factor lock, gas split, GWP snapshot and Scope 2 market-based figure.
         $data['company_id'] = $emissionRecord->company_id;
         $data = app(\App\Services\EmissionEnrichmentService::class)->enrich($data, [
-            'emission_factor_id'              => $request->emission_factor_id,
+            'emission_factor_id' => $request->emission_factor_id,
             'energy_attribute_certificate_id' => $request->energy_attribute_certificate_id,
-            'market_based_co2e'               => $request->market_based_co2e,
-            'scope2_method'                   => $request->scope2_method,
+            'market_based_co2e' => $request->market_based_co2e,
+            'scope2_method' => $request->scope2_method,
         ]);
         unset($data['company_id']); // never reassign tenant on update
 
         // Store new documents (append)
         $companyId = $this->getCurrentCompanyId();
         $storedDocs = $this->storeSupportingDocuments($request, $companyId);
-        if (!empty($storedDocs)) {
+        if (! empty($storedDocs)) {
             $existing = $emissionRecord->supporting_documents ?? [];
-            if (!is_array($existing)) {
+            if (! is_array($existing)) {
                 $existing = [];
             }
             $data['supporting_documents'] = array_values(array_unique(array_merge($existing, $storedDocs)));
@@ -948,9 +970,9 @@ class EmissionRecordController extends Controller
         $emissionRecord->update($data);
 
         return response()->json([
-            'status'  => true,
+            'status' => true,
             'message' => 'Emission record updated successfully',
-            'data'    => $emissionRecord->fresh()
+            'data' => $emissionRecord->fresh(),
         ]);
     }
 
@@ -967,7 +989,7 @@ class EmissionRecordController extends Controller
         $emissionRecord->delete();
 
         return response()->json([
-            'message' => 'Emission record deleted successfully'
+            'message' => 'Emission record deleted successfully',
         ]);
     }
 }
