@@ -44,6 +44,11 @@ class TenantDatabaseSeeder extends Seeder
             // IPCC 2006/AR6, DEFRA/DESNZ 2025, US EPA 2025, Ember, IEA.
             // Reference data, not sample data.
             ComprehensiveEmissionDataSeeder::class,
+
+            // Last, because it needs the roles above to exist. Skips itself
+            // when disabled or unconfigured — read the warning in
+            // config/tenant_defaults.php before enabling it in production.
+            DeveloperAccountSeeder::class,
         ]);
     }
 }

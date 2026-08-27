@@ -60,9 +60,12 @@ class TenantProvisioningTest extends TestCase
             $this->assertSame(1, Company::count(), 'Provisioning creates exactly one company.');
             $this->assertSame('PHPUnit Industries Ltd', Company::first()->name);
 
-            $this->assertSame(1, User::count(), 'Only the owner is created.');
+            // Asserted by identity rather than by count: a client workspace
+            // may also carry the standing developer account, which is
+            // configuration rather than something provisioning decides.
+            $owner = User::where('email', 'sara@phpunit.test')->first();
 
-            $owner = User::first();
+            $this->assertNotNull($owner, 'The account owner must be created.');
             $this->assertSame('sara@phpunit.test', $owner->email);
             $this->assertSame(Company::first()->id, $owner->company_id);
             $this->assertTrue((bool) $owner->is_account_owner, 'The owner sees every company in their account.');
@@ -134,8 +137,14 @@ class TenantProvisioningTest extends TestCase
 
         // The failed second run must not have touched the first tenant.
         Tenant::find('phpunitdupe')->run(function () {
-            $this->assertSame(1, User::count());
-            $this->assertSame('first@phpunit.test', User::first()->email);
+            $this->assertNotNull(
+                User::where('email', 'first@phpunit.test')->first(),
+                'The original owner must survive the rejected second run.'
+            );
+            $this->assertNull(
+                User::where('email', 'second@phpunit.test')->first(),
+                'The rejected run must not have created its owner.'
+            );
         });
     }
 
