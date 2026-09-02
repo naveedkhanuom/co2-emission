@@ -32,14 +32,25 @@ class EmissionEnrichmentService
         $companyId = $data['company_id'] ?? null;
         $scope = (int) ($data['scope'] ?? 0);
 
-        // 0. Verify the figure against its own activity data and factor BEFORE
+        // 0. Resolve the factor FIRST, so the verifier below can be told which
+        //    activity unit it is priced per.
+        //
+        //    This used to run after verification, which meant the check had no
+        //    way to notice that a per-mile factor had been paired with a
+        //    litres activity: 23.789 x 0.25993 is arithmetically true whatever
+        //    the two numbers mean, so a dimensionally nonsensical record passed.
+        //    Resolution depends on nothing the verifier produces — it keys on
+        //    the source name, unit and factor — so hoisting it is safe.
+        $factor = $this->resolveFactor($data, $context);
+
+        // 1. Verify the figure against its own activity data and factor BEFORE
         //    anything is derived from it. The activity-based value arrives from
         //    the client, and everything below (the gas split, the market-based
         //    figure) treats co2e_value as authoritative — so an unchecked value
         //    would propagate consistently and invisibly.
-        $data = $this->verifier->verify($data);
+        $data = $this->verifier->verify($data, $factor?->unit);
 
-        // 1. GWP set — stamp the basis the figure was ACTUALLY computed under, i.e.
+        // 2. GWP set — stamp the basis the figure was ACTUALLY computed under, i.e.
         //    the basis of the bundled factor/source tables (currently AR5), so the
         //    record's stated GWP set always matches its co2e_value. (The company's
         //    aspirational preference from onboarding does not drive the math yet.)
@@ -47,11 +58,17 @@ class EmissionEnrichmentService
             $data['gwp_version'] = Gwp::factorBasis();
         }
 
-        // 2. Resolve and lock the emission factor used (for provenance/audit).
-        $factor = $this->resolveFactor($data, $context);
+        // 3. Lock the resolved factor (for provenance/audit).
         if ($factor) {
             $data['emission_factor_id'] = $factor->id;
-            $data['factor_dataset'] = $factor->datasetLabel() ?? ($factor->organization?->code ?? null);
+
+            // provenanceLabel(), not datasetLabel(): the citation belongs on the
+            // record, not just the edition. The short form stamped
+            // "Built-in catalogue 2026.1" over a resolver-supplied
+            // "…— IPCC 74100 kgCO2/TJ, NCV 26.5 GJ/t", which made the stored
+            // provenance weaker precisely when the factor had been locked to a
+            // real row.
+            $data['factor_dataset'] = $factor->provenanceLabel() ?? ($factor->organization?->code ?? null);
 
             // 3. Per-gas CO2e split. Computed as GWP-weighted proportions of the
             //    authoritative co2e_value so the parts always sum to the whole —
@@ -75,7 +92,24 @@ class EmissionEnrichmentService
 
     /**
      * Find the EmissionFactor row that produced this record, for locking.
-     * Prefers an explicit id; otherwise matches the source + factor value.
+     * Prefers an explicit id; otherwise matches the source, unit and value.
+     *
+     * MATCHES ON UNIT, which it did not used to.
+     *
+     * Matching on source name and factor value alone let a record entered in
+     * litres lock onto a factor published per MILE, because a name can carry
+     * rows for several units and nothing compared them. That produced a stored
+     * figure with a real emission_factor_id, full provenance and a passing
+     * verification — every signal an assurer looks at saying the number was
+     * checked — for a figure that priced fuel volume at a distance rate.
+     *
+     * COMPARES IN TONNES, not on the raw column.
+     *
+     * `emission_factor` on the record is always tCO2e; `factor_value` is in
+     * whatever basis its publisher used. An exact `where('factor_value', ...)`
+     * therefore silently stopped matching DEFRA rows the moment the resolver
+     * started converting them. Candidates are compared through
+     * valueInTonnes() instead, on the same basis the record stores.
      */
     protected function resolveFactor(array $data, array $context): ?EmissionFactor
     {
@@ -86,17 +120,53 @@ class EmissionEnrichmentService
 
         $sourceName = $data['emission_source'] ?? null;
         $factorValue = $data['emission_factor'] ?? null;
-        if (! $sourceName || $factorValue === null) {
+        if (! $sourceName || $factorValue === null || ! is_numeric($factorValue)) {
             return null;
         }
 
-        return EmissionFactor::with('organization')
+        $activityUnit = $data['activity_unit'] ?? null;
+
+        $candidates = EmissionFactor::with('organization')
             ->whereHas('emissionSource', fn ($q) => $q->where('name', $sourceName))
-            ->where('factor_value', $factorValue)
+            // Only when the record states one. A record with no unit cannot be
+            // dimension-checked, and refusing to lock a factor for it would
+            // withdraw provenance from entries that have always had it.
+            ->when(
+                filled($activityUnit),
+                fn ($q) => $q->whereRaw('LOWER(TRIM(unit)) = ?', [mb_strtolower(trim((string) $activityUnit))])
+            )
             ->when(isset($data['factor_organization_id']), fn ($q) => $q->where('organization_id', $data['factor_organization_id']))
             ->orderByDesc('is_active')
             ->orderByDesc('id')
-            ->first();
+            ->get();
+
+        $target = (float) $factorValue;
+
+        foreach ($candidates as $candidate) {
+            if ($this->sameFactor($candidate->valueInTonnes(), $target)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether a candidate row's factor is the one the record was priced with.
+     *
+     * Compared with a tolerance rather than for equality: the record stores a
+     * rounded decimal, and a converted kg row divides by 1000, so exact
+     * equality would reject the very rows this is meant to find. The window is
+     * far tighter than the gap between any two real factors for the same
+     * activity and unit.
+     */
+    protected function sameFactor(float $candidate, float $target): bool
+    {
+        if (abs($target) < 1e-12) {
+            return abs($candidate) < 1e-12;
+        }
+
+        return abs($candidate - $target) / abs($target) < 1e-6;
     }
 
     /**

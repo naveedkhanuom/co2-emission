@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Country;
 use App\Models\EmissionFactor;
 use App\Models\EmissionSource;
 use App\Models\FactorOrganization;
-use App\Models\Country;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -25,16 +25,71 @@ class EmissionFactorController extends Controller
         $factorOrganizations = FactorOrganization::orderBy('name')->get();
         $countries = Country::where('is_active', true)->orderBy('name')->get();
         $countrySpecificOrgId = FactorOrganization::where('code', 'COUNTRY')->value('id');
-        return view('emission_factors.index', compact('sources', 'factorOrganizations', 'countries', 'countrySpecificOrgId'));
+
+        return view('emission_factors.index', compact(
+            'sources',
+            'factorOrganizations',
+            'countries',
+            'countrySpecificOrgId'
+        ) + [
+            // Filter options read from the data rather than hardcoded: which
+            // datasets and units exist depends on what has been imported, and a
+            // fixed list would quietly stop offering DEFRA the day someone
+            // imports EPA.
+            'datasets' => EmissionFactor::query()
+                ->whereNotNull('dataset_name')
+                ->select('dataset_name')
+                ->distinct()
+                ->orderBy('dataset_name')
+                ->pluck('dataset_name'),
+
+            // Capped: DEFRA alone brings ~90 distinct units, and a select with
+            // every one of them is not a filter anyone can use. The common ones
+            // cover almost every row; the rest are reachable by search.
+            'units' => EmissionFactor::query()
+                ->select('unit')
+                ->selectRaw('COUNT(*) as total')
+                ->groupBy('unit')
+                ->orderByDesc('total')
+                ->limit(30)
+                ->pluck('unit'),
+        ]);
     }
 
-    public function getData()
+    public function getData(Request $request)
     {
-        $data = EmissionFactor::with(['emissionSource', 'organization', 'country'])->select('emission_factors.*');
+        // Joined rather than eager-loaded alone, so the source name and scope are
+        // real columns: searching and sorting them then happens in MySQL instead
+        // of over one page of already-fetched rows. With a seeded library of a
+        // few hundred that distinction did not matter; after importing DEFRA it
+        // is thousands, and "source_name" as an addColumn was silently
+        // unsearchable — typing "diesel" matched nothing.
+        $data = EmissionFactor::query()
+            ->with(['emissionSource', 'organization', 'country'])
+            ->leftJoin('emission_sources', 'emission_sources.id', '=', 'emission_factors.emission_source_id')
+            ->select([
+                'emission_factors.*',
+                'emission_sources.name as source_name',
+                'emission_sources.scope as source_scope',
+            ]);
+
+        $this->applyFilters($data, $request);
+
         return DataTables::of($data)
-            ->addColumn('source_name', fn($row) => $row->emissionSource?->name ?? 'N/A')
-            ->addColumn('organization_name', fn($row) => $row->organization?->code ?? $row->organization?->name ?? '—')
-            ->addColumn('country_name', fn($row) => $row->country?->code ?? $row->country?->name ?? '')
+            ->addColumn('organization_name', fn ($row) => $row->organization?->code ?? $row->organization?->name ?? '—')
+            ->addColumn('country_name', fn ($row) => $row->country?->code ?? $row->country?->name ?? '')
+            ->addColumn('dataset', fn ($row) => $row->datasetLabel() ?? '—')
+            ->addColumn('status', function ($row) {
+                // Superseded rows are kept on purpose: a figure computed against
+                // one still points at it, and that row has to keep saying what it
+                // said. Labelled so nobody enters new data against a retired
+                // factor by accident.
+                return $row->is_active
+                    ? '<span class="badge bg-success-subtle text-success">Active</span>'
+                    : '<span class="badge bg-secondary-subtle text-secondary" title="Superseded'
+                        .($row->valid_to ? ' on '.$row->valid_to->format('j M Y') : '')
+                        .'">Superseded</span>';
+            })
             ->addColumn('actions', function ($row) {
                 return '
                     <button class="btn btn-sm btn-info viewBtn" data-id="'.$row->id.'"><i class="bi bi-eye"></i></button>
@@ -42,8 +97,47 @@ class EmissionFactorController extends Controller
                     <button class="btn btn-sm btn-danger deleteBtn" data-id="'.$row->id.'"><i class="bi bi-trash"></i></button>
                 ';
             })
-            ->rawColumns(['actions'])
+            // Global search across the fields someone would actually type into:
+            // the activity, its unit, the region, and the published citation.
+            ->filterColumn('source_name', function ($query, $keyword) {
+                $query->where('emission_sources.name', 'like', "%{$keyword}%");
+            })
+            ->rawColumns(['status', 'actions'])
             ->make(true);
+    }
+
+    /**
+     * Narrow the factor list.
+     *
+     * Every filter is optional and additive. `status` is the one with an opinion:
+     * it defaults to active, because a library holding several editions of the
+     * same factor would otherwise show each activity two or three times over with
+     * no indication which one is in force.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    private function applyFilters($query, Request $request): void
+    {
+        $query
+            ->when($request->filled('organization_id'), fn ($q) => $q->where('emission_factors.organization_id', $request->integer('organization_id')))
+            ->when($request->filled('scope'), fn ($q) => $q->where('emission_sources.scope', $request->integer('scope')))
+            ->when($request->filled('country_id'), fn ($q) => $q->where('emission_factors.country_id', $request->integer('country_id')))
+            ->when($request->filled('unit'), fn ($q) => $q->where('emission_factors.unit', $request->string('unit')->toString()))
+            ->when($request->filled('dataset_name'), fn ($q) => $q->where('emission_factors.dataset_name', $request->string('dataset_name')->toString()))
+            ->when($request->filled('gwp_version'), fn ($q) => $q->where('emission_factors.gwp_version', $request->string('gwp_version')->toString()));
+
+        // Rows with a per-gas breakdown are the ones usable for regulated MRV
+        // reporting, which needs emissions decomposed by gas rather than a single
+        // CO2e figure. Worth being able to see what qualifies.
+        if ($request->boolean('has_breakdown')) {
+            $query->whereNotNull('emission_factors.co2_factor');
+        }
+
+        match ($request->string('status')->toString()) {
+            'superseded' => $query->where('emission_factors.is_active', false),
+            'all' => null,
+            default => $query->where('emission_factors.is_active', true),
+        };
     }
 
     public function show($id)
@@ -102,7 +196,7 @@ class EmissionFactorController extends Controller
     public function destroy($id)
     {
         EmissionFactor::findOrFail($id)->delete();
+
         return response()->json(['message' => 'Emission Factor deleted successfully!']);
     }
 }
-

@@ -32,11 +32,103 @@
 
         <!-- DataTable Card -->
         <div class="card factors-datatable-card">
-            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h5 class="mb-0">Emission Factors List</h5>
-                <div class="input-group" style="width: 280px;">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" id="searchInput" class="form-control" placeholder="Search factors...">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <h5 class="mb-0">Emission Factors List</h5>
+                    <div class="input-group" style="width: 280px;">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search source or unit...">
+                    </div>
+                </div>
+
+                {{--
+                    Filters. The library holds several publishers' datasets side
+                    by side and several editions of each, so without these the
+                    list is thousands of rows in which the same fuel appears
+                    repeatedly with different numbers — all correct, none
+                    findable.
+                --}}
+                <div class="factor-filters row g-2 mt-3" id="factorFilters">
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <label class="filter-label" for="filterOrganization">Published by</label>
+                        <select class="form-select form-select-sm" id="filterOrganization">
+                            <option value="">All publishers</option>
+                            @foreach ($factorOrganizations as $org)
+                                <option value="{{ $org->id }}">{{ $org->code ?: $org->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <label class="filter-label" for="filterScope">Scope</label>
+                        <select class="form-select form-select-sm" id="filterScope">
+                            <option value="">All scopes</option>
+                            <option value="1">Scope 1</option>
+                            <option value="2">Scope 2</option>
+                            <option value="3">Scope 3</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <label class="filter-label" for="filterDataset">Dataset</label>
+                        <select class="form-select form-select-sm" id="filterDataset">
+                            <option value="">All datasets</option>
+                            @foreach ($datasets as $dataset)
+                                <option value="{{ $dataset }}">{{ $dataset }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <label class="filter-label" for="filterUnit">Unit</label>
+                        <select class="form-select form-select-sm" id="filterUnit">
+                            <option value="">All units</option>
+                            @foreach ($units as $unit)
+                                <option value="{{ $unit }}">{{ $unit }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <label class="filter-label" for="filterCountry">Country</label>
+                        <select class="form-select form-select-sm" id="filterCountry">
+                            <option value="">All countries</option>
+                            @foreach ($countries as $country)
+                                <option value="{{ $country->id }}">{{ $country->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-md-4 col-lg-2">
+                        {{--
+                            Defaults to Active. A superseded row is kept so that
+                            figures computed against it still resolve, but showing
+                            them by default would list each activity two or three
+                            times with no sign which one is in force.
+                        --}}
+                        <label class="filter-label" for="filterStatus">Status</label>
+                        <select class="form-select form-select-sm" id="filterStatus">
+                            <option value="active" selected>Active only</option>
+                            <option value="superseded">Superseded only</option>
+                            <option value="all">Active &amp; superseded</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 d-flex align-items-center gap-3 flex-wrap pt-1">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="filterBreakdown">
+                            <label class="form-check-label filter-label mb-0" for="filterBreakdown"
+                                   title="Factors that publish CO₂, CH₄ and N₂O separately — required for regulated MRV reporting">
+                                Has per-gas breakdown
+                            </label>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-link px-0" id="clearFilters">
+                            <i class="fas fa-times-circle"></i> Clear filters
+                        </button>
+
+                        <span class="ms-auto filter-label" id="filterSummary"></span>
+                    </div>
                 </div>
             </div>
             <div class="card-body p-0">
@@ -47,10 +139,12 @@
                                 <th width="50">ID</th>
                                 <th>Emission Source</th>
                                 <th>Organization</th>
+                                <th>Dataset</th>
                                 <th>Country</th>
                                 <th>Unit</th>
                                 <th>Factor Value</th>
                                 <th>Region</th>
+                                <th>Status</th>
                                 <th width="150" class="text-center">Actions</th>
                             </tr>
                         </thead>
@@ -235,6 +329,9 @@
         .emission-factors-app .factors-datatable-card #factorsTable { width: 100% !important; border-collapse: separate; border-spacing: 0; }
         .emission-factors-app .factors-datatable-card #factorsTable thead th { background: var(--gray-100); color: var(--gray-600); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 16px; border: none; border-bottom: 1px solid var(--gray-200); }
         .emission-factors-app .factors-datatable-card #factorsTable thead th:first-child { padding-left: 20px; }
+        .emission-factors-app .filter-label { display: block; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-600); margin-bottom: 4px; }
+        .emission-factors-app #filterSummary { text-transform: none; letter-spacing: 0; font-weight: 500; }
+        .emission-factors-app .factor-filters { border-top: 1px solid var(--gray-200); padding-top: 14px; }
         .emission-factors-app .factors-datatable-card #factorsTable tbody td { padding: 14px 16px; font-size: 0.875rem; color: var(--gray-800); border: none; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
         .emission-factors-app .factors-datatable-card #factorsTable tbody td:first-child { padding-left: 20px; }
         .emission-factors-app .factors-datatable-card #factorsTable tbody tr:hover td { background: var(--gray-50); }
@@ -277,7 +374,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const table = $('#factorsTable').DataTable({
         processing: true,
         serverSide: true,
-        ajax: "{{ route('emission_factors.data') }}",
+        ajax: {
+            url: "{{ route('emission_factors.data') }}",
+            // Read at request time, not bound once: every draw — paging, sorting,
+            // searching — picks up the current filter state, so paging while
+            // filtered stays filtered.
+            data: function (d) {
+                d.organization_id = $('#filterOrganization').val();
+                d.scope           = $('#filterScope').val();
+                d.dataset_name    = $('#filterDataset').val();
+                d.unit            = $('#filterUnit').val();
+                d.country_id      = $('#filterCountry').val();
+                d.status          = $('#filterStatus').val();
+                d.has_breakdown   = $('#filterBreakdown').is(':checked') ? 1 : 0;
+            }
+        },
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         dom: 'rt<"row mt-3"<"col-sm-12"p>>',
@@ -295,20 +406,68 @@ document.addEventListener('DOMContentLoaded', function () {
             paginate: { first: '<i class="fas fa-angle-double-left"></i>', previous: '<i class="fas fa-angle-left"></i>', next: '<i class="fas fa-angle-right"></i>', last: '<i class="fas fa-angle-double-right"></i>' }
         },
         columns: [
-            { data: 'id', name: 'id' },
+            { data: 'id', name: 'emission_factors.id' },
+            // Named for the joined column so sorting and searching run in SQL.
             { data: 'source_name', name: 'source_name' },
             { data: 'organization_name', name: 'organization_name', defaultContent: '—', orderable: false, searchable: false },
+            { data: 'dataset', name: 'dataset', defaultContent: '—', orderable: false, searchable: false },
             { data: 'country_name', name: 'country_name', defaultContent: '' },
-            { data: 'unit', name: 'unit' },
-            { data: 'factor_value', name: 'factor_value' },
-            { data: 'region', name: 'region', defaultContent: '' },
+            { data: 'unit', name: 'emission_factors.unit' },
+            { data: 'factor_value', name: 'emission_factors.factor_value' },
+            { data: 'region', name: 'emission_factors.region', defaultContent: '' },
+            { data: 'status', name: 'status', orderable: false, searchable: false },
             { data: 'actions', name: 'actions', orderable: false, searchable: false },
         ]
     });
 
+    // Debounced: the library runs to thousands of rows and every keystroke is a
+    // server-side query with a LIKE across a join. Typing "natural gas" was
+    // eleven of them.
+    let searchTimer = null;
     $('#searchInput').on('keyup', function () {
-        table.search(this.value).draw();
+        const value = this.value;
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => table.search(value).draw(), 250);
     });
+
+    const filterIds = ['#filterOrganization', '#filterScope', '#filterDataset',
+                       '#filterUnit', '#filterCountry', '#filterStatus', '#filterBreakdown'];
+
+    function describeFilters() {
+        const active = [];
+        $.each(filterIds, function (_, id) {
+            const el = $(id);
+            if (id === '#filterBreakdown') {
+                if (el.is(':checked')) active.push('per-gas breakdown');
+                return;
+            }
+            // Status defaults to "active", which is the resting state rather
+            // than a filter someone chose — not worth counting.
+            if (id === '#filterStatus' && el.val() === 'active') return;
+            if (el.val()) active.push(el.find('option:selected').text().trim());
+        });
+
+        $('#filterSummary').text(active.length ? 'Filtered by: ' + active.join(' · ') : '');
+    }
+
+    $(filterIds.join(', ')).on('change', function () {
+        describeFilters();
+        // Back to page one: staying on page 40 of a narrower result set lands on
+        // an empty table that reads as "no factors".
+        table.page(0).draw(false);
+    });
+
+    $('#clearFilters').on('click', function () {
+        $('#filterOrganization, #filterScope, #filterDataset, #filterUnit, #filterCountry').val('');
+        $('#filterStatus').val('active');
+        $('#filterBreakdown').prop('checked', false);
+        $('#searchInput').val('');
+        table.search('');
+        describeFilters();
+        table.page(0).draw(false);
+    });
+
+    describeFilters();
 
     const modalEl = document.getElementById('factorModal');
     const modal = new bootstrap.Modal(modalEl);

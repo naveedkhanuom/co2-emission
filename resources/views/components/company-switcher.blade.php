@@ -1,6 +1,12 @@
 @php
     $currentCompany = app()->bound('current_company') ? app('current_company') : null;
-    $currentCompanyId = session('current_company_id') ?? (auth()->check() ? auth()->user()->company_id : null);
+    // The value SetCompanyConnection resolved for this request, which already
+    // walks session -> last_company_id -> company_id. Reading the session alone
+    // showed no row as selected on the first request after a login, because the
+    // remembered company had not been in the session at that point.
+    $currentCompanyId = app()->bound('current_company_id')
+        ? app('current_company_id')
+        : (session('current_company_id') ?? (auth()->check() ? auth()->user()->company_id : null));
 @endphp
 
 @auth

@@ -165,12 +165,29 @@ class CompanyController extends Controller
         ]);
     }
 
-    public function show($id)
+    /**
+     * One company, as a page for a browser and as JSON for the scripts.
+     *
+     * Both, because this one URL serves two callers. The edit modal on the index
+     * page fetches it with `Accept: application/json` to populate its fields,
+     * while the View button sends the browser here as a normal navigation — and
+     * that second caller was being handed a raw JSON dump of the company
+     * record, address and contact details included, rendered as text.
+     *
+     * Content negotiation rather than a second route: this is exactly what
+     * EmissionRecordController::show() already does, and splitting the URL would
+     * mean changing the edit modal that currently works.
+     */
+    public function show(Request $request, $id)
     {
         abort_unless(auth()->user()->canAccessCompany($id), 403, 'You do not have access to this company.');
         $company = Company::findOrFail($id);
 
-        return response()->json($company);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($company);
+        }
+
+        return view('companies.show', ['company' => $company]);
     }
 
     public function edit($id)

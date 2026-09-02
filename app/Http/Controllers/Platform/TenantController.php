@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
+use App\Support\TenantSchema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -53,6 +54,11 @@ class TenantController extends Controller
             'filters' => $request->only(['status', 'search']),
             'statuses' => $this->statuses(),
             'centralDomain' => config('tenancy.central_domains')[0] ?? 'localhost',
+
+            // Read from the stamp on each tenant row, so listing the whole fleet
+            // stays one query against the central database. Answering this
+            // properly would mean opening a connection per tenant.
+            'expectedSchema' => TenantSchema::latestAvailable(),
         ]);
     }
 

@@ -15,8 +15,18 @@ use Illuminate\Support\Str;
  * *locked* to that factor (emission_factor_id) on save. This is the audit-safe
  * path: a real, cited factor beats an AI guess.
  *
- * factor_value is stored in tCO2e per unit (the app's canonical basis), so no
- * kg/tonne conversion happens here.
+ * THE RETURNED FACTOR IS ALWAYS tCO2e PER UNIT.
+ *
+ * `factor_value` itself is not: it holds whatever basis its publisher used, and
+ * `factor_unit` says which. DEFRA's rows are kgCO2e as published. This service
+ * used to return the raw column with a comment asserting it was already tonnes,
+ * which was true only while the library held nothing but the compiled built-in
+ * catalogue.
+ *
+ * Once DEFRA was imported it stopped being true, and a petrol receipt for
+ * 23.789 litres was extracted as 55.456 tCO2e — the correct figure is 55.456
+ * KILOGRAMS. The displayed factor read 2331.16 kgCO2e/litre, being the real
+ * 2.33116 multiplied by 1000 a second time on its way to the screen.
  */
 class FactorMatchingService
 {
@@ -50,11 +60,25 @@ class FactorMatchingService
             $unitMatched = $candidates->filter(
                 fn ($f) => $this->normalizeUnit($f->unit) === $wantUnit
             );
-            if ($unitMatched->isNotEmpty()) {
-                $candidates = $unitMatched;
+            if ($unitMatched->isEmpty()) {
+                // No factor is published per the unit on the document, so there
+                // is nothing here that can price it.
+                //
+                // This used to fall through to every candidate on the grounds
+                // that the source name was still a strong signal. It is — but
+                // the caller then multiplies the quantity by whatever came
+                // back, and "Aviation spirit" carries rows per tonne, per litre
+                // and per kWh. Pricing 23.789 litres with the per-tonne row is
+                // arithmetically clean and physically meaningless, and it
+                // arrives labelled "Library", which is the badge that tells a
+                // reviewer the number was checked.
+                //
+                // Returning null leaves the AI's own estimate in place, which
+                // is honestly labelled "AI est." and asks to be verified.
+                return null;
             }
-            // If no unit matches, fall through to all candidates (the source is
-            // still a strong signal); the caller keeps the extracted quantity.
+
+            $candidates = $unitMatched;
         }
 
         $best = $candidates->sort(function ($a, $b) use ($countryCode) {
@@ -77,7 +101,9 @@ class FactorMatchingService
 
         return [
             'emission_factor_id' => $best->id,
-            'factor_value'       => (float) $best->factor_value,   // tCO2e per unit
+            // Converted, not the raw column — see the class docblock. The
+            // caller treats this as tonnes and multiplies by 1000 for display.
+            'factor_value'       => $best->valueInTonnes(),        // tCO2e per unit
             'unit'               => $best->unit,
             'region'             => $best->country?->code ?? $best->region,
             'organization'       => $best->organization?->code ?? $best->organization?->name,

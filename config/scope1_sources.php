@@ -11,8 +11,37 @@
  * Sources: IPCC 2006 Guidelines, DEFRA 2025 (km factors).
  */
 return [
-    'GWP_CH4' => 28,
-    'GWP_N2O' => 265,
+    /**
+     * Catalogue revision. Stamped onto every emission_factors row compiled from
+     * this file, so a stored figure stays traceable to the numbers that produced
+     * it.
+     *
+     * BUMP THIS WHENEVER A FACTOR CHANGES. Not when a label, description or note
+     * changes — when a number does.
+     *
+     * You cannot forget: FactorCatalogueVersionTest hashes every numeric value in
+     * this file and fails if the hash moves without the version moving. That test
+     * failing is the reminder, and the fix is to bump this and update the hash in
+     * the same commit — which is also what puts the change in front of a reviewer.
+     *
+     * Format is free-form but sorts better as YYYY.N.
+     */
+    'version' => '2026.1',
+
+    /*
+     * NOT AUTHORITATIVE. The GWPs actually used come from App\Support\Gwp, which
+     * reads config/gwp.php: BuiltInFactorCatalog prices with them, and
+     * Scope1EntryController overwrites these two keys with the resolved values
+     * before handing the catalogue to the browser.
+     *
+     * They stay only as a fallback for the entry script's `sources.GWP_CH4 || 28`
+     * default, and they must match config/gwp.php's `factor_basis` set. Changing
+     * the basis is done THERE, not here — editing these alone changes nothing,
+     * and editing only these while the basis moves is how the browser and the
+     * server end up pricing the same activity differently.
+     */
+    'GWP_CH4' => 28,   // AR5, mirrors config/gwp.php sets.ar5.ch4
+    'GWP_N2O' => 265,  // AR5, mirrors config/gwp.php sets.ar5.n2o
     'stationary' => [
         ['name' => 'Agricultural Byproducts', 'desc' => 'Agricultural residues for heat', 'units' => [
             ['u' => 'kg', 'label' => 'Kilograms (kg)', 'co2' => 0, 'ch4' => 30, 'n2o' => 4, 'ncv' => 0.0000116],

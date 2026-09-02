@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Tenant;
 use Illuminate\Console\Command;
+use RuntimeException;
+use Symfony\Component\Console\Input\StringInput;
 use Throwable;
 
 /**
@@ -28,7 +30,7 @@ class RunForActiveTenants extends Command
      * uses the same spelling for the same reason.
      */
     protected $signature = 'tenants:each
-        {commandname : The artisan command to run inside each tenant, e.g. anomalies:scan}
+        {commandname : The artisan command to run inside each tenant, with any arguments, e.g. "factors:import defra --pretend"}
         {--tenant=* : Limit to specific tenant ids. Default: every active tenant}';
 
     protected $description = 'Run an artisan command inside each active tenant';
@@ -44,6 +46,19 @@ class RunForActiveTenants extends Command
         }
 
         $inner = (string) $this->argument('commandname');
+
+        // The argument is a whole command line, not just a name: `schema:stamp
+        // --check` and `factors:import defra --pretend` both need to work.
+        //
+        // $this->call() takes ($name, array $parameters) and treats anything else
+        // as a name, so "schema:stamp --check" was looked up verbatim and failed
+        // with "Command is not defined" — which reads like a missing command
+        // rather than unparsed arguments. Its $parameters form does not help
+        // either: positional arguments have to be keyed by the inner command's
+        // own argument NAMES, which this command cannot know.
+        //
+        // StringInput is what the CLI itself uses, so the line is parsed exactly
+        // as it would be at a shell prompt — positional, options, quoting and all.
         $failures = [];
 
         foreach ($tenants as $tenant) {
@@ -51,7 +66,15 @@ class RunForActiveTenants extends Command
 
             try {
                 $tenant->run(function () use ($inner) {
-                    $this->call($inner);
+                    // doRun rather than run: run() catches exceptions and exits
+                    // the process, which would abandon every tenant after this
+                    // one. Failures belong to the catch below, which records them
+                    // and carries on.
+                    $status = $this->getApplication()->doRun(new StringInput($inner), $this->output);
+
+                    if ($status !== 0) {
+                        throw new RuntimeException("exited with status {$status}");
+                    }
                 });
             } catch (Throwable $e) {
                 // Recorded and carried past, not rethrown: the remaining

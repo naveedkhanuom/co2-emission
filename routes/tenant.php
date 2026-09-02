@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Middleware\DemoRestrictAccess;
 use App\Http\Middleware\EnsureTenantIsActive;
+use App\Http\Middleware\EnsureTenantSchemaIsCurrent;
 use App\Http\Middleware\RestrictSidebarAccess;
 use App\Http\Middleware\SetCompanyConnection;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,14 @@ Route::middleware([
     // entitled to be served. Without this, suspending an account changed
     // nothing the user could notice.
     EnsureTenantIsActive::class,
+
+    // ...and being entitled to be served is not the same as being SERVABLE. A
+    // tenant migration added after a client was provisioned never reaches them
+    // on its own, and the first symptom is a 500 from a query naming a column
+    // that does not exist. Ordered after EnsureTenantIsActive on purpose: a
+    // suspended account should be told it is suspended, which is the more
+    // specific fact.
+    EnsureTenantSchemaIsCurrent::class,
 
     // Tenant concerns, and only tenant concerns. These used to be global on
     // the `web` group, which meant they also ran for back-office requests —

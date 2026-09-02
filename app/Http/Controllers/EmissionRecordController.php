@@ -49,7 +49,14 @@ class EmissionRecordController extends Controller
             if (! $file) {
                 continue;
             }
-            $stored[] = $file->storePublicly($folder, 'public');
+            // PRIVATE disk, deliberately. The public disk is served by
+            // /tenancy/assets/{path}, whose only middleware is
+            // InitializeTenancyBySubdomain — no auth, no company check, and no
+            // EnsureTenantIsActive, so a suspended client's files stay
+            // downloadable. These are audit evidence: utility invoices, meter
+            // readings, supplier statements. They go out through
+            // downloadDocument() below, which checks the company, or not at all.
+            $stored[] = $file->store($folder, 'local');
         }
 
         return $stored;
@@ -70,12 +77,19 @@ class EmissionRecordController extends Controller
             abort(404, 'Document not found.');
         }
 
+        // 'local' is where these are written now. 'public' is checked second so
+        // documents uploaded before they were made private keep working; new
+        // uploads never land there. Once the legacy files have been moved, the
+        // fallback can go.
         $path = $docs[$index];
-        if (! Storage::disk('public')->exists($path)) {
+        $disk = collect(['local', 'public'])
+            ->first(fn ($candidate) => Storage::disk($candidate)->exists($path));
+
+        if (! $disk) {
             abort(404, 'File not found.');
         }
 
-        $fullPath = Storage::disk('public')->path($path);
+        $fullPath = Storage::disk($disk)->path($path);
         $name = basename($path);
 
         return response()->file($fullPath, [
@@ -328,6 +342,16 @@ class EmissionRecordController extends Controller
                         'errors' => ['row' => $index + 1, 'messages' => $validator->errors()],
                     ], 422);
                 }
+
+                // Block writes to a locked (finalised) reporting period.
+                //
+                // This branch returns before reaching the single-entry path's
+                // check further down, so it needs its own — and it needs it
+                // MORE than that path does: rows here are written with the
+                // status from the request, which defaults to 'active', so they
+                // land straight in the reported inventory without passing
+                // through the review queue that would otherwise catch them.
+                $this->assertPeriodOpen($data['entryDate'] ?? null, $companyId);
             }
 
             // Validate sites and suppliers belong to current company if provided
@@ -517,43 +541,72 @@ class EmissionRecordController extends Controller
         if (empty($data['emission_factor'])) {
             $scope = (int) $request->scopeSelect;
 
-            $resolved = app(BuiltInFactorCatalog::class)->resolve(
+            $context = [
+                // Scope 2 only: the grid region and any hand-entered factor
+                // exist solely in the entry form, so they have to be passed
+                // through for the server to price the same activity.
+                'region' => $request->input('scope2Region'),
+                'ef_override' => $request->input('scope2FactorOverride'),
+                'organization_id' => $request->input('factor_organization_id'),
+            ];
+
+            // GHG-04 — the DATABASE answers first, for every scope.
+            //
+            // The built-in catalogue is compiled into emission_factors rows
+            // (factors:import builtin), so the library now covers the Scope 1 and
+            // 2 sources that used to exist only in config. Resolving there means
+            // the record gets an emission_factor_id: a foreign key to a row that
+            // can be inspected, versioned and superseded, rather than the label
+            // string "Built-in Scope 1 catalogue v1" — which reads like
+            // provenance but cannot be followed anywhere.
+            //
+            // The values are identical either way. BuiltInFactorCatalog::entries()
+            // prices through the same factorFor() the entry pages use, so
+            // compiling did not restate a single figure — which is what makes
+            // this switch safe rather than a migration.
+            $resolved = app(LibraryFactorCatalog::class)->resolve(
                 $scope,
                 $emissionSourceName,
                 $data['activity_unit'],
-                [
-                    // Scope 2 only: the grid region and any hand-entered factor
-                    // exist solely in the entry form, so they have to be passed
-                    // through for the server to price the same activity.
-                    'region' => $request->input('scope2Region'),
-                    'ef_override' => $request->input('scope2FactorOverride'),
-                ]
+                $context
             );
 
-            // The built-in catalogue is config, and config only covers Scope 1
-            // and 2. Scope 3's factors are seeded reference data in the
-            // client's own library, so fall through to that — otherwise a
-            // Scope 3 entry stores the browser's total with nothing beside it
-            // for EmissionFigureVerifier to check.
-            //
-            // Scope 3 ONLY, deliberately. Scope 2 is priced by grid region,
-            // and the library's generic electricity row is not that region's
-            // factor: falling back to it would price UAE electricity at a
-            // global average and then flag the client's correct regional
-            // figure as an error. Scope 2 without a region is meant to save
-            // unverified, which is honest. Scope 1 is already covered by the
-            // config catalogue's 244 sources.
-            if ($scope === 3) {
-                $resolved ??= app(LibraryFactorCatalog::class)->resolve(
-                    $scope,
-                    $emissionSourceName,
-                    $data['activity_unit']
-                );
-            }
+            // Config remains the fallback, for two cases the library cannot
+            // answer: a tenant whose catalogue has not been compiled yet, and a
+            // user-supplied Scope 2 factor, which by definition has no row. The
+            // fallback stores a label string, so a record landing here is
+            // visibly less well evidenced than one that resolved above.
+            $resolved ??= app(BuiltInFactorCatalog::class)->resolve(
+                $scope,
+                $emissionSourceName,
+                $data['activity_unit'],
+                $context
+            );
 
+            // Scope 3 needs no special case any more. It used to fall through to
+            // the library because config covered only Scope 1 and 2; now the
+            // library is tried first for every scope, so all three take the same
+            // path.
+            //
+            // The old warning still holds and is now enforced inside the library
+            // resolver: Scope 2 is priced by grid REGION, and a generic
+            // electricity row is not any particular region's factor. Resolving
+            // without a region would price UAE electricity at a global average
+            // and then flag the client's correct figure as an error. A Scope 2
+            // entry with no region saves unverified, which is the honest outcome.
             if ($resolved !== null) {
                 $data['emission_factor'] = $resolved->value;
                 $data['factor_dataset'] = $resolved->datasetLabel();
+
+                // Lock the exact row. This is the point of the whole exercise:
+                // enrichment can match a factor by source name and value, but
+                // that fails for Scope 2 grid — the record's source is "EV
+                // Charging", while the factor that priced it is filed under the
+                // canonical grid source. Carrying the id the resolver already
+                // knows removes the guesswork.
+                if ($resolved->emissionFactorId !== null) {
+                    $data['emission_factor_id'] = $resolved->emissionFactorId;
+                }
             }
         }
 

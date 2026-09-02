@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmissionRecord;
-use Illuminate\Http\Request;
+use App\Support\Gwp;
 use DataTables;
+use Illuminate\Http\Request;
 
 class Scope1EntryController extends Controller
 {
@@ -50,10 +51,10 @@ class Scope1EntryController extends Controller
         })->count();
 
         return response()->json([
-            'total'      => $total,
+            'total' => $total,
             'stationary' => $stationary,
-            'mobile'     => $mobile,
-            'fugitive'   => $fugitive,
+            'mobile' => $mobile,
+            'fugitive' => $fugitive,
         ]);
     }
 
@@ -63,11 +64,33 @@ class Scope1EntryController extends Controller
     public function index()
     {
         $sources = config('scope1_sources', []);
-        $storeUrl = route('emission-records.store');
+
+        // Overwrite the catalogue's own GWP constants with the ones the SERVER
+        // prices on, so the browser's preview and the stored figure cannot
+        // disagree.
+        //
+        // scope1_sources.php declares GWP_CH4 = 28 and GWP_N2O = 265, and the
+        // entry script reads them directly. BuiltInFactorCatalog deliberately
+        // does NOT — it takes them from App\Support\Gwp so that re-basing moves
+        // the maths and config/gwp.php together. That left the browser holding a
+        // second, independent copy.
+        //
+        // They agree today because both are AR5. But config/gwp.php already has
+        // 'default' => 'ar6' alongside 'factor_basis' => 'ar5' and a comment
+        // saying to bump it later; on the day someone does, the server would
+        // re-price and these constants would not. The user would watch the page
+        // compute one number, the record would store another, and
+        // EmissionFigureVerifier would flag the figure the user was just shown.
+        //
+        // Sending the resolved values means there is one source of truth and the
+        // browser follows it.
+        $basis = Gwp::factorBasis();
+        $sources['GWP_CH4'] = Gwp::factor('ch4', $basis);
+        $sources['GWP_N2O'] = Gwp::factor('n2o', $basis);
 
         return view('scope1_entry.index', [
             'sourcesJson' => json_encode($sources),
-            'storeUrl'    => $storeUrl,
+            'storeUrl' => route('emission-records.store'),
         ]);
     }
 
@@ -115,11 +138,12 @@ class Scope1EntryController extends Controller
                 if (str_contains($src, 'Refrigerant') || str_contains($src, 'Methane') || str_contains($src, 'SF6') || str_contains($src, 'PFC') || str_contains($src, 'N2O') || str_contains($src, 'Fire Suppression')) {
                     return 'fugitive';
                 }
+
                 return 'stationary';
             })
             ->addColumn('attachments', function ($row) {
                 $docs = $row->supporting_documents ?? [];
-                if (!is_array($docs)) {
+                if (! is_array($docs)) {
                     $docs = [];
                 }
                 if (count($docs) === 0) {
@@ -130,12 +154,13 @@ class Scope1EntryController extends Controller
                     $list[] = ['idx' => $i, 'name' => basename($path)];
                 }
                 $urlTemplate = route('emission_records.document', ['emissionRecord' => $row->id, 'index' => ':index']);
-                return '<button type="button" class="btn btn-sm btn-outline-primary view-attachments-btn" data-docs="' . e(json_encode($list)) . '" data-url-template="' . e($urlTemplate) . '" title="View attachments"><i class="fas fa-paperclip me-1"></i>View (' . count($list) . ')</button>';
+
+                return '<button type="button" class="btn btn-sm btn-outline-primary view-attachments-btn" data-docs="'.e(json_encode($list)).'" data-url-template="'.e($urlTemplate).'" title="View attachments"><i class="fas fa-paperclip me-1"></i>View ('.count($list).')</button>';
             })
             ->addColumn('actions', function ($row) {
                 return '
-                    <button type="button" class="btn btn-sm btn-info viewBtn" data-id="' . $row->id . '">View</button>
-                    <button type="button" class="btn btn-sm btn-danger deleteBtn" data-id="' . $row->id . '" title="Delete this record">Delete</button>
+                    <button type="button" class="btn btn-sm btn-info viewBtn" data-id="'.$row->id.'">View</button>
+                    <button type="button" class="btn btn-sm btn-danger deleteBtn" data-id="'.$row->id.'" title="Delete this record">Delete</button>
                 ';
             })
             ->editColumn('co2e_value', fn ($row) => number_format($row->co2e_value, 4))

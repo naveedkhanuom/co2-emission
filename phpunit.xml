@@ -18,6 +18,22 @@
         </include>
     </source>
     <php>
+        <!--
+            DefraFactorImportTest parses the real DESNZ workbook — 8,748 rows
+            through PhpSpreadsheet, which costs about 66 MB on its own. PHPUnit
+            runs the whole suite in one process, so that lands on top of several
+            hundred tests' accumulated state and exhausted the 128 MB default.
+
+            Raised rather than worked around: the alternatives were a cut-down
+            fixture, which would test the parser against our idea of the format
+            instead of DESNZ's actual file, or skipping the import tests, which
+            would leave the riskiest code in this repo uncovered.
+
+            `factors:import` needs comparable headroom in production — see
+            docs/DEPLOYMENT.md.
+        -->
+        <ini name="memory_limit" value="512M"/>
+
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

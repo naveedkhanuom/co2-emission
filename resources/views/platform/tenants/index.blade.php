@@ -108,6 +108,7 @@
                         <th>Address</th>
                         <th>Database</th>
                         <th>Status</th>
+                        <th>Schema</th>
                         <th>Created</th>
                         <th class="right">Actions</th>
                     </tr>
@@ -131,6 +132,25 @@
                             <td>
                                 <span class="pill pill-{{ $tenant->status }}">{{ $statuses[$tenant->status] ?? $tenant->status }}</span>
                             </td>
+                            {{--
+                                Schema drift. A tenant migration added after a
+                                client was provisioned does not reach them on
+                                its own, and until it does every query touching
+                                a new column 500s. Shown here so the fleet can
+                                be checked at a glance rather than one client at
+                                a time — read from the stamp, so this costs no
+                                extra query.
+                            --}}
+                            <td>
+                                @if ($tenant->schema_version === null)
+                                    <span class="muted" title="No stamp yet; recorded on this workspace's next request or by `tenants:each schema:stamp`.">unknown</span>
+                                @elseif ($tenant->schema_version === $expectedSchema)
+                                    <span class="muted">up to date</span>
+                                @else
+                                    <span class="pill pill-failed"
+                                          title="At {{ $tenant->schema_version }}, expected {{ $expectedSchema }}. Run `php artisan tenants:migrate --force`.">behind</span>
+                                @endif
+                            </td>
                             <td class="muted">{{ $tenant->created_at?->format('j M Y') }}</td>
                             <td class="right">
                                 @if ($tenant->status === \App\Models\Tenant::STATUS_ACTIVE)
@@ -151,7 +171,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="muted" style="padding: 1.5rem 0; text-align: center;">
+                            <td colspan="7" class="muted" style="padding: 1.5rem 0; text-align: center;">
                                 No accounts match.
                             </td>
                         </tr>

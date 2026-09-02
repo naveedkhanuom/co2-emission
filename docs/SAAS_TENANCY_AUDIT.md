@@ -21,6 +21,123 @@ Findings carry stable IDs (`TEN-01`…`TEN-12`).
 
 ---
 
+## Status — 2026-08-31
+
+Re-verified against the code, not against this document. Suite: **345 passing**
+(329 + 16 new).
+
+Each new test was confirmed to FAIL against the pre-fix code before being kept —
+a regression test that passes either way documents a behaviour rather than
+guarding one. `CompanySelectionPersistenceTest` fails 3 of its 5 cases on the
+old middleware; `SupportingDocumentPrivacyTest` fails its disk assertion on the
+old controller.
+
+| Finding | State | Where |
+|---|---|---|
+| `TEN-01` roles/permissions leak via shared cache | **Fixed** | `config/permission.php` → `'store' => 'array'`; `TenantPermissionCacheTest` |
+| `TEN-13` bulk manual entry bypasses the period lock | **Fixed** | `EmissionRecordController::store()`; `BulkEntryPeriodLockTest` |
+| `TEN-14` client uploads served unauthenticated | **Fixed** | uploads moved to the private disk; `SupportingDocumentPrivacyTest` |
+| `TEN-15` draft writers had no provenance | **Fixed** | OCR + supplier survey now enrich; `DraftWriterProvenanceTest` |
+| `TEN-16` draft writers ignored the period lock | **Fixed** | all three writers check; `DraftWriterProvenanceTest` |
+| `TEN-02` `Cache::` throws inside a tenant request | Open | needs Redis, or drop `CacheTenancyBootstrapper` |
+| `TEN-03` three Laravel 10 `.env` keys | Open in `.env` | documented in `docs/DEPLOYMENT.md` §5 |
+| `TEN-04` realtime layer not tenant-scoped | Open | dormant while `TEN-03` keeps broadcasting off |
+| `TEN-05` shared developer account | Open | `TENANT_DEV_ACCOUNT_ENABLED=true` in `.env` |
+| `TEN-06` nothing migrates existing tenants | **Fixed** | `schema_version` now written and read; `EnsureTenantSchemaIsCurrent` + `schema:stamp` + back-office badge; `TenantSchemaDriftTest` |
+| `GHG-04` factor catalogue — DEFRA imported | **Phase 1 part done** | `factors:import defra`; 2,622 factors with full provenance in all 5 tenants; `DefraFactorImportTest`. EPA 2025 still to import. |
+| `TEN-07` provisioning runs inline | Open | timeout guidance added to deployment doc |
+| `TEN-08` no offboarding, export or billing | Open | product decision |
+| `TEN-09` owner's company selection cleared by saves | **Fixed** | `SetCompanyConnection` reads `input()` and guards emptiness; `CompanySelectionPersistenceTest` |
+| `TEN-10` central DB holds the old application schema | Code clean | central migration set is now 9 files; live DB still needs the one-off cleanup |
+| `TEN-11` new tenants born with 485 audit rows | **Fixed** | `App\Support\Auditing::without()` wraps seeding; `SeedingAuditNoiseTest` |
+| `TEN-17` legacy documents on the public disk | **Tooling ready** | `documents:privatise`; `PrivatiseStoredDocumentsTest` — **must still be run against live tenants** |
+| `TEN-18` dead `EnsureCompanyAccess` middleware | **Fixed** | deleted; `SetCompanyConnection` is the live one |
+| `TEN-19` `AskController` had no permission gate | **Fixed** | gated on `list-dashboard`; `AskAssistantAuthorisationTest` |
+| `TEN-12` CI does not run on this branch | **Fixed** | `tests.yml` now triggers on every push, not a branch list |
+
+Two findings below were **not** in the original twelve and are recorded here with
+new ids:
+
+### TEN-13 · Bulk manual entry wrote into locked reporting periods
+
+`EmissionRecordController::store()` has two branches. The bulk branch
+(`if ($request->has('entries'))`) validates, checks ownership, then creates — and
+returned before ever reaching the `assertPeriodOpen()` call that guards the
+single-entry path below it.
+
+Worse than the import hole this platform already closed (`GHG-01`): bulk rows are
+written with the status from the request, which defaults to `active`, so they
+landed straight in the reported inventory without passing through the review
+queue that would otherwise have caught them. A locked year is a signed-off
+inventory.
+
+**Fixed** by guarding inside the first pass, which runs before any row is
+created — so the batch stays atomic and a locked row anywhere in it rejects the
+whole submission.
+
+### TEN-15 · The draft-creating writers stored figures with no provenance
+
+Three paths create `EmissionRecord`s outside the manual-entry controller: the
+utility-bill OCR upload, the supplier-survey converter, and AI document
+extraction. Only the third ran `EmissionEnrichmentService`. The other two wrote
+rows with no `gwp_version`, no `activity_unit` and no `emission_factor_id` — the
+same defect as the closed `GHG-02`, in doors that were missed.
+
+A figure stating no GWP basis cannot be disclosed under CSRD/ESRS E1 or CDP.
+Supplier-reported figures are also the ones an assurer scrutinises hardest, so
+they least of all should arrive unstamped.
+
+Two of the three already *knew* the unit and discarded it. The converter wrote it
+into the notes prose only. The AI extraction screen renders an editable unit
+column that `saveBtn` never put in its payload — the same shape as `GHG-26`,
+where Manual Entry's unit dropdown posted a field name the controller did not
+read.
+
+**Fixed** by running `enrich()` on all three and persisting `activity_unit`
+(blade included).
+
+### TEN-16 · None of them consulted the reporting-period lock
+
+The approval step already refuses to activate a record in a locked year, so this
+could not reach a finalised inventory — but it let drafts accumulate against a
+closed year that nobody could ever action, indistinguishable in the review queue
+from real work.
+
+**Fixed** per path, each in the way that suits it:
+
+- **AI extraction** rejects the whole save with a 422 naming the row and year,
+  in a pass that runs before any record is created.
+- **OCR upload** still stores the bill — the file is evidence regardless of which
+  year it lands in — and adds a warning saying no record was created.
+- **Supplier survey** returns quietly and, critically, does **not** stamp
+  `emissions_generated_at`. Conversion is idempotent on that column, so marking
+  it would strand the supplier's answers permanently; leaving it null means the
+  survey converts normally once the period is reopened. This path is reachable
+  from the public portal, where the submitter is an unauthenticated third party
+  who should not be shown the buyer's reporting calendar.
+
+### TEN-14 · Client uploads were served with no authentication
+
+The public disk is not reachable through `public/storage` under tenancy — it
+lives in `storage/tenant{id}/app/public` — so it is served instead by stancl's
+`/tenancy/assets/{path}`. Confirmed via `route:list`: that route's only
+middleware is `InitializeTenancyBySubdomain`. No `web`, no `auth`, no company
+check, and no `EnsureTenantIsActive`, so even a **suspended** client's files
+stayed downloadable.
+
+Supporting documents, AI-extraction source files and energy-certificate
+documents were all being written there. These are the evidence an ISO 14064-3
+assurer reads, and they carry account numbers and site addresses.
+`downloadDocument()` had always checked company ownership, but that check was
+decorative while the same bytes sat behind an open route.
+
+**Fixed** by writing all three to the private `local` disk. Logos stay public
+because they render on the unauthenticated login screen. The download action
+falls back to the public disk so documents uploaded before the change keep
+working — that fallback should be removed once the legacy files have been moved.
+
+---
+
 ## Summary
 
 | Band | Theme | Count |

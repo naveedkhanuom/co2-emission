@@ -5,6 +5,12 @@
  * emission sources with units and factors, and grid emission factors by region.
  */
 return [
+    /**
+     * Catalogue revision — see the identical note in config/scope1_sources.php.
+     * Bump when a number changes; FactorCatalogueVersionTest enforces it.
+     */
+    'version' => '2026.1',
+
     'grid_ef' => [
         ['region' => 'UAE (Abu Dhabi / ADWEC)', 'co2' => 0.4041, 'src' => 'IEA 2024'],
         ['region' => 'UAE (Dubai / DEWA)', 'co2' => 0.3876, 'src' => 'DEWA 2023'],

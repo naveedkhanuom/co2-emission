@@ -466,6 +466,11 @@
                 emission_source:  tr.querySelector('.f-source').value.trim(),
                 facility:         tr.querySelector('.f-facility').value.trim(),
                 activity_data:    tr.querySelector('.f-qty').value || null,
+                // The unit column is editable and was being discarded on save —
+                // the quantity reached the record with no record of what it
+                // counted, and the verifier cannot re-derive activity x factor
+                // without it.
+                activity_unit:    tr.querySelector('.f-unit').value.trim() || null,
                 emission_factor:  isNaN(factorKg) ? null : (factorKg / 1000), // tonnes/unit
                 co2e_value:       tr.querySelector('.f-co2e').value || 0,
                 confidence_level: tr.querySelector('.f-confidence').value,

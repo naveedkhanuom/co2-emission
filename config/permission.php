@@ -75,8 +75,8 @@ return [
         /*
          * Change this if you want to name the related pivots other than defaults
          */
-        'role_pivot_key' => null, //default 'role_id',
-        'permission_pivot_key' => null, //default 'permission_id',
+        'role_pivot_key' => null, // default 'role_id',
+        'permission_pivot_key' => null, // default 'permission_id',
 
         /*
          * Change this if you want to name the related model primary key other than
@@ -176,11 +176,32 @@ return [
         'key' => 'spatie.permission.cache',
 
         /*
-         * You may optionally indicate a specific cache driver to use for permission and
-         * role caching using any of the `store` drivers listed in the cache.php config
-         * file. Using 'default' here means to use the `default` set in cache.php.
+         * MUST NOT be 'default', and MUST NOT be a shared store.
+         *
+         * This package caches the entire role-to-permission map under ONE key
+         * (see 'key' above) and resolves its store through CacheManager::store(),
+         * a real method on the base manager — so it bypasses
+         * Stancl\Tenancy\CacheManager::__call(), the only thing that would have
+         * applied a per-tenant tag. With 'default' it lands on the `database`
+         * store, which config/cache.php pins to the CENTRAL connection: one row,
+         * shared by every tenant.
+         *
+         * The consequence is not theoretical. RoleController::store() lets any
+         * tenant create roles, so the maps genuinely diverge, and assignments in
+         * model_has_roles are stored by integer id — ids allocated independently
+         * per database. Whichever tenant warmed the cache last decides what role
+         * id 3 means for everyone else, and forgetCachedPermissions() flushes
+         * globally on any role edit. It is a race, and it fails in the direction
+         * of GRANTING access.
+         *
+         * 'array' lives and dies with the process, so it cannot be shared. The
+         * cost is one query per request. If this platform moves to Redis,
+         * RedisTenancyBootstrapper (config/tenancy.php) makes a real cache safe
+         * here — until then, do not "optimise" this back.
+         *
+         * Covered by Tests\Feature\TenantPermissionCacheTest.
          */
 
-        'store' => 'default',
+        'store' => 'array',
     ],
 ];

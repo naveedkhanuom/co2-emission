@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Company;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantSchema;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -122,6 +123,14 @@ class ProvisionTenant extends Command
 
                     $owner->assignRole('Super Admin');
                 });
+            });
+
+            // Record what this database migrated to, so the tenant is born with
+            // a stamp. Without it EnsureTenantSchemaIsCurrent has nothing to
+            // compare, and the back-office cannot show fleet drift without
+            // opening a connection per client.
+            $this->components->task('Recording the schema version', function () use ($tenant) {
+                $tenant->run(fn () => TenantSchema::stampCurrentTenant($tenant));
             });
 
             $this->components->task('Activating the account', function () use ($tenant) {

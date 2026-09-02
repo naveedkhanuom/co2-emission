@@ -36,12 +36,13 @@ class EnergyAttributeCertificateController extends Controller
 
         return DataTables::of($data)
             ->addColumn('type_label', fn ($row) => $row->typeLabel())
-            ->addColumn('factor_formatted', fn ($row) => number_format((float) $row->emission_factor, 4) . ' kgCO₂e/kWh')
-            ->addColumn('volume_formatted', fn ($row) => number_format((float) $row->mwh_volume, 2) . ' MWh')
+            ->addColumn('factor_formatted', fn ($row) => number_format((float) $row->emission_factor, 4).' kgCO₂e/kWh')
+            ->addColumn('volume_formatted', fn ($row) => number_format((float) $row->mwh_volume, 2).' MWh')
             ->addColumn('validity', function ($row) {
                 $from = $row->valid_from?->format('Y-m-d') ?? '—';
                 $to = $row->valid_to?->format('Y-m-d') ?? '—';
-                return $from . ' → ' . $to;
+
+                return $from.' → '.$to;
             })
             ->addColumn('status_badge', function ($row) {
                 $map = [
@@ -49,13 +50,14 @@ class EnergyAttributeCertificateController extends Controller
                     'expired' => 'warning', 'cancelled' => 'danger',
                 ];
                 $cls = $map[$row->status] ?? 'secondary';
-                return '<span class="badge bg-' . $cls . '">' . ucfirst($row->status) . '</span>';
+
+                return '<span class="badge bg-'.$cls.'">'.ucfirst($row->status).'</span>';
             })
             ->addColumn('actions', function ($row) {
                 return '
-                    <button class="btn btn-sm btn-info viewBtn" data-id="' . $row->id . '"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-sm btn-warning editBtn" data-id="' . $row->id . '"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger deleteBtn" data-id="' . $row->id . '"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-info viewBtn" data-id="'.$row->id.'"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm btn-warning editBtn" data-id="'.$row->id.'"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger deleteBtn" data-id="'.$row->id.'"><i class="fas fa-trash"></i></button>
                 ';
             })
             ->rawColumns(['status_badge', 'actions'])
@@ -78,6 +80,7 @@ class EnergyAttributeCertificateController extends Controller
         if ($cert->company_id != current_company_id()) {
             abort(403, 'You do not have access to this certificate.');
         }
+
         return response()->json($cert);
     }
 
@@ -88,21 +91,21 @@ class EnergyAttributeCertificateController extends Controller
         }
 
         $validated = $request->validate([
-            'id'                 => 'nullable|integer|exists:energy_attribute_certificates,id',
-            'type'               => 'required|string|in:' . implode(',', array_keys(EnergyAttributeCertificate::TYPES)),
-            'name'               => 'required|string|max:255',
+            'id' => 'nullable|integer|exists:energy_attribute_certificates,id',
+            'type' => 'required|string|in:'.implode(',', array_keys(EnergyAttributeCertificate::TYPES)),
+            'name' => 'required|string|max:255',
             'certificate_number' => 'nullable|string|max:255',
-            'supplier_name'      => 'nullable|string|max:255',
-            'energy_carrier'     => 'required|string|in:' . implode(',', array_keys(EnergyAttributeCertificate::CARRIERS)),
-            'mwh_volume'         => 'nullable|numeric|min:0',
-            'emission_factor'    => 'required|numeric|min:0',
-            'region'             => 'nullable|string|max:255',
-            'vintage_year'       => 'nullable|integer|min:1990|max:2100',
-            'valid_from'         => 'nullable|date',
-            'valid_to'           => 'nullable|date|after_or_equal:valid_from',
-            'status'             => 'required|string|in:active,retired,expired,cancelled',
-            'notes'              => 'nullable|string|max:1000',
-            'document'           => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
+            'supplier_name' => 'nullable|string|max:255',
+            'energy_carrier' => 'required|string|in:'.implode(',', array_keys(EnergyAttributeCertificate::CARRIERS)),
+            'mwh_volume' => 'nullable|numeric|min:0',
+            'emission_factor' => 'required|numeric|min:0',
+            'region' => 'nullable|string|max:255',
+            'vintage_year' => 'nullable|integer|min:1990|max:2100',
+            'valid_from' => 'nullable|date',
+            'valid_to' => 'nullable|date|after_or_equal:valid_from',
+            'status' => 'required|string|in:active,retired,expired,cancelled',
+            'notes' => 'nullable|string|max:1000',
+            'document' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,xlsx,xls,csv',
         ]);
 
         $companyId = current_company_id();
@@ -112,8 +115,13 @@ class EnergyAttributeCertificateController extends Controller
         $payload['company_id'] = $companyId;
 
         if ($request->hasFile('document')) {
-            $folder = 'energy-certificates/' . ($companyId ?: 'unknown') . '/' . now()->format('Y/m');
-            $payload['document_path'] = $request->file('document')->storePublicly($folder, 'public');
+            // PRIVATE disk: a REC/GO certificate is the evidence behind a
+            // market-based Scope 2 claim, and the public disk is served by
+            // /tenancy/assets/{path} with no authentication. Nothing builds a
+            // URL to these today — they are referenced by filename only — so
+            // moving them off the public disk costs nothing.
+            $folder = 'energy-certificates/'.($companyId ?: 'unknown').'/'.now()->format('Y/m');
+            $payload['document_path'] = $request->file('document')->store($folder, 'local');
         }
 
         if ($id) {
@@ -137,8 +145,12 @@ class EnergyAttributeCertificateController extends Controller
             abort(403, 'You do not have access to this certificate.');
         }
 
-        if ($cert->document_path && Storage::disk('public')->exists($cert->document_path)) {
-            Storage::disk('public')->delete($cert->document_path);
+        // 'public' is still swept because certificates uploaded before these
+        // were made private are still there; new ones only ever land on 'local'.
+        foreach (['local', 'public'] as $disk) {
+            if ($cert->document_path && Storage::disk($disk)->exists($cert->document_path)) {
+                Storage::disk($disk)->delete($cert->document_path);
+            }
         }
 
         $cert->delete();

@@ -7,8 +7,11 @@ use App\Models\EmissionFactor;
 use App\Models\EmissionRecord;
 use App\Models\EmissionSource;
 use App\Models\Facilities;
+use App\Models\ReportingPeriod;
 use App\Models\UtilityBill;
 use App\Services\BillDataExtractor;
+use App\Services\EmissionEnrichmentService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -303,14 +306,38 @@ class UtilityBillController extends Controller
         $warnings = [];
         $recordCreated = false;
 
-        if ($extractedData['consumption'] && $extractedData['bill_date'] && ! $unitMismatch) {
-            $emissionRecord = EmissionRecord::create([
+        $recordCompanyId = $companyId ?? $bill->company_id ?? null;
+
+        // A bill dated inside a locked (finalised) reporting period must not
+        // produce a record. The approval step already refuses to activate one,
+        // so without this the only outcome is a draft that can never be
+        // actioned, sitting in the review queue looking like work to do.
+        //
+        // The bill itself is still stored — the upload is not the mistake, and
+        // the file is evidence regardless of which year it lands in.
+        $periodLocked = $extractedData['bill_date']
+            && $recordCompanyId
+            && ReportingPeriod::isYearLocked(
+                (int) Carbon::parse($extractedData['bill_date'])->year,
+                (int) $recordCompanyId
+            );
+
+        if ($extractedData['consumption'] && $extractedData['bill_date'] && ! $unitMismatch && ! $periodLocked) {
+            $recordData = [
                 'entry_date' => $extractedData['bill_date'],
-                'company_id' => $companyId ?? $bill->company_id ?? null,
+                'company_id' => $recordCompanyId,
                 'facility' => $facility->name,
+                // Link by id as well as name, the same way manual entry does —
+                // a later rename must not orphan this record under the old
+                // spelling.
+                'facility_id' => $facility->id,
+                'department_id' => $department?->id,
                 'scope' => $scope,
                 'emission_source' => $emissionSourceName,
                 'activity_data' => $extractedData['consumption'],
+                // Without the unit, the figure states a quantity of nothing and
+                // EmissionFigureVerifier cannot re-derive it.
+                'activity_unit' => $consumptionUnit,
                 'emission_factor' => $factorValue,
                 'co2e_value' => $co2eValue,
                 'confidence_level' => $extractedData['confidence'] ?? 'medium',
@@ -319,7 +346,20 @@ class UtilityBillController extends Controller
                 'notes' => "Extracted from {$billType} bill via OCR. Supplier: ".($extractedData['supplier_name'] ?? 'Unknown'),
                 'created_by' => Auth::id(),
                 'status' => 'draft', // Set as draft for review
+            ];
+
+            // Enrich exactly as manual entry does: GWP stamp, factor lock, per-gas
+            // split, and Scope 2 dual reporting. Without it these records state no
+            // GWP basis — which CSRD/ESRS E1 and CDP both require — and carry no
+            // emission_factor_id, so their provenance chain does not exist.
+            //
+            // $emissionFactor is null when the factor fell back to the built-in
+            // default above; enrich() is additive and handles that.
+            $recordData = app(EmissionEnrichmentService::class)->enrich($recordData, [
+                'emission_factor_id' => $emissionFactor?->id,
             ]);
+
+            $emissionRecord = EmissionRecord::create($recordData);
 
             // Link emission record to bill
             $bill->update(['emission_record_id' => $emissionRecord->id]);
@@ -333,6 +373,10 @@ class UtilityBillController extends Controller
             }
             if ($unitMismatch) {
                 $warnings[] = "the extracted unit ({$consumptionUnit}) does not match the expected unit for {$billType}";
+            }
+            if ($periodLocked) {
+                $warnings[] = 'the '.Carbon::parse($extractedData['bill_date'])->year
+                    .' reporting period is locked, so no emission record was created';
             }
         }
 

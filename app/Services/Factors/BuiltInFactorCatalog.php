@@ -90,8 +90,8 @@ class BuiltInFactorCatalog
      * @param  string|null  $source  The catalogue source name as entered.
      * @param  string|null  $unit  Canonical unit key ("liters", "kg", "kWh", …).
      * @param  array{region?: string|null, ef_override?: float|int|string|null}  $context
-     *                      Scope 2 only: the selected grid region, and a factor
-     *                      the user entered by hand (custom region or override).
+     *                                                                                     Scope 2 only: the selected grid region, and a factor
+     *                                                                                     the user entered by hand (custom region or override).
      */
     public function resolve(int $scope, ?string $source, ?string $unit, array $context = []): ?ResolvedFactor
     {
@@ -233,6 +233,172 @@ class BuiltInFactorCatalog
      *
      * @return array{src: array, unit: array, group: string}|null
      */
+    /**
+     * Every priceable entry in the built-in catalogue, with both its computed
+     * tCO2e-per-unit AND the raw components behind it.
+     *
+     * Exists so the catalogue can be COMPILED into emission_factors rows without
+     * anyone re-implementing factorFor(). The pricing formula has one home, and
+     * a compiled row has to carry the same number the entry page would have
+     * calculated — otherwise switching the resolver to the database silently
+     * changes every figure.
+     *
+     * Grid-priced Scope 2 sources are emitted once per REGION, under a single
+     * canonical source name, rather than once per (source x region). All 13 grid
+     * sources — EV charging, green tariff, landlord-supplied and the rest — use
+     * the same regional factor and differ only in what the electricity was for.
+     * Emitting the cross product would store the same 22 numbers 26 times and
+     * make a record's emission_factor_id point at a synthetic row, when the
+     * honest answer to "what factor produced this" is "DEWA 2023, 0.3876".
+     *
+     * @return array<int, array{
+     *     scope:int, source:string, description:?string, unit:string,
+     *     value:float, reference:?string, region:?string, is_grid:bool,
+     *     co2:?float, ch4:?float, n2o:?float, ncv:?float
+     * }>
+     */
+    public function entries(): array
+    {
+        $entries = [];
+
+        foreach (self::SCOPE1_GROUPS as $group) {
+            foreach (config("scope1_sources.{$group}", []) as $src) {
+                foreach ($src['units'] ?? [] as $unit) {
+                    $value = $this->factorFor($src, $unit);
+
+                    if ($value === null) {
+                        continue;
+                    }
+
+                    $entries[] = [
+                        'scope' => 1,
+                        'source' => (string) $src['name'],
+                        'description' => $src['desc'] ?? null,
+                        'unit' => (string) $unit['u'],
+                        'value' => $value,
+                        'reference' => $src['note'] ?? null,
+                        'region' => null,
+                        'is_grid' => false,
+                        // Fugitive rows price straight off a GWP and carry no
+                        // combustion components; recording zeros there would
+                        // claim a breakdown that does not exist.
+                        'co2' => empty($src['isFug']) ? (float) ($unit['co2'] ?? 0) : null,
+                        'ch4' => empty($src['isFug']) ? (float) ($unit['ch4'] ?? 0) : null,
+                        'n2o' => empty($src['isFug']) ? (float) ($unit['n2o'] ?? 0) : null,
+                        'ncv' => empty($src['isFug']) ? (float) ($unit['ncv'] ?? 0) : null,
+                    ];
+                }
+            }
+        }
+
+        foreach (self::SCOPE2_GROUPS as $group) {
+            foreach (config("scope2_sources.{$group}", []) as $src) {
+                foreach ($src['units'] ?? [] as $unit) {
+                    $unitKey = (string) ($unit['u'] ?? '');
+                    $kwhPerUnit = self::KWH_PER_UNIT[$this->normalise($unitKey)] ?? null;
+
+                    if ($kwhPerUnit === null) {
+                        continue;
+                    }
+
+                    if (empty($src['isGrid'])) {
+                        if (! array_key_exists('efPerKwh', $src)) {
+                            continue;
+                        }
+
+                        $entries[] = [
+                            'scope' => 2,
+                            'source' => (string) $src['name'],
+                            'description' => $src['desc'] ?? null,
+                            'unit' => $unitKey,
+                            'value' => $kwhPerUnit * (float) $src['efPerKwh'] / 1000,
+                            'reference' => $src['note'] ?? null,
+                            'region' => null,
+                            'is_grid' => false,
+                            'co2' => null, 'ch4' => null, 'n2o' => null, 'ncv' => null,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // The grid, once per region rather than once per grid source.
+        foreach (config('scope2_sources.grid_ef', []) as $row) {
+            $region = (string) ($row['region'] ?? '');
+            $ef = (float) ($row['co2'] ?? 0);
+
+            // "Custom (enter manually)" carries co2 = 0 as a placeholder meaning
+            // "the user has not said yet", not "zero emissions".
+            if ($region === '' || $ef <= 0 || str_contains($this->normalise($region), 'custom')) {
+                continue;
+            }
+
+            foreach (self::GRID_UNITS as $unitKey) {
+                $entries[] = [
+                    'scope' => 2,
+                    'source' => self::GRID_SOURCE,
+                    'description' => 'Purchased grid electricity, priced by regional grid factor',
+                    'unit' => $unitKey,
+                    'value' => self::KWH_PER_UNIT[$this->normalise($unitKey)] * $ef / 1000,
+                    'reference' => sprintf('Grid factor %s — %s', $region, $row['src'] ?? 'unspecified'),
+                    'region' => $region,
+                    'is_grid' => true,
+                    'co2' => null, 'ch4' => null, 'n2o' => null, 'ncv' => null,
+                ];
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * The canonical emission source that regional grid factors are filed under.
+     *
+     * A Scope 2 record still stores what the electricity was FOR in its own
+     * emission_source column ("EV Charging", "Green Tariff"); this is what
+     * priced it.
+     */
+    public const GRID_SOURCE = 'Purchased Electricity (Grid)';
+
+    /** Units the 13 grid sources are offered in — all of them use these two. */
+    private const GRID_UNITS = ['kWh', 'MWh'];
+
+    /**
+     * Is this Scope 2 source priced by grid region?
+     *
+     * Thirteen sources carry `isGrid` — EV charging, green tariff,
+     * landlord-supplied and the rest — and none of them has a factor of its own:
+     * the number comes entirely from which grid the electricity came off.
+     *
+     * Callers need this to REFUSE. A grid source with no region must not be
+     * priced, and the failure it prevents is specific: without it, the library
+     * matched a generic seeded electricity row and priced UAE electricity at
+     * roughly a global average, then presented that as the client's own figure.
+     * A wrong number that looks settled is worse than an unverified one.
+     */
+    public function isGridSource(?string $source): bool
+    {
+        if ($source === null || trim($source) === '') {
+            return false;
+        }
+
+        $wanted = $this->normalise($source);
+
+        if ($wanted === $this->normalise(self::GRID_SOURCE)) {
+            return true;
+        }
+
+        foreach (self::SCOPE2_GROUPS as $group) {
+            foreach (config("scope2_sources.{$group}", []) as $src) {
+                if (! empty($src['isGrid']) && $this->normalise((string) $src['name']) === $wanted) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private function find(string $source, ?string $unit): ?array
     {
         return $this->findIn($this->sourceIndex(), $source, $unit);

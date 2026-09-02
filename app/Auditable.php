@@ -3,6 +3,7 @@
 namespace App;
 
 use App\Models\AuditLog;
+use App\Support\Auditing;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -74,6 +75,13 @@ trait Auditable
      */
     public function writeAuditLog(string $event, ?array $old, ?array $new): void
     {
+        // Suppressed for machine-generated reference data — see App\Support\Auditing.
+        // Checked here rather than in the boot hooks so every entry point to the
+        // audit trail goes through one gate.
+        if (! Auditing::enabled()) {
+            return;
+        }
+
         try {
             $user = auth()->user();
 
@@ -83,20 +91,20 @@ trait Auditable
             $request = request();
 
             AuditLog::create([
-                'company_id'     => $companyId,
-                'user_id'        => $user?->id,
-                'user_name'      => $user?->name,
-                'event'          => $event,
+                'company_id' => $companyId,
+                'user_id' => $user?->id,
+                'user_name' => $user?->name,
+                'event' => $event,
                 'auditable_type' => static::class,
-                'auditable_id'   => $this->getKey(),
-                'old_values'     => $old,
-                'new_values'     => $new,
-                'url'            => $request ? mb_substr($request->fullUrl(), 0, 255) : null,
-                'ip_address'     => $request?->ip(),
-                'user_agent'     => $request ? mb_substr((string) $request->userAgent(), 0, 1000) : null,
+                'auditable_id' => $this->getKey(),
+                'old_values' => $old,
+                'new_values' => $new,
+                'url' => $request ? mb_substr($request->fullUrl(), 0, 255) : null,
+                'ip_address' => $request?->ip(),
+                'user_agent' => $request ? mb_substr((string) $request->userAgent(), 0, 1000) : null,
             ]);
         } catch (\Throwable $e) {
-            Log::warning('Audit log write failed: ' . $e->getMessage(), [
+            Log::warning('Audit log write failed: '.$e->getMessage(), [
                 'model' => static::class,
                 'event' => $event,
             ]);

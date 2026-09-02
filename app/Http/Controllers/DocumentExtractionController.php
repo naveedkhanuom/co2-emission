@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\AiExtraction;
 use App\Models\EmissionRecord;
 use App\Models\EmissionSource;
+use App\Models\ReportingPeriod;
 use App\Models\Supplier;
 use App\Services\AI\DocumentEmissionExtractor;
 use App\Services\EmissionEnrichmentService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -35,14 +37,15 @@ class DocumentExtractionController extends Controller
         if (app()->bound('current_company_id')) {
             return app('current_company_id');
         }
+
         return auth()->user()?->company_id;
     }
 
     public function index()
     {
         return view('ai_extract.index', [
-            'aiEnabled'  => $this->extractor->enabled(),
-            'recent'     => AiExtraction::with('user:id,name')
+            'aiEnabled' => $this->extractor->enabled(),
+            'recent' => AiExtraction::with('user:id,name')
                 ->orderByDesc('id')->limit(10)->get(),
         ]);
     }
@@ -75,9 +78,9 @@ class DocumentExtractionController extends Controller
             'document' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,gif,xlsx,xls,csv,docx,txt',
         ]);
 
-        if (!$this->extractor->enabled()) {
+        if (! $this->extractor->enabled()) {
             return response()->json([
-                'ok'      => false,
+                'ok' => false,
                 'message' => 'AI is not configured. Ask an administrator to set ANTHROPIC_API_KEY.',
             ], 200);
         }
@@ -85,41 +88,47 @@ class DocumentExtractionController extends Controller
         $companyId = $this->currentCompanyId();
         $file = $request->file('document');
 
-        // Persist to the public disk under a company-scoped folder so we can
-        // attach it as a supporting document when the drafts are saved.
-        $folder = 'supporting-documents/' . ($companyId ?: 'unknown') . '/' . now()->format('Y/m');
-        $storedPath = $file->storePublicly($folder, 'public');
+        // Persist under a company-scoped folder so we can attach it as a
+        // supporting document when the drafts are saved.
+        //
+        // PRIVATE disk, matching EmissionRecordController::storeSupportingDocuments()
+        // — these end up in the same supporting_documents array and are served
+        // by the same company-checked download action. The public disk would
+        // put them behind /tenancy/assets/{path}, which has no auth at all.
+        $folder = 'supporting-documents/'.($companyId ?: 'unknown').'/'.now()->format('Y/m');
+        $storedPath = $file->store($folder, 'local');
 
         try {
             $result = $this->extractor->extract($file);
         } catch (\Throwable $e) {
             Log::error('AI document extraction failed', ['error' => $e->getMessage()]);
+
             return response()->json([
-                'ok'      => false,
+                'ok' => false,
                 'message' => 'Something went wrong reading that document. Please try again or enter the data manually.',
             ], 200);
         }
 
         Log::info('AI document extraction', [
-            'company_id'     => $companyId,
-            'user_id'        => auth()->id(),
+            'company_id' => $companyId,
+            'user_id' => auth()->id(),
             'prompt_version' => DocumentEmissionExtractor::PROMPT_VERSION,
-            'ok'             => $result['ok'],
-            'items'          => count($result['line_items']),
+            'ok' => $result['ok'],
+            'items' => count($result['line_items']),
         ]);
 
         // Persist an audit record of this run (proposal captured for compliance).
         $extraction = AiExtraction::create([
-            'company_id'     => $companyId,
-            'created_by'     => auth()->id(),
-            'file_name'      => $file->getClientOriginalName(),
-            'file_path'      => $result['ok'] ? $storedPath : null,
-            'document_type'  => $result['document_type'] ?? null,
-            'status'         => $result['ok'] ? 'extracted' : 'failed',
-            'items_count'    => count($result['line_items']),
-            'currency'       => $result['currency'] ?? null,
+            'company_id' => $companyId,
+            'created_by' => auth()->id(),
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $result['ok'] ? $storedPath : null,
+            'document_type' => $result['document_type'] ?? null,
+            'status' => $result['ok'] ? 'extracted' : 'failed',
+            'items_count' => count($result['line_items']),
+            'currency' => $result['currency'] ?? null,
             'prompt_version' => DocumentEmissionExtractor::PROMPT_VERSION,
-            'result'         => ['line_items' => $result['line_items'], 'message' => $result['message']],
+            'result' => ['line_items' => $result['line_items'], 'message' => $result['message']],
         ]);
 
         $result['extraction_id'] = $extraction->id;
@@ -135,22 +144,23 @@ class DocumentExtractionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'document_path'            => 'nullable|string',
-            'extraction_id'            => 'nullable|integer|exists:ai_extractions,id',
-            'items'                    => 'required|array|min:1',
-            'items.*.entry_date'       => 'nullable|date',
-            'items.*.scope'            => 'required|in:1,2,3',
-            'items.*.emission_source'  => 'required|string|max:100',
-            'items.*.facility'         => 'nullable|string|max:50',
-            'items.*.department'       => 'nullable|string|max:100',
-            'items.*.activity_data'    => 'nullable|numeric|min:0',
-            'items.*.emission_factor'  => 'nullable|numeric|min:0',
-            'items.*.co2e_value'       => 'required|numeric|min:0',
+            'document_path' => 'nullable|string',
+            'extraction_id' => 'nullable|integer|exists:ai_extractions,id',
+            'items' => 'required|array|min:1',
+            'items.*.entry_date' => 'nullable|date',
+            'items.*.scope' => 'required|in:1,2,3',
+            'items.*.emission_source' => 'required|string|max:100',
+            'items.*.facility' => 'nullable|string|max:50',
+            'items.*.department' => 'nullable|string|max:100',
+            'items.*.activity_data' => 'nullable|numeric|min:0',
+            'items.*.activity_unit' => 'nullable|string|max:30',
+            'items.*.emission_factor' => 'nullable|numeric|min:0',
+            'items.*.co2e_value' => 'required|numeric|min:0',
             'items.*.confidence_level' => 'nullable|in:low,medium,high',
             'items.*.scope3_category_id' => 'nullable|exists:scope3_categories,id',
             'items.*.emission_factor_id' => 'nullable|integer|exists:emission_factors,id',
-            'items.*.supplier_id'      => 'nullable|integer|exists:suppliers,id',
-            'items.*.notes'            => 'nullable|string|max:1000',
+            'items.*.supplier_id' => 'nullable|integer|exists:suppliers,id',
+            'items.*.notes' => 'nullable|string|max:1000',
         ]);
 
         $companyId = $this->currentCompanyId();
@@ -160,12 +170,36 @@ class DocumentExtractionController extends Controller
         $validSupplierIds = Supplier::pluck('id')->all();
 
         // Only attach a document that lives under THIS company's folder.
+        //
+        // 'local' is where extract() writes now; 'public' is still accepted so a
+        // review submitted against a document uploaded before the disk changed
+        // still attaches it. Drop the second entry once the legacy files have
+        // been moved.
         $docs = null;
         $path = $validated['document_path'] ?? null;
         if ($path
-            && str_starts_with($path, 'supporting-documents/' . $companyId . '/')
-            && Storage::disk('public')->exists($path)) {
+            && str_starts_with($path, 'supporting-documents/'.$companyId.'/')
+            && collect(['local', 'public'])->contains(fn ($disk) => Storage::disk($disk)->exists($path))) {
             $docs = [$path];
+        }
+
+        // Reject the whole save if any row falls in a locked (finalised) period,
+        // BEFORE creating any of them, so a rejected save leaves nothing behind.
+        //
+        // The approval step already refuses to activate a record in a locked
+        // year, so without this the only outcome is drafts that can never be
+        // actioned — and the person who reviewed the extraction would not find
+        // out until they tried to approve them.
+        foreach ($validated['items'] as $index => $item) {
+            $year = (int) Carbon::parse($item['entry_date'] ?? now())->year;
+
+            if ($companyId && ReportingPeriod::isYearLocked($year, (int) $companyId)) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Row '.($index + 1).": the {$year} reporting period is locked. "
+                        .'Unlock it before saving data into that year.',
+                ], 422);
+            }
         }
 
         $enricher = app(EmissionEnrichmentService::class);
@@ -183,27 +217,28 @@ class DocumentExtractionController extends Controller
             }
 
             $data = [
-                'company_id'       => $companyId,
-                'entry_date'       => $item['entry_date'] ?? now()->toDateString(),
-                'facility'         => $item['facility'] ?? '',           // empty => Review flags "Missing Facility"
-                'scope'            => $scope,
-                'emission_source'  => $sourceName,
-                'activity_data'    => $item['activity_data'] ?? null,
-                'emission_factor'  => $item['emission_factor'] ?? null,
-                'co2e_value'       => $item['co2e_value'],
+                'company_id' => $companyId,
+                'entry_date' => $item['entry_date'] ?? now()->toDateString(),
+                'facility' => $item['facility'] ?? '',           // empty => Review flags "Missing Facility"
+                'scope' => $scope,
+                'emission_source' => $sourceName,
+                'activity_data' => $item['activity_data'] ?? null,
+                'activity_unit' => $item['activity_unit'] ?? null,
+                'emission_factor' => $item['emission_factor'] ?? null,
+                'co2e_value' => $item['co2e_value'],
                 'confidence_level' => $item['confidence_level'] ?? 'low',
-                'department'       => $item['department'] ?? null,
-                'data_source'      => 'import',
-                'notes'            => $item['notes'] ?? null,
-                'created_by'       => auth()->id(),
-                'status'           => 'draft',                            // -> Review Data "Pending"
-                'data_quality'     => $scope === 3 ? 'estimated' : 'primary',
+                'department' => $item['department'] ?? null,
+                'data_source' => 'import',
+                'notes' => $item['notes'] ?? null,
+                'created_by' => auth()->id(),
+                'status' => 'draft',                            // -> Review Data "Pending"
+                'data_quality' => $scope === 3 ? 'estimated' : 'primary',
             ];
 
             if ($scope === 3) {
-                $data['scope3_category_id']  = $item['scope3_category_id'] ?? null;
-                $data['calculation_method']  = 'activity-based';
-                $data['spend_currency']      = 'USD';
+                $data['scope3_category_id'] = $item['scope3_category_id'] ?? null;
+                $data['calculation_method'] = 'activity-based';
+                $data['spend_currency'] = 'USD';
 
                 // Link supplier only if it belongs to this company (tenant guard).
                 $supplierId = $item['supplier_id'] ?? null;
@@ -228,7 +263,7 @@ class DocumentExtractionController extends Controller
 
         // Close out the audit record: mark saved and note how many of the
         // proposed items were actually kept.
-        if (!empty($validated['extraction_id'])) {
+        if (! empty($validated['extraction_id'])) {
             $extraction = AiExtraction::find($validated['extraction_id']);
             if ($extraction && $extraction->company_id == $companyId) {
                 $extraction->update(['status' => 'saved', 'saved_count' => $created]);
@@ -236,9 +271,9 @@ class DocumentExtractionController extends Controller
         }
 
         return response()->json([
-            'ok'      => true,
-            'message' => $created . ' draft record(s) saved. Find them under Review Data → Pending.',
-            'count'   => $created,
+            'ok' => true,
+            'message' => $created.' draft record(s) saved. Find them under Review Data → Pending.',
+            'count' => $created,
         ]);
     }
 }

@@ -39,6 +39,12 @@ class CompanySwitcherController extends Controller
         // Set company in session
         $request->session()->put('current_company_id', $companyId);
 
+        // ...and on the user, so it outlives the session. logout() flushes the
+        // session, so without this the choice was gone at the next sign-in —
+        // and for an account owner, who has no company_id to fall back to,
+        // nothing at all was selected.
+        Auth::user()->rememberCompany($companyId);
+
         // Set company context
         app()->instance('current_company', $company);
         app()->instance('current_company_id', $companyId);

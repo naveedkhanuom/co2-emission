@@ -114,6 +114,45 @@ class User extends Authenticatable
     }
 
     /**
+     * The company this user last worked in.
+     *
+     * Deliberately NOT `company_id`: that one is membership and grants access,
+     * this one is only a remembered preference. Kept off $fillable for the same
+     * reason `is_account_owner` is guarded — it is never a form field. The
+     * company switcher sets it directly, and only after canAccessCompany() has
+     * passed.
+     */
+    public function lastCompany()
+    {
+        return $this->belongsTo(Company::class, 'last_company_id');
+    }
+
+    /**
+     * Remember this company as where the user is working, if they may see it.
+     *
+     * Re-checks access rather than trusting the caller: this is written from a
+     * request and read back on a later one, and an account's membership can
+     * change in between. A remembered company the user has since lost access to
+     * must not be silently restored.
+     */
+    public function rememberCompany($companyId): void
+    {
+        if (! $companyId || ! $this->canAccessCompany($companyId)) {
+            return;
+        }
+
+        if ((string) $this->last_company_id === (string) $companyId) {
+            return;
+        }
+
+        // Saved quietly. This is a UI preference, not a change to the user, and
+        // routing it through the audit trail would file a row every time
+        // somebody flipped between two companies.
+        $this->last_company_id = $companyId;
+        $this->saveQuietly();
+    }
+
+    /**
      * Check if user can access a company.
      */
     public function canAccessCompany($companyId)

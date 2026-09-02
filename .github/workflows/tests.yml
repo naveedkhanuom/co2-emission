@@ -1,8 +1,11 @@
 name: Tests
 
 on:
+  # Every branch, not a list. A list has to be remembered when work moves to a
+  # new branch, and it was not: all of the tenancy work landed on `saas-tenancy`
+  # while this said [main, boundary], so every direct push to it ran no tests at
+  # all. Pull requests were covered, which is what kept it from being noticed.
   push:
-    branches: [main, boundary]
   pull_request:
 
 concurrency:
