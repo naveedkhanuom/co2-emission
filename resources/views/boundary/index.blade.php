@@ -183,6 +183,22 @@
                 </div>
             </div>
 
+            {{--
+                Continuation of the setup wizard, not a fresh visit. Shown only
+                while onboarding_stage is 'boundary' — BoundaryController::
+                activate() clears it, so this cannot outlive its usefulness.
+            --}}
+            @if(($fromOnboarding ?? false) && $step === 1)
+                <div class="alert alert-success d-flex align-items-start gap-2">
+                    <i class="fas fa-circle-check mt-1"></i>
+                    <div>
+                        <b>Setup saved.</b> Last step — we've carried over what you just told us, so check it reads
+                        right and continue. What comes out of this decides which numbers you need to collect, so it is
+                        worth the two minutes.
+                    </div>
+                </div>
+            @endif
+
             @if(session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
@@ -225,7 +241,7 @@
                         <label class="bd-label" for="reportingYear">Reporting year</label>
                         <select class="form-select" id="reportingYear">
                             @for($y = $currentYear + 1; $y >= $currentYear - 3; $y--)
-                                <option value="{{ $y }}" @selected($y === $currentYear)>{{ $y }}</option>
+                                <option value="{{ $y }}" @selected($y === ($defaultReportingYear ?? $currentYear))>{{ $y }}</option>
                             @endfor
                         </select>
                     </div>

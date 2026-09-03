@@ -112,6 +112,80 @@
                 </div>
             </div>
 
+            {{--
+                Emission sources — 2c2 table (d). Sat above the streams because
+                that is the containment order the workbook uses: a stream
+                belongs to a source, and 2c2 column E is that reference.
+                Until now these could only be invented by prefill and never
+                corrected, so every facility exported as CO₂-only,
+                energy-related and calculation-based.
+            --}}
+            <div class="card border-0 shadow-sm mt-3" style="border-radius:16px;">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-radius:16px 16px 0 0;">
+                    <h5 class="mb-0 fw-bold">Emission Sources</h5>
+                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#sourceModal" onclick="resetSourceForm()">
+                        <i class="fas fa-plus me-1"></i>Add source
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name / description</th>
+                                    <th>Product</th>
+                                    <th>GHGs</th>
+                                    <th>Type</th>
+                                    <th>Methodology</th>
+                                    <th class="text-end">tCO₂e</th>
+                                    <th style="width:90px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($sources as $src)
+                                <tr>
+                                    <td><span class="badge bg-light text-dark border">{{ $src->source_code }}</span></td>
+                                    <td>
+                                        <div class="fw-semibold">{{ $src->name ?: '—' }}</div>
+                                        @if($src->description)<div class="text-muted" style="font-size:.75rem;">{{ Str::limit($src->description, 70) }}</div>@endif
+                                    </td>
+                                    <td>{{ $src->associated_product ?: '—' }}</td>
+                                    <td><span style="font-size:.75rem;">{{ $src->ghg_types ?: '—' }}</span></td>
+                                    <td>
+                                        @if($src->energy_related)<span class="badge bg-info-subtle text-info-emphasis border" style="font-size:.65rem;">Energy</span>@endif
+                                        @if($src->process_emissions)<span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:.65rem;">Process</span>@endif
+                                        @if(! $src->energy_related && ! $src->process_emissions)—@endif
+                                    </td>
+                                    <td style="font-size:.8rem;">{{ config('mrv.methodologies')[$src->methodology] ?? '—' }}</td>
+                                    <td class="text-end fw-semibold">{{ number_format($src->total_co2e, 2) }}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-link p-0 me-2 edit-source"
+                                            data-source='@json($src, JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP)'
+                                            data-bs-toggle="modal" data-bs-target="#sourceModal" title="Edit"><i class="fas fa-pen"></i></button>
+                                        <form method="POST" action="{{ route('mrv.deleteSource', $src->id) }}" class="d-inline" onsubmit="return confirm('Delete emission source {{ $src->source_code }}?')">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-sm btn-link text-danger p-0" title="Delete"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="8" class="text-center text-muted py-4">
+                                    No emission sources yet. <strong>Pre-fill from Scope 1</strong> creates one per distinct source, which you can then correct.
+                                </td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Report combustion and process emissions <strong>separately</strong>. Pre-fill assumes every source is
+                    CO₂-only, energy-related and calculation-based — correct anything that is not, particularly process
+                    emissions such as calcination, which are often the larger half of a facility's inventory.
+                </div>
+            </div>
+
             {{-- Source streams --}}
             <div class="card border-0 shadow-sm mt-3" style="border-radius:16px;">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-radius:16px 16px 0 0;">
@@ -192,11 +266,14 @@
                     <i class="fas fa-info-circle me-1"></i>
                     When you enter both a Net Calorific Value and an Emission Factor, the tCO₂e is recomputed with the
                     EU-ETS formula (Activity × NCV × EF × Oxidation × Conversion). Otherwise the imported Scope 1 value is kept.
-                    <strong>Export EAD workbook</strong> fills the official EAD "Deliverable C" template (identifiers, facility
-                    description, source streams and calculation inputs); narrative sheets (methane, verification, QA, mitigation)
-                    remain blank for you to complete in the workbook.
+                    <strong>Export EAD workbook</strong> fills the official EAD "Deliverable C" template — identifiers,
+                    facility description, source streams, tiers and calculation inputs, plus whatever you have completed
+                    in <strong>Monitoring Plan Details</strong> below. Measurement/CEMS (3e) and fall-back (3f) are not
+                    yet covered and stay blank.
                 </div>
             </div>
+
+            @include('reports.mrv._plan')
         @endif
     </div>
 </div>
@@ -239,7 +316,20 @@
                         <div class="col-md-6"><label class="form-label small">Parent / Group Entity</label><input type="text" name="parent_entity" id="setParent" class="form-control"></div>
                         <div class="col-md-6"><label class="form-label small">Coordinates (lat,lng)</label><input type="text" name="coordinates" id="setCoords" class="form-control" placeholder="24.4539, 54.3773"></div>
                         <div class="col-md-6"><label class="form-label small">Primary Sector</label><input type="text" name="primary_sector" id="setSector" class="form-control" placeholder="Energy"></div>
-                        <div class="col-md-6"><label class="form-label small">Primary Activity</label><input type="text" name="primary_activity" id="setActivity" class="form-control" placeholder="Combustion of fuels"></div>
+                        {{--
+                            A dropdown, not free text: 2c2's own cell is bound
+                            to this list (sheet 4k), so "Iron & steel
+                            production" typed by hand fails EAD's validation
+                            even though it means the listed option exactly.
+                        --}}
+                        <div class="col-md-6"><label class="form-label small">Primary Activity</label>
+                            <select name="primary_activity" id="setActivity" class="form-select">
+                                <option value="">—</option>
+                                @foreach(config('mrv.primary_activities') as $activity)
+                                    <option value="{{ $activity }}">{{ $activity }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -290,6 +380,11 @@
                         <div class="col-md-3"><label class="form-label small">Conversion factor</label><input type="number" step="any" name="conversion_factor" id="f_conversion" class="form-control" placeholder="1"></div>
 
                         <div class="col-12"><hr class="my-1"><small class="text-muted fw-semibold">Tier &amp; materiality (EU-ETS / EAD)</small></div>
+                        {{-- 2c2 columns J–L: the equipment the stream is burned in. --}}
+                        <div class="col-md-5"><label class="form-label small">Combustion device / technology</label><input type="text" name="combustion_device" id="f_combustion_device" class="form-control" placeholder="Gas fired heaters"></div>
+                        <div class="col-md-4"><label class="form-label small">Device capacity</label><input type="number" step="any" min="0" name="device_capacity" id="f_device_capacity" class="form-control" placeholder="100"></div>
+                        <div class="col-md-3"><label class="form-label small">Capacity unit</label><input type="text" name="device_capacity_unit" id="f_device_capacity_unit" class="form-control" placeholder="MW"></div>
+
                         <div class="col-md-3"><label class="form-label small">Materiality</label>
                             <select name="materiality" id="f_materiality" class="form-select">
                                 <option value="">—</option>
@@ -301,12 +396,98 @@
                         <div class="col-md-3"><label class="form-label small">Tier (1–4)</label><input type="number" min="1" max="4" name="tier_level" id="f_tier" class="form-control"></div>
                         <div class="col-md-3"><label class="form-label small">Uncertainty %</label><input type="number" step="any" name="uncertainty_pct" id="f_uncertainty" class="form-control"></div>
                         <div class="col-md-3"><label class="form-label small">Est. tCO₂e (if no NCV/EF)</label><input type="number" step="any" name="estimated_co2e" id="f_estimated_co2e" class="form-control"></div>
+                        {{-- 3d1 (b) column G — how the activity figure's accuracy is established. --}}
+                        <div class="col-md-3"><label class="form-label small">Source of accuracy</label>
+                            <input type="text" name="accuracy_source" id="f_accuracy_source" class="form-control" list="accuracySources" placeholder="Lab. Analysis">
+                            <datalist id="accuracySources">
+                                <option value="Lab. Analysis"></option>
+                                <option value="Supplier invoice"></option>
+                                <option value="In-house technical data"></option>
+                                <option value="Calibrated meter"></option>
+                                <option value="Default value (IPCC)"></option>
+                            </datalist>
+                        </div>
                         <div class="col-12"><label class="form-label small">Information source</label><input type="text" name="information_source" id="f_information_source" class="form-control" placeholder="IPCC, National Inventory…"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success">Save stream</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Emission source editor — 2c2 table (d) --}}
+<div class="modal fade" id="sourceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;">
+            <form method="POST" action="{{ route('mrv.saveSource') }}">
+                @csrf
+                <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+                <input type="hidden" name="year" value="{{ $year }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="sourceModalTitle">Add Emission Source</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-3"><label class="form-label small">Source code *</label><input type="text" name="source_code" id="s_source_code" class="form-control" placeholder="S01" required></div>
+                        <div class="col-md-9"><label class="form-label small">Name *</label><input type="text" name="name" id="s_name" class="form-control" placeholder="Cement kiln 1" required></div>
+                        <div class="col-12"><label class="form-label small">Description</label><textarea name="description" id="s_description" class="form-control" rows="2" maxlength="1000"></textarea></div>
+
+                        <div class="col-md-4"><label class="form-label small">Associated product</label>
+                            <input type="text" name="associated_product" id="s_associated_product" class="form-control" placeholder="P01" maxlength="20">
+                            <div class="form-text" style="font-size:.7rem;">The product ID whose production causes these emissions. Use a separate source per product.</div>
+                        </div>
+                        <div class="col-md-4"><label class="form-label small">Greenhouse gases</label>
+                            <select name="ghg_types" id="s_ghg_types" class="form-select">
+                                <option value="">—</option>
+                                @foreach(config('mrv.ghg_types') as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4"><label class="form-label small">Methodology *</label>
+                            <select name="methodology" id="s_methodology" class="form-select" required>
+                                @foreach(config('mrv.methodologies') as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-4"><label class="form-label small">Materiality</label>
+                            <select name="materiality" id="s_materiality" class="form-select">
+                                <option value="">—</option>
+                                <option value="major">Major</option>
+                                <option value="minor">Minor</option>
+                                <option value="de_minimis">De-minimis</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4"><label class="form-label small">Total tCO₂e</label><input type="number" step="any" min="0" name="total_co2e" id="s_total_co2e" class="form-control"></div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="energy_related" value="1" id="s_energy_related">
+                                    <label class="form-check-label small" for="s_energy_related">Energy-related emissions</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="process_emissions" value="1" id="s_process_emissions">
+                                    <label class="form-check-label small" for="s_process_emissions">Process emissions</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-light border mt-3 mb-0 small">
+                        <i class="fas fa-circle-info me-1 text-muted"></i>
+                        EAD asks for combustion and process emissions to be reported separately. A source can be both —
+                        a kiln that burns fuel <em>and</em> calcines limestone — in which case tick both boxes.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save source</button>
                 </div>
             </form>
         </div>
@@ -332,11 +513,43 @@ document.addEventListener('DOMContentLoaded', syncFacilitySettings);
 function resetStreamForm() {
     document.getElementById('streamModalTitle').textContent = 'Add Source Stream';
     ['streamId','f_stream_code','f_description','f_fuel_type','f_emission_source_code','f_activity_level','f_activity_unit',
-     'f_ncv','f_ncv_unit','f_ef','f_ef_unit','f_oxidation','f_conversion','f_tier','f_uncertainty','f_estimated_co2e','f_information_source']
+     'f_ncv','f_ncv_unit','f_ef','f_ef_unit','f_oxidation','f_conversion','f_tier','f_uncertainty','f_estimated_co2e','f_information_source',
+     'f_combustion_device','f_device_capacity','f_device_capacity_unit','f_accuracy_source']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     document.getElementById('f_classification').value = 'fuel_combusted';
     document.getElementById('f_materiality').value = '';
 }
+
+function resetSourceForm() {
+    document.getElementById('sourceModalTitle').textContent = 'Add Emission Source';
+    ['s_source_code','s_name','s_description','s_associated_product','s_total_co2e']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('s_ghg_types').value = 'CO2';
+    document.getElementById('s_methodology').value = 'calculation';
+    document.getElementById('s_materiality').value = '';
+    document.getElementById('s_energy_related').checked = true;
+    document.getElementById('s_process_emissions').checked = false;
+}
+
+document.querySelectorAll('.edit-source').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const s = JSON.parse(this.dataset.source);
+        document.getElementById('sourceModalTitle').textContent = 'Edit Emission Source ' + (s.source_code || '');
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v ?? ''); };
+        set('s_source_code', s.source_code);
+        set('s_name', s.name);
+        set('s_description', s.description);
+        set('s_associated_product', s.associated_product);
+        set('s_total_co2e', s.total_co2e);
+        document.getElementById('s_ghg_types').value = s.ghg_types || '';
+        document.getElementById('s_methodology').value = s.methodology || 'calculation';
+        document.getElementById('s_materiality').value = s.materiality || '';
+        // Cast: the model casts these to bool, but JSON from an unsaved edit
+        // can still carry 1/0.
+        document.getElementById('s_energy_related').checked = !!s.energy_related;
+        document.getElementById('s_process_emissions').checked = !!s.process_emissions;
+    });
+});
 
 document.querySelectorAll('.edit-stream').forEach(btn => {
     btn.addEventListener('click', function () {
@@ -360,6 +573,10 @@ document.querySelectorAll('.edit-stream').forEach(btn => {
         set('f_uncertainty', s.uncertainty_pct);
         set('f_estimated_co2e', s.estimated_co2e);
         set('f_information_source', s.information_source);
+        set('f_combustion_device', s.combustion_device);
+        set('f_device_capacity', s.device_capacity);
+        set('f_device_capacity_unit', s.device_capacity_unit);
+        set('f_accuracy_source', s.accuracy_source);
         document.getElementById('f_classification').value = s.classification || 'fuel_combusted';
         document.getElementById('f_materiality').value = s.materiality || '';
     });

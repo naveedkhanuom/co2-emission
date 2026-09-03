@@ -25,12 +25,17 @@ class ReportingPeriod extends Model
         'locked_at',
         'locked_by',
         'note',
+
+        // Set only when a year was locked without a complete boundary. Null is
+        // the good state: the lock needed no excuse. See the migration.
+        'boundary_ack_reason',
+        'boundary_ack_gap',
     ];
 
     protected $casts = [
-        'year'         => 'integer',
+        'year' => 'integer',
         'is_base_year' => 'boolean',
-        'locked_at'    => 'datetime',
+        'locked_at' => 'datetime',
     ];
 
     public function locker()
@@ -51,7 +56,7 @@ class ReportingPeriod extends Model
     public static function isYearLocked(int $year, ?int $companyId = null): bool
     {
         $companyId = $companyId ?? current_company_id();
-        if (!$companyId) {
+        if (! $companyId) {
             return false;
         }
 
@@ -66,7 +71,7 @@ class ReportingPeriod extends Model
     public static function baseYearFor(?int $companyId = null): ?int
     {
         $companyId = $companyId ?? current_company_id();
-        if (!$companyId) {
+        if (! $companyId) {
             return null;
         }
 

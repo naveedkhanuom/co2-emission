@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\EmissionRecord;
+use App\Models\ReportingPeriod;
 use App\Models\Site;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,22 @@ use Illuminate\Support\Facades\Auth;
  *
  * Progress is stored in the existing `company_settings` table (no schema
  * change) via Company::setSetting().
+ *
+ * WHERE THIS SITS IN THE SEQUENCE
+ *
+ * This wizard settles the ORGANISATIONAL boundary — which entities count as
+ * yours (`consolidation_approach`). It does not settle the OPERATIONAL one —
+ * which sources and Scope 3 categories are in the inventory — and under the GHG
+ * Protocol both are required before a figure means anything.
+ *
+ * The operational half is the Boundary Advisor at /boundary, and until this
+ * handoff existed nothing led a new client to it: they finished setup, landed
+ * on an empty dashboard, and had to find the boundary in the sidebar on their
+ * own. So `save()` ends by sending them there, having collected
+ * `business_description` on the way — the one field the Advisor requires and
+ * this wizard did not ask for. Arriving with it already filled in is the
+ * difference between the Advisor's first screen being a form and being a
+ * confirmation.
  */
 class OnboardingController extends Controller
 {
@@ -25,6 +42,18 @@ class OnboardingController extends Controller
     {
         $this->middleware('auth');
     }
+
+    /**
+     * The `onboarding_stage` setting's one meaningful value: this company has
+     * finished the wizard and been handed to the Boundary Advisor, which has
+     * not yet been activated.
+     *
+     * A stage rather than a boolean because the sequence is expected to grow —
+     * the next link in the chain is "boundary done, gaps not yet closed" — and
+     * because "which step are they on" is the question the dashboard will want
+     * to ask. BoundaryController::activate() clears it.
+     */
+    public const STAGE_BOUNDARY = 'boundary';
 
     /**
      * Plain-language business activities → the GHG scope they belong to.
@@ -131,6 +160,11 @@ class OnboardingController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'industry_type' => 'required|in:'.implode(',', array_keys($this->industryOptions())),
+            // Optional here, but bounded by what the Boundary Advisor accepts
+            // (BoundaryController::start()): anything this wizard stores has to
+            // be usable there without being re-typed, and a two-word answer is
+            // not enough for the interview to produce a useful boundary.
+            'business_description' => 'nullable|string|min:10|max:1000',
             'country' => 'nullable|string|max:255',
             'employee_count' => 'nullable|integer|min:0',
             'fiscal_year_start' => 'nullable|string|max:10',
@@ -160,6 +194,9 @@ class OnboardingController extends Controller
         $company->update([
             'name' => $validated['name'],
             'industry_type' => $validated['industry_type'],
+            // Coalesce rather than overwrite: a client who skipped the field
+            // should not lose a description they already had.
+            'business_description' => $validated['business_description'] ?? $company->business_description,
             'country' => $validated['country'] ?? $company->country,
             'employee_count' => $validated['employee_count'] ?? $company->employee_count,
             'size' => $this->sizeFromEmployees($validated['employee_count'] ?? null) ?? $company->size,
@@ -188,18 +225,72 @@ class OnboardingController extends Controller
         // Reporting basis — stored as settings (no schema change) and consumed by
         // the disclosure report (boundary), Gwp::versionForCompany (gwp_version),
         // and future targets / year-over-year comparison (base_year).
-        $company->setSetting('base_year', $validated['base_year'] ?? now()->year, 'integer');
+        $baseYear = (int) ($validated['base_year'] ?? now()->year);
+
+        $company->setSetting('base_year', $baseYear, 'integer');
         $company->setSetting('consolidation_approach', $validated['consolidation_approach'] ?? config('boundary.default'), 'string');
         $company->setSetting('gwp_version', $validated['gwp_version'] ?? config('gwp.default', 'ar6'), 'string');
+
+        $this->recordBaseYearPeriod($company, $baseYear);
 
         // Remember what they told us, and mark setup complete.
         $company->setSetting('onboarding_activities', $validated['activities'], 'json');
         $company->setSetting('onboarding_completed', true, 'boolean');
 
+        // Setup is done; the boundary is not. BoundaryController reads this to
+        // greet them as a continuation rather than a cold screen, and clears it
+        // on activation. See STAGE_BOUNDARY.
+        $company->setSetting('onboarding_stage', self::STAGE_BOUNDARY, 'string');
+
         return response()->json([
             'success' => true,
-            'message' => 'Your account is set up. Welcome aboard!',
-            'redirect' => route('home'),
+            'message' => 'Your account is set up. Now let’s scope what you need to measure.',
+            'redirect' => route('boundary.index'),
+        ]);
+    }
+
+    /**
+     * Make the chosen base year a real reporting period, not only a setting.
+     *
+     * The wizard has always written the `base_year` company setting, but
+     * ReportingPeriod::baseYearFor() reads the `reporting_periods` TABLE — so
+     * until a row existed it answered null however carefully the client filled
+     * the wizard in, and the year-over-year and target screens behaved as
+     * though no base year had ever been chosen. The row was only created if
+     * someone later happened to visit /reporting-periods and set it again.
+     *
+     * ReportingPeriodController::setBaseYear() writes both directions; this is
+     * the other door into the same state, so it does the same thing.
+     *
+     * The scope is bypassed and company_id matched explicitly, the way
+     * ReportingPeriod's own static helpers do it — this runs during first-run
+     * setup, where the company context is the thing still being established.
+     */
+    private function recordBaseYearPeriod(Company $company, int $year): void
+    {
+        // Only one base year per company.
+        ReportingPeriod::withoutGlobalScope('company')
+            ->where('company_id', $company->id)
+            ->update(['is_base_year' => false]);
+
+        $period = ReportingPeriod::withoutGlobalScope('company')
+            ->where('company_id', $company->id)
+            ->where('year', $year)
+            ->first();
+
+        // Never reopen a locked year: a client can re-run setup, and a signed
+        // off inventory is not something the wizard gets to unfreeze.
+        if ($period) {
+            $period->update(['is_base_year' => true]);
+
+            return;
+        }
+
+        ReportingPeriod::create([
+            'company_id' => $company->id,
+            'year' => $year,
+            'status' => 'open',
+            'is_base_year' => true,
         ]);
     }
 

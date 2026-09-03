@@ -89,7 +89,38 @@ class BoundaryController extends Controller
                 : [],
             'aiEnabled' => app(ClaudeService::class)->enabled(),
             'currentYear' => (int) now()->year,
+
+            // Arriving straight from the setup wizard rather than from the
+            // sidebar. The screen is identical either way — this only changes
+            // the greeting, so a client who was just told "one thing left"
+            // recognises where they landed instead of meeting a cold form.
+            'fromOnboarding' => $company->getSetting('onboarding_stage')
+                === OnboardingController::STAGE_BOUNDARY,
+
+            // Default the boundary to the year the client already nominated in
+            // setup, so the two screens do not quietly disagree about which
+            // year is being scoped. Falls back to the current year, and is
+            // ignored if the stored value sits outside the selectable range.
+            'defaultReportingYear' => $this->defaultReportingYear($company),
         ]);
+    }
+
+    /**
+     * Which reporting year the boundary wizard should preselect.
+     *
+     * The base year set during onboarding, when it is one of the years the
+     * dropdown actually offers — otherwise selecting it would match no option
+     * and the browser would silently fall back to the first (a year ahead),
+     * which is worse than defaulting to today.
+     */
+    private function defaultReportingYear(Company $company): int
+    {
+        $currentYear = (int) now()->year;
+        $baseYear = (int) $company->getSetting('base_year', 0);
+
+        return ($baseYear >= $currentYear - 3 && $baseYear <= $currentYear + 1)
+            ? $baseYear
+            : $currentYear;
     }
 
     /**
@@ -325,6 +356,11 @@ class BoundaryController extends Controller
             if ($scopes) {
                 $company->update(['scopes_enabled' => $scopes]);
             }
+
+            // The setup chain ends here: wizard → boundary → live. Clearing the
+            // stage is what stops the "finish setting up" greeting following a
+            // client around after they have finished setting up.
+            $company->setSetting('onboarding_stage', 'complete', 'string');
         });
 
         return redirect()->route('boundary.index')

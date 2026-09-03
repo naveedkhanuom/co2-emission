@@ -402,6 +402,34 @@ Once every tenant is clear, the `public` fallbacks in
 `EmissionRecordController::downloadDocument`, `DocumentExtractionController::store`
 and `EnergyAttributeCertificateController::destroy` can be removed.
 
+### The EAD MRV workbook template
+
+The regulated MRV layer (`/mrv`) exports a filled **EAD "Deliverable C"**
+workbook by loading EAD's own file and writing values into its cells, so the
+download keeps EAD's formatting, dropdowns and inter-sheet formulas.
+
+**That file is not shipped with the application, and must not be committed.** It
+carries EAD's confidentiality notice — its contents "must not be distributed
+without prior consent" — and EAD issues it to each operator directly. Install
+the copy your deployment was issued:
+
+```bash
+mkdir -p storage/app/templates
+cp "20260227 - Deliverable C Template_v8 1.xlsx" storage/app/templates/ead_deliverable_c.xlsx
+```
+
+Or point `MRV_EAD_TEMPLATE_PATH` at it anywhere on disk.
+
+Note the path is **not** under `storage/tenant*/`: the workbook is shared
+reference data, byte-identical for every client, and `storage_path()` is
+suffixed per tenant. Putting it inside a tenant directory is what previously
+broke every export.
+
+**The cell map is pinned to v8.1.** `EadWorkbookFiller` writes to fixed rows
+(`SRC_FIRST_ROW = 43`, `STREAM_FIRST_ROW = 75`). If EAD issues a version that
+moves them, the export will write into the wrong cells of a regulatory
+submission — verify a sample export after any template change.
+
 ### Emission factor libraries
 
 Published factor sets are imported from the publishers' own files, committed

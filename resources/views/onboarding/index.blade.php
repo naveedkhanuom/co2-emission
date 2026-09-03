@@ -90,7 +90,7 @@
     <form id="wizForm" class="card-wiz" autocomplete="off">
         <!-- ============ STEP 1 — WELCOME ============ -->
         <section class="body step" data-step="1">
-            <div class="step-eyebrow">Step 1 of 5</div>
+            <div class="step-eyebrow">Step 1 of 6</div>
             <h2 class="step-title">Welcome, {{ $company->name }} 👋</h2>
             <p class="step-sub">We'll measure your company's carbon footprint for you. You don't need to know anything about "emission factors" or "scopes" — just tell us about your business and we'll handle the science. It takes about 2 minutes.</p>
 
@@ -140,8 +140,20 @@
                     <label class="form-label">When does your financial year start? <span class="hint">(optional)</span></label>
                     <input type="text" name="fiscal_year_start" class="form-control" value="{{ $company->fiscal_year_start }}" placeholder="e.g. 01-01 (Jan) or 04-01 (Apr)">
                 </div>
+                {{--
+                    Asked here so the Boundary Advisor does not have to ask it
+                    again on the very next screen. It is the field its interview
+                    is built on, and a client who has just described their
+                    business twice has learned that this product does not listen.
+                --}}
+                <div class="col-12">
+                    <label class="form-label">In your own words, what does your company do?</label>
+                    <textarea name="business_description" class="form-control" rows="3" maxlength="1000"
+                              placeholder="e.g. We are a general contractor building residential towers in Abu Dhabi. We own our site plant but subcontract concrete and steel work.">{{ $company->business_description }}</textarea>
+                    <div class="hint mt-1">Mention what you own, what you outsource, and who your customers are — those three things decide most of your footprint. A sentence or two is plenty.</div>
+                </div>
             </div>
-            <div class="invalid-msg" id="err2">Please fill in your company name and industry.</div>
+            <div class="invalid-msg" id="err2">Please fill in your company name, industry, and a sentence about what you do.</div>
         </section>
 
         <!-- ============ STEP 3 — REPORTING BASIS ============ -->
@@ -222,12 +234,17 @@
         <!-- ============ STEP 6 — DONE ============ -->
         <section class="body step" data-step="6" hidden>
             <div class="step-eyebrow">Step 6 of 6</div>
-            <h2 class="step-title">You're all set! 🎉</h2>
-            <p class="step-sub">Your account is ready. Here's a simple checklist to build your first carbon footprint — tackle them in any order:</p>
+            <h2 class="step-title">Your account is ready 🎉</h2>
+            <p class="step-sub">Based on what you told us, here's what we'll be measuring:</p>
 
             <div id="checklist"></div>
 
-            <p class="step-sub mt-3 mb-0"><i class="fas fa-lightbulb text-warning me-1"></i> Tip: the fastest way to start is to <b>snap a photo of a utility bill</b> — we'll read the numbers for you.</p>
+            <p class="step-sub mt-3 mb-0">
+                <i class="fas fa-compass-drafting text-success me-1"></i>
+                <b>One thing left.</b> Before entering any numbers, we'll spend two minutes agreeing exactly which
+                emissions belong in your footprint and which don't — that's the part auditors ask about, and it decides
+                what data you actually need to collect. We've already filled in what you just told us.
+            </p>
         </section>
 
         <!-- ============ FOOTER ============ -->
@@ -263,7 +280,7 @@
         dots.forEach(d=> d.classList.toggle('active', +d.dataset.dot <= n));
         backBtn.style.visibility = n === 1 ? 'hidden' : 'visible';
         nextBtn.innerHTML = n === 1 ? 'Get started <i class="fas fa-arrow-right ms-1"></i>'
-                          : n === TOTAL ? 'Go to my dashboard <i class="fas fa-arrow-right ms-1"></i>'
+                          : n === TOTAL ? 'Scope what I measure <i class="fas fa-arrow-right ms-1"></i>'
                           : 'Continue <i class="fas fa-arrow-right ms-1"></i>';
         document.querySelectorAll('.invalid-msg').forEach(m=>m.style.display='none');
         window.scrollTo({top:0,behavior:'smooth'});
@@ -308,7 +325,12 @@
     function validate(n){
         if(n===2){
             const name=form.name.value.trim(), ind=form.industry_type.value;
-            if(!name || !ind){ document.getElementById('err2').style.display='block'; return false; }
+            // The description is optional to the API (so the skip path and any
+            // older client still work) but insisted on here: it is what the
+            // Boundary Advisor on the next screen runs its interview from, and
+            // a blank one costs the client the whole benefit of the handoff.
+            const desc=form.business_description.value.trim();
+            if(!name || !ind || desc.length < 10){ document.getElementById('err2').style.display='block'; return false; }
         }
         if(n===4){
             if(collectSites().length===0){ document.getElementById('err3').style.display='block'; return false; }
@@ -354,6 +376,7 @@
         const payload = {
             name: form.name.value.trim(),
             industry_type: form.industry_type.value,
+            business_description: form.business_description.value.trim() || null,
             country: form.country.value.trim(),
             employee_count: form.employee_count.value || null,
             fiscal_year_start: form.fiscal_year_start.value.trim() || null,
@@ -379,12 +402,12 @@
             }else{
                 alert(data.message || 'Something went wrong. Please review your answers.');
                 nextBtn.disabled=false;
-                nextBtn.innerHTML='Go to my dashboard <i class="fas fa-arrow-right ms-1"></i>';
+                nextBtn.innerHTML='Scope what I measure <i class="fas fa-arrow-right ms-1"></i>';
             }
         }catch(err){
             alert('Network error — please try again.');
             nextBtn.disabled=false;
-            nextBtn.innerHTML='Go to my dashboard <i class="fas fa-arrow-right ms-1"></i>';
+            nextBtn.innerHTML='Scope what I measure <i class="fas fa-arrow-right ms-1"></i>';
         }
     }
 
