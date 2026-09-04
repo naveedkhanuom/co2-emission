@@ -10,8 +10,33 @@
     </p>
 
     @if ($credentials = session('credentials'))
+        @php $pending = ! empty($credentials['pending']); @endphp
         <div class="card" style="border-color: var(--ok);">
-            <h2 style="color: var(--ok);">“{{ $credentials['subdomain'] }}” is ready</h2>
+            <h2 style="color: var(--ok);">
+                @if ($pending)
+                    “{{ $credentials['subdomain'] }}” is being set up
+                @else
+                    “{{ $credentials['subdomain'] }}” is ready
+                @endif
+            </h2>
+
+            {{--
+                Provisioning runs on the queue, so the credentials exist before
+                the workspace does — the password is generated when the request
+                is made. Saying so is the difference between "wait a moment"
+                and "the login you just gave me is broken" if someone tries the
+                link straight away.
+            --}}
+            @if ($pending)
+                <p style="margin-top: 0;">
+                    Creating the database, running migrations and seeding the factor catalogues takes
+                    a minute or so. The account appears in the list below when it is done — refresh to
+                    check. If it has not appeared after a few minutes, look for a failed job
+                    (<code>php artisan queue:failed</code>); a queue worker must be running for
+                    provisioning to happen at all.
+                </p>
+            @endif
+
             <p style="margin-top: 0;">
                 <strong>Copy these now.</strong> The password is not stored anywhere and cannot be
                 shown again. Send it over a channel you trust and have them change it.

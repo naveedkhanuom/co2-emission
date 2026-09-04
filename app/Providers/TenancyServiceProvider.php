@@ -43,7 +43,27 @@ class TenancyServiceProvider extends ServiceProvider
 
                 ])->send(function (Events\TenantCreated $event) {
                     return $event->tenant;
-                })->shouldBeQueued(false), // Runs inline. Move to the queue once provisioning is exposed in the UI.
+                })
+                    /*
+                     * MUST stay false. This looks like the place to make
+                     * provisioning asynchronous, and it is not. ProvisionTenant
+                     * does:
+                     *
+                     *     $tenant = Tenant::create([...]);   // fires this pipeline
+                     *     $tenant->domains()->create([...]);
+                     *     $tenant->run(fn () => Company::create(...));
+                     *
+                     * and that last line needs the database this pipeline
+                     * creates. Queue the pipeline and Tenant::create() returns
+                     * before the database exists, so the lines after it write
+                     * into nothing.
+                     *
+                     * Provisioning IS off the request — App\Jobs\
+                     * ProvisionTenantWorkspace queues the whole operation, and
+                     * inside it these steps run in order exactly as they do on
+                     * the command line. QueuedProvisioningTest pins this.
+                     */
+                    ->shouldBeQueued(false),
             ],
             Events\SavingTenant::class => [],
             Events\TenantSaved::class => [],

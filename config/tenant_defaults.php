@@ -29,7 +29,19 @@ return [
     */
 
     'developer_account' => [
-        'enabled' => env('TENANT_DEV_ACCOUNT_ENABLED', true),
+        /*
+         * Defaults to FALSE, and must stay that way.
+         *
+         * This was `true`, which meant a deployment that never set the key got
+         * a standing account owner in every client database. A security control
+         * whose default is "off" fails by leaving someone locked out; one whose
+         * default is "on" fails by silently granting access to every client on
+         * the platform, and nothing about the deployment would look wrong.
+         *
+         * Turning it on is a deliberate act that has to be written down in an
+         * .env. Forgetting to is now the safe outcome.
+         */
+        'enabled' => env('TENANT_DEV_ACCOUNT_ENABLED', false),
 
         'name' => env('TENANT_DEV_ACCOUNT_NAME', 'Developer'),
 

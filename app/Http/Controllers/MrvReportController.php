@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EmissionFactor;
 use App\Models\EmissionRecord;
 use App\Models\Facilities;
 use App\Models\MrvEmissionSource;
 use App\Models\MrvFacilityReport;
+use App\Models\MrvMeasuringInstrument;
 use App\Models\MrvSourceStream;
 use App\Services\MRV\EadWorkbookFiller;
 use App\Services\MRV\MrvCalculator;
@@ -52,6 +54,7 @@ class MrvReportController extends Controller
         $report = null;
         $streams = collect();
         $sources = collect();
+        $instruments = collect();
         $total = 0.0;
         $reconciliationWarnings = [];
         $scope1Available = 0;
@@ -69,6 +72,11 @@ class MrvReportController extends Controller
             $sources = MrvEmissionSource::where('facility_id', $facility->id)
                 ->where('reporting_year', $year)
                 ->orderBy('source_code')
+                ->get();
+
+            $instruments = MrvMeasuringInstrument::where('facility_id', $facility->id)
+                ->where('reporting_year', $year)
+                ->orderBy('instrument_code')
                 ->get();
 
             foreach ($streams as $stream) {
@@ -101,6 +109,7 @@ class MrvReportController extends Controller
             'report' => $report,
             'streams' => $streams,
             'sources' => $sources,
+            'instruments' => $instruments,
             'total' => $total,
             'reconciliationWarnings' => $reconciliationWarnings,
             'scope1Available' => $scope1Available,
@@ -280,7 +289,11 @@ class MrvReportController extends Controller
                     'activity_unit' => $unit,
                     'emission_factor_value' => $factors->count() === 1 ? $factors->first() : null,
                     'estimated_co2e' => (float) $unitRecords->sum('co2e_value'),
-                ])->save();
+                ]);
+
+                $this->applyDecomposition($stream, $unitRecords);
+
+                $stream->save();
 
                 $imported++;
             }
@@ -385,7 +398,8 @@ class MrvReportController extends Controller
             'facility_id' => 'required|integer',
             'year' => 'required|integer',
             'section' => ['required', Rule::in([
-                'contacts', 'products', 'methane', 'verification', 'management', 'mitigation',
+                'contacts', 'products', 'measurement', 'fallback', 'methane',
+                'verification', 'management', 'mitigation',
             ])],
         ]);
 
@@ -464,6 +478,58 @@ class MrvReportController extends Controller
             ->all();
 
         return ['products' => $products];
+    }
+
+    /**
+     * 3e2 — how the flue gas is measured, and how a year's emissions come out
+     * of it.
+     *
+     * `measurement_derivation` is the field that carries the weight. EAD asks
+     * for how annual emissions are determined from concentration AND flue-gas
+     * flow, at what frequency each is determined, and — the part operators
+     * forget — what is substituted when no data can be determined. A CEMS that
+     * was offline for a fortnight has to be accounted for somehow, and the
+     * substitution method is what an assurer checks.
+     */
+    private function validateMeasurementSection(Request $request): array
+    {
+        $data = $request->validate([
+            'measurement_approach' => 'nullable|string|max:5000',
+            'measurement_derivation' => 'nullable|string|max:5000',
+            'measurement_comments' => 'nullable|string|max:5000',
+        ]);
+
+        return [
+            'measurement_approach' => $data['measurement_approach'] ?? null,
+            'measurement_derivation' => $data['measurement_derivation'] ?? null,
+            'measurement_comments' => $data['measurement_comments'] ?? null,
+        ];
+    }
+
+    /**
+     * 3f — monitoring without tiers, and the case for departing from them.
+     *
+     * The justification carries a hard threshold: the operator must be able to
+     * demonstrate that overall uncertainty for the installation's annual
+     * emissions stays below 7.5%. That is a substantive claim the competent
+     * authority may ask for the workings behind, which is why it is a long free
+     * text and not a checkbox.
+     */
+    private function validateFallbackSection(Request $request): array
+    {
+        $data = $request->validate([
+            'fallback_description' => 'nullable|string|max:5000',
+            'fallback_justification' => 'nullable|string|max:5000',
+        ]);
+
+        // Spelled out rather than returned as-is, so submitting the form with
+        // the boxes emptied CLEARS them. validate() omits absent keys, and
+        // fill() on a partial array would silently keep the old text — leaving
+        // a justification in the workbook for an approach no longer in use.
+        return [
+            'fallback_description' => $data['fallback_description'] ?? null,
+            'fallback_justification' => $data['fallback_justification'] ?? null,
+        ];
     }
 
     /**
@@ -586,6 +652,83 @@ class MrvReportController extends Controller
     }
 
     /**
+     * Carry the EU-ETS decomposition from the factor the records were priced
+     * with onto the stream — NCV, the energy-basis emission factor, oxidation
+     * and conversion.
+     *
+     * Without this the operator picks a fuel the platform already knows
+     * everything about and then types four numbers back in by hand, which is
+     * both the slowest part of the workbook and the easiest place to put a
+     * digit wrong in a regulatory return.
+     *
+     * NEVER OVERWRITES. A field already holding a value is left exactly as it
+     * is, because under EU-ETS the values worth having are the ones the
+     * operator measured: Tier 3 and 4 are defined by using a site-specific
+     * calorific value from laboratory analysis rather than a published default.
+     * Re-running prefill must not quietly replace a lab result with a
+     * catalogue average — that would silently demote the tier the submission
+     * claims.
+     *
+     * Only when every record in the group was priced with the SAME factor. Two
+     * different factors under one stream means the stream is not one material,
+     * and picking either one would state a decomposition that priced only part
+     * of the activity.
+     *
+     * @param  \Illuminate\Support\Collection<int, EmissionRecord>  $records
+     */
+    private function applyDecomposition(MrvSourceStream $stream, $records): void
+    {
+        $factorIds = $records->pluck('emission_factor_id')->filter()->unique();
+
+        if ($factorIds->count() !== 1) {
+            return;
+        }
+
+        $factor = EmissionFactor::find($factorIds->first());
+
+        // A factor with no calorific value is not decomposed — a distance-based
+        // or spend-based row, or a publisher that only ships combined figures.
+        // There is nothing here to carry.
+        if (! $factor || $factor->net_calorific_value === null || $factor->ef_per_energy === null) {
+            return;
+        }
+
+        $decomposition = [
+            'emission_factor_id' => $factor->id,
+            'net_calorific_value' => $factor->net_calorific_value,
+            'ncv_unit' => $factor->ncv_unit,
+            'oxidation_factor' => $factor->oxidation_factor,
+            'conversion_factor' => $factor->conversion_factor,
+            'information_source' => $factor->ipcc_reference ?: $stream->information_source,
+        ];
+
+        foreach ($decomposition as $column => $value) {
+            if ($value !== null && $stream->{$column} === null) {
+                $stream->{$column} = $value;
+            }
+        }
+
+        // The emission factor and its unit are ONE value, and the pair has to be
+        // replaced together or not at all.
+        //
+        // The step above has already put the records' combined factor —
+        // tCO2e per litre — into emission_factor_value. Under the EU-ETS
+        // formula the EF acts on ENERGY, so what belongs there once an NCV is
+        // present is tCO2/TJ. Left as it was, MrvCalculator would multiply an
+        // energy quantity by a per-litre factor and return a number that is
+        // wrong by the calorific value itself.
+        //
+        // A missing ef_unit is what marks the existing value as not-an-EU-ETS-EF:
+        // MrvCalculator refuses a null unit outright, so nothing that reads
+        // these columns was relying on it. An operator who HAS set the unit has
+        // established the basis themselves, and is left alone.
+        if ($stream->ef_unit === null) {
+            $stream->emission_factor_value = $factor->ef_per_energy;
+            $stream->ef_unit = $factor->ef_per_energy_unit;
+        }
+    }
+
+    /**
      * Create or update one emission source — 2c2 table (d).
      *
      * There was no way to edit an emission source at all: prefill invented them
@@ -621,6 +764,15 @@ class MrvReportController extends Controller
             'methodology' => ['required', Rule::in(array_keys(config('mrv.methodologies')))],
             'materiality' => 'nullable|in:major,minor,de_minimis',
             'total_co2e' => 'nullable|numeric|min:0',
+
+            // 3e1(b). Only meaningful for a measured source, but accepted
+            // regardless: an operator who fills them then switches the
+            // methodology should not silently lose the values, and the export
+            // writes them only where measurement applies.
+            'tier_level' => 'nullable|integer|min:1|max:4',
+            'uncertainty_pct' => 'nullable|numeric|min:0',
+            'emission_stream_type' => 'nullable|string|max:255',
+            'accuracy_source' => 'nullable|string|max:255',
         ]);
 
         $facility = Facilities::findOrFail($data['facility_id']);
@@ -668,6 +820,75 @@ class MrvReportController extends Controller
         return redirect()
             ->route('mrv.index', ['facility_id' => $facilityId, 'year' => $year])
             ->with('success', "Emission source {$source->source_code} deleted.");
+    }
+
+    /**
+     * Create or update a measurement point — 3e2 table (b).
+     *
+     * A measurement point is where a continuous emission monitoring system
+     * (CEMS) sits: the stack or the pipeline cross-section whose CO2 flow is
+     * measured directly, rather than calculated from fuel consumed. EAD asks
+     * which emission source each one serves and which procedures govern it.
+     *
+     * The instrument's own specification — range, specified uncertainty, the
+     * part of the range actually used — was already modelled here; this is the
+     * descriptive half the workbook also wants.
+     */
+    public function saveInstrument(Request $request)
+    {
+        $data = $request->validate([
+            'facility_id' => 'required|integer',
+            'year' => 'required|integer',
+            'instrument_code' => 'required|string|max:20',
+            'emission_source_code' => 'nullable|string|max:20',
+            'source_stream_code' => 'nullable|string|max:20',
+            'type' => 'nullable|string|max:255',
+            'location_id' => 'nullable|string|max:255',
+            'procedures' => 'nullable|string|max:3000',
+            'relevant_procedures' => 'nullable|string|max:255',
+            'relevant_source' => 'nullable|string|max:255',
+            'range_unit' => 'nullable|string|max:50',
+            'range_lower' => 'nullable|numeric',
+            'range_upper' => 'nullable|numeric|gte:range_lower',
+            'use_range_lower' => 'nullable|numeric',
+            'use_range_upper' => 'nullable|numeric|gte:use_range_lower',
+            'specified_uncertainty_pct' => 'nullable|numeric|min:0',
+        ], [
+            'range_upper.gte' => 'The top of the instrument range cannot be below the bottom of it.',
+            'use_range_upper.gte' => 'The top of the used range cannot be below the bottom of it.',
+        ]);
+
+        $facility = Facilities::findOrFail($data['facility_id']);
+        $year = (int) $data['year'];
+
+        $instrument = MrvMeasuringInstrument::updateOrCreate(
+            [
+                'facility_id' => $facility->id,
+                'reporting_year' => $year,
+                'instrument_code' => $data['instrument_code'],
+            ],
+            array_merge($data, [
+                'company_id' => (int) (current_company_id() ?? auth()->user()->company_id),
+            ]),
+        );
+
+        return redirect()
+            ->route('mrv.index', ['facility_id' => $facility->id, 'year' => $year])
+            ->with('success', "Measurement point {$instrument->instrument_code} saved.");
+    }
+
+    public function deleteInstrument(Request $request, $id)
+    {
+        $instrument = MrvMeasuringInstrument::findOrFail($id);
+        $facilityId = $instrument->facility_id;
+        $year = $instrument->reporting_year;
+        $code = $instrument->instrument_code;
+
+        $instrument->delete();
+
+        return redirect()
+            ->route('mrv.index', ['facility_id' => $facilityId, 'year' => $year])
+            ->with('success', "Measurement point {$code} deleted.");
     }
 
     /**

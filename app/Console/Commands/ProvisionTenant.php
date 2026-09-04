@@ -159,6 +159,24 @@ class ProvisionTenant extends Command
     /**
      * @return string|null The reason it is unusable, or null if it is fine.
      */
+    /**
+     * Why this subdomain cannot be provisioned, or null if it can.
+     *
+     * Static and public so the back-office can apply exactly these rules
+     * before dispatching. Provisioning is asynchronous from there, so a
+     * subdomain that is reserved, malformed or already taken has to be
+     * refused while there is still a request to answer into — otherwise the
+     * operator gets a success page and the real answer lands in a log file
+     * minutes later.
+     *
+     * One implementation, so the two callers cannot disagree about what a
+     * valid subdomain is.
+     */
+    public static function rejectionFor(string $subdomain): ?string
+    {
+        return (new self)->validateSubdomain($subdomain);
+    }
+
     protected function validateSubdomain(string $subdomain): ?string
     {
         $validator = Validator::make(['subdomain' => $subdomain], [

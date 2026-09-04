@@ -22,3 +22,25 @@ yarn-error.log
 # per tenant, so these hold clients' uploads — bills, OCR sources, supporting
 # documents — and must never reach the repository.
 /storage/tenant*
+
+# Files moved out of public/ pending a decision on git history. public/ is the
+# web ROOT — anything in it is served by nginx directly, with no PHP, no auth
+# and no tenancy — so it held two phpMyAdmin dumps carrying users, sessions and
+# bcrypt hashes, and EAD's confidential MRV template. Kept on disk rather than
+# deleted so nothing is lost; safe to remove once you have what you need.
+/_archive
+
+# Database dumps, wherever they land. These carry real user rows and password
+# hashes and have no business in a repository.
+*.sql
+*.sqlite
+*.sqlite3
+*.dump
+
+# Nothing served straight off the web root should be a spreadsheet or an
+# archive: those are documents, and documents belong behind a controller that
+# can check who is asking. Build output under public/build is unaffected.
+/public/*.xlsx
+/public/*.xls
+/public/*.csv
+/public/*.zip

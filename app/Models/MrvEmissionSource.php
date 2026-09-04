@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MrvEmissionSource extends Model
 {
-    use HasCompanyScope, Auditable;
+    use Auditable, HasCompanyScope;
 
     protected $fillable = [
         'company_id',
@@ -27,6 +27,14 @@ class MrvEmissionSource extends Model
         'process_emissions',
         'methodology',
         'materiality',
+
+        // 3e1(b) — accuracy of a MEASURED source. Distinct from the same-named
+        // columns on MrvSourceStream: under a measurement approach the tier
+        // describes the stack being measured, not a fuel stream entering it.
+        'tier_level',
+        'uncertainty_pct',
+        'emission_stream_type',
+        'accuracy_source',
         'total_co2e',
     ];
 
@@ -35,6 +43,12 @@ class MrvEmissionSource extends Model
         'energy_related' => 'boolean',
         'process_emissions' => 'boolean',
         'total_co2e' => 'decimal:4',
+
+        // Same casts MrvSourceStream gives the same columns. Without them one
+        // model returns a tier as int and the other as a string, and the code
+        // reading both has to remember which.
+        'tier_level' => 'integer',
+        'uncertainty_pct' => 'decimal:4',
     ];
 
     public function facility()

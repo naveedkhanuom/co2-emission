@@ -50,6 +50,55 @@ class ImportEmissionFactors extends Command
     ];
 
     /**
+     * Entries whose derived emission factor disagrees with the IPCC value their
+     * own note quotes.
+     *
+     * Not a failure, and deliberately not corrected: `co2` is what prices every
+     * figure today, so changing it would restate history — a decision for
+     * whoever signs the inventory off, not for an importer. What it signals is
+     * that `co2` and `ncv` are on different bases, almost always a gross
+     * calorific value paired with a citation stated on a net one.
+     *
+     * It matters more under MRV than anywhere else: a regulator reads the
+     * decomposition AND the citation, and here they do not agree with each
+     * other.
+     *
+     * @param  array<int, array{source:string, unit:string, divergence:float}>  $divergent
+     */
+    private function reportDivergence(array $divergent): void
+    {
+        if ($divergent === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->components->warn(
+            count($divergent).' decomposed '.str('factor')->plural(count($divergent))
+            .' disagree with the IPCC value quoted in their own note by more than 1%. '
+            .'Totals are unaffected — co2 is what prices them — but the NCV and the citation '
+            .'are not on the same basis, which an assurer reading the MRV workbook will ask about.'
+        );
+
+        $this->newLine();
+        $this->table(
+            ['Source', 'Unit', 'Derived vs quoted'],
+            collect($divergent)
+                ->sortByDesc(fn ($row) => abs($row['divergence']))
+                ->take(15)
+                ->map(fn ($row) => [
+                    $row['source'],
+                    $row['unit'],
+                    sprintf('%+.1f%%', $row['divergence']),
+                ])
+                ->all(),
+        );
+
+        if (count($divergent) > 15) {
+            $this->components->info('… and '.(count($divergent) - 15).' more.');
+        }
+    }
+
+    /**
      * Compile the built-in config catalogue into rows.
      *
      * Not a file import — the source is config/scope1_sources.php and
@@ -82,7 +131,13 @@ class ImportEmissionFactors extends Command
         // buried: each one is a factor whose provenance a human still has to
         // establish, and the number should go DOWN over time.
         $this->components->twoColumnDetail('Unattributed (no publisher cited)', (string) $result['unattributed']);
+
+        // Rows carrying NCV + EF + oxidation, so the regulated MRV layer can
+        // run the EU-ETS formula against them and a tier means something.
+        $this->components->twoColumnDetail('Decomposed for MRV (NCV + EF)', (string) $result['decomposed']);
         $this->components->twoColumnDetail('Elapsed', $elapsed.'s');
+
+        $this->reportDivergence($result['divergent'] ?? []);
 
         if ($pretend) {
             $this->newLine();

@@ -317,6 +317,14 @@ php artisan migrate --force          # central
 php artisan tenants:migrate --force  # EVERY tenant — do not skip
 php artisan tenants:each "schema:stamp"    # record what each tenant migrated to
 
+# The built-in catalogue is AUTHORED in config/scope1_sources.php and COMPILED
+# into each tenant's emission_factors. Editing the config and deploying without
+# this leaves every tenant serving yesterday's numbers from the library while
+# the Scope 1/2 entry pages serve today's — including the NCV and energy-basis
+# EF the MRV workbook is built from. Cheap and idempotent; run it every deploy.
+php artisan tenants:each "factors:import builtin"
+php artisan tenants:each factors:check-drift   # exits non-zero if any tenant is stale
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
@@ -358,18 +366,33 @@ gets the 503. Running it keeps the back-office accurate and saves that check.
 
 ## Operational notes
 
-### Provisioning is synchronous
+### Provisioning runs on the queue — the worker is not optional
 
-`Platform\TenantController::store()` calls `tenant:provision` inline in the HTTP
-request: create database, run the tenant migrations, seed roughly 600 rows. That
-takes ~10s on an unloaded machine, which is why `fastcgi_read_timeout` is raised
-to 120 above. On a loaded server a browser-initiated onboarding can still cut out
-mid-provision.
+`Platform\TenantController::store()` dispatches `App\Jobs\ProvisionTenantWorkspace`
+and returns immediately. The job creates the database, runs the tenant migrations
+and seeds the reference data — 10–15s, and the seeding grows with every factor
+library imported.
 
-The asynchronous path is mostly built — the `provisioning` and `failed` statuses
-and the `tenant.unavailable` view already exist. Moving it to the queue means
-flipping `shouldBeQueued(false)` in `app/Providers/TenancyServiceProvider.php`
-and redirecting to a status page.
+**No worker, no provisioning.** If `ghg-worker` is not running, the back-office
+reports success, shows the credentials, and the workspace never appears. The
+screen says as much, but check the worker first when a client account does not
+show up:
+
+```bash
+systemctl status ghg-worker
+php artisan queue:failed          # a provision that failed lands here
+```
+
+The credentials are generated before dispatch, so they are correct and can be
+sent immediately — the workspace just is not ready for a minute. The account
+appears in the client list when the job completes.
+
+**Do not "fix" this by queueing the `TenantCreated` pipeline.** It is the obvious
+move and it breaks provisioning. `ProvisionTenant` runs `$tenant->run(...)` on the
+line after `Tenant::create()`, and that needs the database the pipeline creates —
+queue the pipeline and it writes into a database that does not exist yet.
+`shouldBeQueued(false)` in `app/Providers/TenancyServiceProvider.php` is correct
+and there is a test pinning it.
 
 ### Client uploads are private; branding is not
 
@@ -441,6 +464,26 @@ that can still be checked years later, rather than to a URL that may have moved.
 php artisan tenants:each "factors:import defra --pretend"   # parse and report
 php artisan tenants:each "factors:import defra"             # apply
 ```
+
+### Catalogue drift
+
+The built-in catalogue exists twice: authored in `config/scope1_sources.php` and
+`config/scope2_sources.php`, and compiled into each tenant's `emission_factors`.
+Only the config half is edited by hand, so the compiled half can go stale.
+
+```bash
+php artisan tenants:each factors:check-drift
+```
+
+Read only, and exits non-zero when a tenant's stored rows disagree with the
+deployed catalogue — which is why it is in the deploy script above. It reports
+two things: entries the library cannot resolve at all (never compiled), and
+entries whose stored value has moved away from the config.
+
+Nothing about stale rows looks wrong from the outside. The Scope 1/2 entry pages
+read the config directly and would show the new number; everything reading the
+library — the factor list, reports, and the NCV and energy-basis EF that the MRV
+workbook's tier calculations are built from — would show the old one.
 
 DEFRA/DESNZ 2026 adds ~2,600 factors and ~1,600 emission sources per tenant, and
 takes roughly 12s each. Re-running supersedes rather than duplicating: the

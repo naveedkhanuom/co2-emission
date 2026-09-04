@@ -328,6 +328,8 @@ Route::prefix('mrv')->name('mrv.')->middleware('auth')->group(function () {
     Route::post('/report', [MrvReportController::class, 'saveReport'])->name('saveReport');
     Route::post('/source', [MrvReportController::class, 'saveSource'])->name('saveSource');
     Route::delete('/source/{id}', [MrvReportController::class, 'deleteSource'])->name('deleteSource');
+    Route::post('/instrument', [MrvReportController::class, 'saveInstrument'])->name('saveInstrument');
+    Route::delete('/instrument/{id}', [MrvReportController::class, 'deleteInstrument'])->name('deleteInstrument');
 });
 
 // Data Quality Routes

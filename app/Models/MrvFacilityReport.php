@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MrvFacilityReport extends Model
 {
-    use HasCompanyScope, Auditable;
+    use Auditable, HasCompanyScope;
 
     protected $fillable = [
         'company_id',
@@ -26,6 +26,18 @@ class MrvFacilityReport extends Model
         'products',
         'methane_present',
         'methane',
+
+        // Sheet 3f — monitoring without tiers, and the case for it. The
+        // justification must demonstrate overall uncertainty below 7.5%.
+        'fallback_description',
+        'fallback_justification',
+
+        // Sheet 3e2 — how the flue gas is measured, how annual emissions are
+        // derived from concentration and flow (including what is substituted
+        // when the analyser is offline), and any caveats.
+        'measurement_approach',
+        'measurement_derivation',
+        'measurement_comments',
         'verification_text',
         'data_gaps',
         'management',

@@ -99,8 +99,37 @@ class ConfigCatalogueCompiler
             'sources' => 0,
             'superseded' => 0,
             'unattributed' => 0,
+            'decomposed' => 0,
+
+            // Entries whose derived EF disagrees with the IPCC value their own
+            // note quotes. Collected on every run, in --pretend too, because it
+            // is a reason to look at the catalogue rather than a consequence of
+            // writing to the database.
+            'divergent' => [],
+
             'import' => null,
         ];
+
+        foreach ($entries as $entry) {
+            // The same condition writeEntry() uses. A zero-carbon fuel has a
+            // real EF of zero and IS decomposed, so testing co2 as well would
+            // under-report by every biogenic entry in the catalogue.
+            if (! empty($entry['ncv']) && $entry['ncv'] > 0) {
+                $result['decomposed']++;
+            }
+
+            $divergence = $this->divergenceFrom($entry);
+
+            // A percent is noise below this; the cases that matter — a gross
+            // calorific value paired with a net citation — are several times it.
+            if ($divergence !== null && abs($divergence) > 1.0) {
+                $result['divergent'][] = [
+                    'source' => $entry['source'] ?? ($entry['name'] ?? '?'),
+                    'unit' => $entry['unit'],
+                    'divergence' => round($divergence, 1),
+                ];
+            }
+        }
 
         if ($pretend) {
             foreach ($entries as $entry) {
@@ -242,6 +271,8 @@ class ConfigCatalogueCompiler
             $attributes['n2o_factor'] = $entry['n2o'];
             $attributes['net_calorific_value'] = $entry['ncv'];
             $attributes['ncv_unit'] = 'TJ per '.$entry['unit'];
+
+            $attributes += $this->euEtsDecomposition($entry);
         }
 
         EmissionFactor::create($attributes);
@@ -251,6 +282,110 @@ class ConfigCatalogueCompiler
             'superseded' => $superseded,
             'unattributed' => $organisation === null ? 1 : 0,
         ];
+    }
+
+    /**
+     * The EU-ETS form of a factor the catalogue already decomposes.
+     *
+     *     Emissions = Activity × NCV × EF × Oxidation × Conversion
+     *
+     * The regulated MRV layer needs the emission factor per unit of ENERGY
+     * (tCO2/TJ) — the tier system rates the accuracy of NCV and EF separately,
+     * so a combined tCO2e-per-litre figure cannot express a tier at all. That
+     * is why 3d2 filled for no streams and every tier an operator entered was a
+     * claim about a calculation this application could not perform.
+     *
+     * DERIVED, NOT TRANSCRIBED
+     *
+     * EF = co2 / ncv, from the two numbers already committed in
+     * config/scope1_sources.php. It is deliberately NOT the IPCC figure quoted
+     * in the source's note, even though the note is where those numbers came
+     * from, because derivation is the only form that cannot move a client's
+     * total: NCV × EF reproduces `co2` exactly, by construction, so
+     * MrvCalculator returns what the entry page already calculated.
+     *
+     * Taking the quoted value instead would give MRV a different answer from
+     * the rest of the platform for the same fuel — the two-catalogues-disagree
+     * problem this codebase has spent GHG-04 closing, reopened inside one row.
+     *
+     * Where the derived EF and the quoted IPCC value disagree, that divergence
+     * is a data-quality signal about `co2`/`ncv`, and belongs in a report a
+     * human reads — not in a silent correction here. See divergenceFrom().
+     *
+     * Oxidation and conversion are 1.0 because the catalogue's `co2` is already
+     * a net, fully-oxidised figure; anything else would apply the factor twice.
+     *
+     * @param  array<string, mixed>  $entry
+     * @return array<string, mixed>
+     */
+    private function euEtsDecomposition(array $entry): array
+    {
+        $co2 = (float) $entry['co2'];
+        $ncv = (float) $entry['ncv'];
+
+        // A zero-carbon fuel decomposes to a zero EF, which is a real answer
+        // and must survive. Only a missing NCV makes the division impossible,
+        // and the caller has already excluded that.
+        if ($ncv <= 0.0) {
+            return [];
+        }
+
+        return [
+            // co2 is kg per unit and ncv is TJ per unit, so co2/ncv is kgCO2/TJ;
+            // /1000 puts it in the tonnes the EU-ETS formula and this column
+            // both expect.
+            'ef_per_energy' => $co2 / $ncv / 1000,
+            'ef_per_energy_unit' => 'tCO2/TJ',
+
+            'oxidation_factor' => 1.0,
+            'conversion_factor' => 1.0,
+
+            // The catalogue's own citation, kept on the row so a regulated
+            // submission can say where its calculation factors came from
+            // without reading back through config.
+            'ipcc_reference' => $entry['reference'] ? mb_substr($entry['reference'], 0, 255) : null,
+        ];
+    }
+
+    /**
+     * How far the derived EF sits from the IPCC value the source's note quotes,
+     * as a percentage — or null when the note quotes none.
+     *
+     * A non-trivial divergence means `co2` and `ncv` are not on the same basis:
+     * the recurring cause is a gross calorific value (US practice) paired with
+     * an IPCC citation that is stated on a net one, which is roughly a 10%
+     * difference for natural gas and around 3% for motor fuels.
+     *
+     * It does not make today's totals wrong — `co2` is what prices them, and
+     * `ncv` only feeds the small CH4/N2O terms. It does mean the decomposition
+     * a regulator sees is internally consistent but disagrees with its own
+     * citation, which is exactly the kind of thing an assurer asks about.
+     *
+     * Reported, never corrected. Changing a published `co2` or `ncv` restates
+     * every historical figure derived from it, and that is a decision for
+     * whoever signs the inventory off.
+     *
+     * @param  array<string, mixed>  $entry
+     */
+    public function divergenceFrom(array $entry): ?float
+    {
+        if (empty($entry['ncv']) || empty($entry['co2']) || empty($entry['reference'])) {
+            return null;
+        }
+
+        if (preg_match('/IPCC\s+([\d,]+)\s*kgCO2\/TJ/i', (string) $entry['reference'], $matches) !== 1) {
+            return null;
+        }
+
+        $quoted = (float) str_replace(',', '', $matches[1]) / 1000;
+
+        if ($quoted <= 0.0) {
+            return null;
+        }
+
+        $derived = (float) $entry['co2'] / (float) $entry['ncv'] / 1000;
+
+        return ($derived - $quoted) / $quoted * 100;
     }
 
     /**

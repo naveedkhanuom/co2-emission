@@ -143,6 +143,19 @@ class EadWorkbookExportTest extends TenantTestCase
         $calc = $book->createSheet();
         $calc->setTitle('3d2_ Calculation Approaches');
         $calc->setCellValue('B59', 'Source Stream ID');
+
+        $measured = $book->createSheet();
+        $measured->setTitle('3e1_Emission Sources (Measured)');
+        $measured->setCellValue('B8', 'Emission source ID');
+        $measured->setCellValue('C39', 'Tier level used ');
+
+        $measurement = $book->createSheet();
+        $measurement->setTitle('3e2_MeasurementBasedApproaches');
+        $measurement->setCellValue('B22', 'Measurement point ID');
+
+        $fallback = $book->createSheet();
+        $fallback->setTitle('3f_Fallback Approach');
+        $fallback->setCellValue('B8', 'Please provide a concise description of the monitoring approach, including formulae, used to determine your annual CO2 or CO2(e) emissions in the text box below.');
         $calc->setCellValue('B60', 'F03');
         $calc->setCellValue('C60', 'Crude oil');
         $calc->setCellValue('F60', '42.3 TJ/Gg');

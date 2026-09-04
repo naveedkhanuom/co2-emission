@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\EmissionRecord;
 use App\Models\Facilities;
+use App\Services\DataHealthService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
-    public function __construct()
+    public function __construct(private DataHealthService $health)
     {
         $this->middleware('auth');
         $this->middleware('permission:list-dashboard', ['only' => ['index']]);
@@ -401,7 +402,30 @@ class HomeController extends Controller
             ->pluck('emission_source')
             ->toArray();
 
+        /*
+         * What to do next.
+         *
+         * The dashboard is the screen every client lands on, and until now it
+         * answered "how are you doing" with charts and "what should you do
+         * next" not at all. A client who finished the setup wizard and scoped
+         * their boundary arrived here and stalled — the answer existed, on
+         * /data-health, which nobody visits.
+         *
+         * Top three only. This is a prompt, not the report: the full list, the
+         * dimension scores and the health breakdown stay on Data Health, and
+         * the panel links across.
+         */
+        $health = $this->health->assess(current_company());
+        $nextSteps = array_slice($health['steps'], 0, 3);
+        $remainingSteps = max(0, count($health['steps']) - count($nextSteps));
+        $healthScore = $health['healthScore'];
+        $healthYear = $health['year'];
+
         return view('home', compact(
+            'nextSteps',
+            'remainingSteps',
+            'healthScore',
+            'healthYear',
             'totalEmissions',
             'scope1Emissions',
             'scope2Emissions',

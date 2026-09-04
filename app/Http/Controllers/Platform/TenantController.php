@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Platform;
 
+use App\Console\Commands\ProvisionTenant;
 use App\Http\Controllers\Controller;
+use App\Jobs\ProvisionTenantWorkspace;
 use App\Models\Tenant;
 use App\Support\TenantSchema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Throwable;
 
 /**
  * The client list, and the handful of things we do to a client account.
@@ -85,29 +85,26 @@ class TenantController extends Controller
         // whose password nobody had.
         $password = Str::password(16);
 
-        try {
-            $exitCode = Artisan::call('tenant:provision', array_filter([
-                'subdomain' => $subdomain,
-                '--name' => $validated['name'] ?? null,
-                '--company' => $validated['company'] ?? null,
-                '--owner-name' => $validated['owner_name'] ?? null,
-                '--owner-email' => $validated['owner_email'],
-                '--owner-password' => $password,
-            ]));
-        } catch (Throwable $e) {
-            Log::error('Tenant provisioning failed from the back-office', [
-                'subdomain' => $subdomain,
-                'error' => $e->getMessage(),
-            ]);
-
-            return back()->withInput()->with('error', 'Provisioning failed: '.$e->getMessage());
+        // Cheap rejections first, while there is still a request to answer
+        // into. Everything below is asynchronous, so a subdomain that was
+        // never going to work should say so now rather than in a log file
+        // three minutes later.
+        if (($rejection = ProvisionTenant::rejectionFor($subdomain)) !== null) {
+            return back()->withInput()->with('error', $rejection);
         }
 
-        if ($exitCode !== 0) {
-            // The command reports precisely why — reserved name, already
-            // taken, bad email — and has already rolled back anything partial.
-            return back()->withInput()->with('error', trim(Artisan::output()));
-        }
+        // Off the request. Provisioning creates a database, runs 88 migrations
+        // and seeds several thousand factor rows — 10-11 seconds idle, and it
+        // is the seeding that grows. Behind a 30s FPM timeout on a loaded
+        // server this used to cut out part way through, leaving a half-built
+        // account and an operator with no idea how far it got.
+        ProvisionTenantWorkspace::dispatch($subdomain, [
+            '--name' => $validated['name'] ?? null,
+            '--company' => $validated['company'] ?? null,
+            '--owner-name' => $validated['owner_name'] ?? null,
+            '--owner-email' => $validated['owner_email'],
+            '--owner-password' => $password,
+        ]);
 
         $host = $subdomain.'.'.(config('tenancy.central_domains')[0] ?? 'localhost');
 
@@ -123,6 +120,13 @@ class TenantController extends Controller
                 // will not resolve until this line exists. In production a
                 // single wildcard DNS record covers every client.
                 'hosts_line' => app()->isLocal() ? '127.0.0.1 '.$host : null,
+
+                // The credentials are known before provisioning starts — the
+                // password is generated here — so they can be shown at once.
+                // The WORKSPACE is not ready yet, and saying so is the
+                // difference between "wait a moment" and "your login is
+                // broken" when they try the link immediately.
+                'pending' => true,
             ]);
     }
 

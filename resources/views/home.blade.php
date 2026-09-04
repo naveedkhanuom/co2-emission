@@ -495,7 +495,65 @@
     <!-- Main Content -->
     <div id="content">
 
-       @include('layouts.top-nav') 
+       @include('layouts.top-nav')
+
+        {{--
+            What to do next — above the charts on purpose.
+
+            The numbers below answer "how am I doing". This answers "what should
+            I do", which is the question a client actually arrives with, and the
+            one that decides whether they come back. The same steps power
+            /data-health; only the top three appear here.
+        --}}
+        @if(! empty($nextSteps))
+            @php
+                $sevStyle = [
+                    'high'   => ['border' => '#dc3545', 'bg' => 'rgba(220,53,69,.08)',  'text' => '#b02a37'],
+                    'medium' => ['border' => '#fd7e14', 'bg' => 'rgba(253,126,20,.08)', 'text' => '#b35309'],
+                    'low'    => ['border' => '#0dcaf0', 'bg' => 'rgba(13,202,240,.08)', 'text' => '#0a7c8f'],
+                    'done'   => ['border' => '#198754', 'bg' => 'rgba(25,135,84,.08)',  'text' => '#0f5132'],
+                ];
+            @endphp
+            <div class="card border-0 shadow-sm mt-4" style="border-radius:16px;">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2"
+                     style="border-radius:16px 16px 0 0;">
+                    <div>
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-list-check me-2 text-muted"></i>What to do next</h5>
+                        <div class="text-muted" style="font-size:.78rem;">Highest impact first, for {{ $healthYear }}</div>
+                    </div>
+                    <a href="{{ route('data_health.index') }}" class="btn btn-sm btn-outline-secondary">
+                        Data health {{ $healthScore }}%
+                        @if($remainingSteps > 0)
+                            <span class="badge bg-secondary ms-1">+{{ $remainingSteps }}</span>
+                        @endif
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @foreach($nextSteps as $step)
+                            @php $s = $sevStyle[$step['sev']] ?? $sevStyle['low']; @endphp
+                            <div class="col-md-4">
+                                <div class="h-100 d-flex flex-column"
+                                     style="border:1px solid {{ $s['border'] }}33;background:{{ $s['bg'] }};border-radius:12px;padding:14px 16px;">
+                                    <div class="d-flex align-items-start gap-2 mb-2">
+                                        <i class="fas {{ $step['icon'] }}" style="color:{{ $s['text'] }};margin-top:3px;"></i>
+                                        <div class="fw-semibold" style="font-size:.92rem;line-height:1.35;">{{ $step['title'] }}</div>
+                                    </div>
+                                    <div class="text-muted flex-grow-1" style="font-size:.8rem;line-height:1.45;">{{ $step['sub'] }}</div>
+                                    <div class="mt-3">
+                                        <a href="{{ route($step['route']) }}" class="btn btn-sm"
+                                           style="background:{{ $s['text'] }};color:#fff;font-size:.78rem;font-weight:600;">
+                                            {{ $step['cta'] }} <i class="fas fa-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- KPI Summary Cards -->
         <div class="row mt-4">
             <div class="col-xl-3 col-md-6 mb-4">

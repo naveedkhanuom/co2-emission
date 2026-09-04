@@ -5,6 +5,7 @@ namespace App\Services\MRV;
 use App\Models\Facilities;
 use App\Models\MrvEmissionSource;
 use App\Models\MrvFacilityReport;
+use App\Models\MrvMeasuringInstrument;
 use App\Models\MrvSourceStream;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
@@ -72,6 +73,10 @@ class EadWorkbookFiller
         [self::SHEET_STREAM_TIERS, 'B9', 'Source stream ID'],
         [self::SHEET_STREAM_TIERS, 'C40', 'Tier level used'],
         [self::SHEET_CALC, 'B59', 'Source Stream ID'],
+        [self::SHEET_FALLBACK, 'B8', 'Please provide a concise description of the monitoring approach, including formulae, used to determine your annual CO2 or CO2(e) emissions in the text box below.'],
+        [self::SHEET_MEASURED_SOURCES, 'B8', 'Emission source ID'],
+        [self::SHEET_MEASURED_SOURCES, 'C39', 'Tier level used'],
+        [self::SHEET_MEASUREMENT, 'B22', 'Measurement point ID'],
     ];
 
     // 3d1 (a) — materiality table, rows 10..34. Row-aligned 1:1 with the 2c2
@@ -89,6 +94,42 @@ class EadWorkbookFiller
     private const CALC_FIRST_ROW = 60;
 
     private const CALC_LAST_ROW = 84;
+
+    private const SHEET_MEASURED_SOURCES = '3e1_Emission Sources (Measured)';
+
+    private const SHEET_MEASUREMENT = '3e2_MeasurementBasedApproaches';
+
+    /*
+     * 3e1 (a) — measured sources, rows 9..33. Row-aligned 1:1 with the 2c2
+     * emission-source table (43..67), because column C is
+     * ='2c2_Facility Description'!G43 downward. The sheet cannot therefore be a
+     * FILTERED list of measured sources: row 9 always reports source #1's
+     * emissions whatever is written beside it, so the ordering has to mirror
+     * 2c2 exactly and the measurement columns are filled only where they apply.
+     */
+    private const MEASURED_FIRST_ROW = 9;
+
+    // 3e1 (b) — the same sources again, 31 rows below (its column B is =B9 …).
+    private const MEASURED_TIER_OFFSET = 31;
+
+    // 3e2 — the two narratives, then the measurement-point table, then comments.
+    private const MEASUREMENT_APPROACH_CELL = 'B7';
+
+    private const MEASUREMENT_DERIVATION_CELL = 'B9';
+
+    private const MEASUREMENT_COMMENTS_CELL = 'B41';
+
+    private const MEASUREMENT_POINT_FIRST_ROW = 23;
+
+    private const MEASUREMENT_POINT_LAST_ROW = 38;
+
+    private const SHEET_FALLBACK = '3f_Fallback Approach';
+
+    // 3f — two merged input blocks: (a) the methodology at B9:K17, (b) the
+    // justification at B21:K29. Each is written at the cell its block starts at.
+    private const FALLBACK_DESCRIPTION_CELL = 'B9';
+
+    private const FALLBACK_JUSTIFICATION_CELL = 'B21';
 
     private const SHEET_METHANE = '3g_Methane';
 
@@ -232,10 +273,28 @@ class EadWorkbookFiller
             ->orderBy('stream_code')
             ->get();
 
+        // Sources are shared for the same reason, and it matters more: 3e1's
+        // emissions column is ='2c2_Facility Description'!G43 downward, so the
+        // two sheets must list sources in the SAME ORDER or every measured
+        // source's tier lands beside a different source's emissions. One
+        // ordering, one place to change it.
+        $sources = MrvEmissionSource::where('facility_id', $facility->id)
+            ->where('reporting_year', $year)
+            ->orderBy('source_code')
+            ->get();
+
+        $instruments = MrvMeasuringInstrument::where('facility_id', $facility->id)
+            ->where('reporting_year', $year)
+            ->orderBy('instrument_code')
+            ->get();
+
         $this->fillIdentifiers($book, $facility, $report);
-        $this->fillFacilityDescription($book, $facility, $year, $report, $streams);
+        $this->fillFacilityDescription($book, $facility, $year, $report, $streams, $sources);
         $this->fillStreamTiers($book, $streams);
         $this->fillCalculation($book, $streams);
+        $this->fillMeasuredSources($book, $sources);
+        $this->fillMeasurement($book, $report, $instruments);
+        $this->fillFallback($book, $report);
         $this->fillMethane($book, $report);
         $this->fillVerification($book, $report);
         $this->fillManagement($book, $report);
@@ -374,8 +433,9 @@ class EadWorkbookFiller
 
     /**
      * @param  Collection<int, MrvSourceStream>  $streams
+     * @param  Collection<int, MrvEmissionSource>  $sources
      */
-    private function fillFacilityDescription(Spreadsheet $book, Facilities $facility, int $year, ?MrvFacilityReport $report, Collection $streams): void
+    private function fillFacilityDescription(Spreadsheet $book, Facilities $facility, int $year, ?MrvFacilityReport $report, Collection $streams, Collection $sources): void
     {
         $ws = $book->getSheetByName(self::SHEET_FACILITY);
         if (! $ws) {
@@ -400,11 +460,6 @@ class EadWorkbookFiller
 
         // Emission sources table (C..J, rows 43..67). All 25 rows ship filled
         // with illustrative placeholders — see clearTable().
-        $sources = MrvEmissionSource::where('facility_id', $facility->id)
-            ->where('reporting_year', $year)
-            ->orderBy('source_code')
-            ->get();
-
         $this->clearTable($ws, self::SRC_FIRST_ROW, self::SRC_LAST_ROW, 'C', 'J');
 
         $row = self::SRC_FIRST_ROW;
@@ -558,6 +613,138 @@ class EadWorkbookFiller
             $this->set($ws, "J{$row}", $st->information_source);
             $row++;
         }
+    }
+
+    /**
+     * 3e1 — the emission sources determined by measurement, and how well.
+     *
+     * Positional, not filtered. Column C is the template's own lookup into 2c2
+     * (`='2c2_Facility Description'!G43` downward), so row 9 reports the FIRST
+     * emission source's total whatever id is written next to it. Listing only
+     * the measured sources would put each one's tier beside a different
+     * source's emissions.
+     *
+     * So the (a) table mirrors 2c2's ordering for every source, and the columns
+     * that are specific to measurement — the category in (a), and the whole of
+     * (b) — are written only for sources that actually declare the measurement
+     * methodology. A reader can tell which sources are measured by which rows
+     * carry a tier, which is what the sheet is for.
+     *
+     * Column H of (b) — permitted uncertainty per Annex VIII — is left alone
+     * for the same reason as 3d1's: it is a regulatory threshold, it is not
+     * stored, and inventing one is the thing this class must never do.
+     *
+     * @param  Collection<int, MrvEmissionSource>  $sources
+     */
+    private function fillMeasuredSources(Spreadsheet $book, Collection $sources): void
+    {
+        $ws = $book->getSheetByName(self::SHEET_MEASURED_SOURCES);
+        if (! $ws) {
+            return;
+        }
+
+        $firstRow = self::MEASURED_FIRST_ROW;
+        $lastRow = $firstRow + (self::SRC_LAST_ROW - self::SRC_FIRST_ROW);
+        $offset = self::MEASURED_TIER_OFFSET;
+
+        // (a) B id, D category — C is the template's lookup and E carries an
+        // "Illustrative" marker on the first row.
+        $this->clearTable($ws, $firstRow, $lastRow, 'B', 'E');
+        // (b) C tier, D category, E uncertainty, F stream type, G accuracy —
+        // B is a formula, H is the Annex VIII threshold, I marks illustrative.
+        $this->clearTable($ws, $firstRow + $offset, $lastRow + $offset, 'C', 'I');
+
+        $row = $firstRow;
+
+        foreach ($sources as $source) {
+            if ($row > $lastRow) {
+                break;
+            }
+
+            // Written for every source, measured or not, so the id beside each
+            // row matches the emissions the formula pulls into it.
+            $this->set($ws, "B{$row}", $source->source_code);
+
+            if ($source->methodology === 'measurement') {
+                $materiality = $this->materialityLabel($source->materiality);
+                $tierRow = $row + $offset;
+
+                $this->set($ws, "D{$row}", $materiality);
+
+                $this->set($ws, "C{$tierRow}", $source->tier_level !== null ? (int) $source->tier_level : null);
+                $this->set($ws, "D{$tierRow}", $materiality);
+                $this->set($ws, "E{$tierRow}", $source->uncertainty_pct !== null ? (float) $source->uncertainty_pct : null);
+                $this->set($ws, "F{$tierRow}", $source->emission_stream_type);
+                $this->set($ws, "G{$tierRow}", $source->accuracy_source);
+            }
+
+            $row++;
+        }
+    }
+
+    /**
+     * 3e2 — how the measurement is actually done, and where.
+     *
+     * @param  Collection<int, \App\Models\MrvMeasuringInstrument>  $instruments
+     */
+    private function fillMeasurement(Spreadsheet $book, ?MrvFacilityReport $report, Collection $instruments): void
+    {
+        $ws = $book->getSheetByName(self::SHEET_MEASUREMENT);
+        if (! $ws) {
+            return;
+        }
+
+        $this->set($ws, self::MEASUREMENT_APPROACH_CELL, $report?->measurement_approach);
+
+        // B9:K15 — seven rows of merged block. The derivation is the answer an
+        // assurer reads hardest, so it gets laid out rather than clipped into
+        // one line.
+        $this->writeWrapped($ws, self::MEASUREMENT_DERIVATION_CELL, 7, $report?->measurement_derivation);
+
+        $this->set($ws, self::MEASUREMENT_COMMENTS_CELL, $report?->measurement_comments);
+
+        // Measurement points. Rows 23..25 ship with an illustrative MI1/S03/S04.
+        $this->clearTable($ws, self::MEASUREMENT_POINT_FIRST_ROW, self::MEASUREMENT_POINT_LAST_ROW, 'B', 'I');
+
+        $row = self::MEASUREMENT_POINT_FIRST_ROW;
+
+        foreach ($instruments as $instrument) {
+            if ($row > self::MEASUREMENT_POINT_LAST_ROW) {
+                break;
+            }
+
+            $this->set($ws, "B{$row}", $instrument->instrument_code);
+            $this->set($ws, "C{$row}", $instrument->emission_source_code);
+            $this->set($ws, "D{$row}", $instrument->procedures);
+            $this->set($ws, "H{$row}", $instrument->relevant_procedures);
+            $this->set($ws, "I{$row}", $instrument->relevant_source);
+
+            $row++;
+        }
+    }
+
+    /**
+     * 3f — monitoring that does not use the tier system, and the case for it.
+     *
+     * Written whenever the operator has recorded either half, rather than
+     * gated on whether a source currently declares the fall-back methodology.
+     *
+     * The two failure directions are not symmetric. Exporting a justification
+     * for an approach nobody is using is confusing; NOT exporting one while a
+     * source does use fall-back is an incomplete regulatory submission, and the
+     * competent authority may ask for the workings behind exactly this section.
+     * So it errs toward writing, and the workspace prompts when a fall-back
+     * source exists with nothing recorded here.
+     */
+    private function fillFallback(Spreadsheet $book, ?MrvFacilityReport $report): void
+    {
+        $ws = $book->getSheetByName(self::SHEET_FALLBACK);
+        if (! $ws) {
+            return;
+        }
+
+        $this->set($ws, self::FALLBACK_DESCRIPTION_CELL, $report?->fallback_description);
+        $this->set($ws, self::FALLBACK_JUSTIFICATION_CELL, $report?->fallback_justification);
     }
 
     /**

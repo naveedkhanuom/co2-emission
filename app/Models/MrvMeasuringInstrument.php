@@ -7,12 +7,18 @@ use App\HasCompanyScope;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * A measuring instrument register entry for a facility/year (EAD 3d2(c), 3e2).
- * Phase 1 is descriptive; the measurement-based numeric path is phase 2.
+ * A measurement point for a facility/year — EAD 3d2(c) and 3e2(b).
+ *
+ * Where a continuous emission monitoring system sits: the stack, or the
+ * pipeline cross-section whose CO2 flow is measured directly rather than
+ * calculated from fuel consumed. Carries both halves the workbook asks for —
+ * the instrument's specification (range, specified uncertainty, the part of the
+ * range actually used) and the descriptive side (which emission source it
+ * serves, and the procedures governing it).
  */
 class MrvMeasuringInstrument extends Model
 {
-    use HasCompanyScope, Auditable;
+    use Auditable, HasCompanyScope;
 
     protected $fillable = [
         'company_id',
@@ -28,6 +34,13 @@ class MrvMeasuringInstrument extends Model
         'specified_uncertainty_pct',
         'use_range_lower',
         'use_range_upper',
+
+        // 3e2(b) — the descriptive half of a measurement point: which emission
+        // source it serves, and the procedures governing it.
+        'emission_source_code',
+        'procedures',
+        'relevant_procedures',
+        'relevant_source',
     ];
 
     protected $casts = [

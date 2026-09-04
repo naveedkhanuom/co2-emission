@@ -268,8 +268,9 @@
                     EU-ETS formula (Activity × NCV × EF × Oxidation × Conversion). Otherwise the imported Scope 1 value is kept.
                     <strong>Export EAD workbook</strong> fills the official EAD "Deliverable C" template — identifiers,
                     facility description, source streams, tiers and calculation inputs, plus whatever you have completed
-                    in <strong>Monitoring Plan Details</strong> below. Measurement/CEMS (3e) and fall-back (3f) are not
-                    yet covered and stay blank.
+                    in <strong>Monitoring Plan Details</strong> below — every sheet of the workbook is covered.
+                    Sections that do not apply to this facility are submitted empty, which is the correct answer
+                    for them.
                 </div>
             </div>
 
@@ -479,6 +480,29 @@
                             </div>
                         </div>
                     </div>
+                    {{--
+                        3e1(b) — accuracy of a MEASURED source. Shown always but
+                        labelled as measurement-only: these are a property of
+                        the stack being measured, and the export writes them
+                        only where the methodology says measurement.
+                    --}}
+                    <h6 class="fw-bold small text-uppercase text-muted mt-4">
+                        If measurement-based <span class="text-muted" style="text-transform:none;font-weight:500;">(sheet 3e1)</span>
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-3"><label class="form-label small">Tier (1–4)</label><input type="number" min="1" max="4" name="tier_level" id="s_tier_level" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label small">Uncertainty %</label><input type="number" step="any" min="0" name="uncertainty_pct" id="s_uncertainty_pct" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label small">Emission stream type</label>
+                            <input type="text" name="emission_stream_type" id="s_emission_stream_type" class="form-control" list="emissionStreamTypes" placeholder="CO₂ emission sources">
+                            <datalist id="emissionStreamTypes">
+                                <option value="CO2 emission sources"></option>
+                                <option value="N2O emission sources"></option>
+                                <option value="Transferred CO2"></option>
+                            </datalist>
+                        </div>
+                        <div class="col-md-3"><label class="form-label small">Source of accuracy</label><input type="text" name="accuracy_source" id="s_accuracy_source" class="form-control" placeholder="Lab. Analysis"></div>
+                    </div>
+
                     <div class="alert alert-light border mt-3 mb-0 small">
                         <i class="fas fa-circle-info me-1 text-muted"></i>
                         EAD asks for combustion and process emissions to be reported separately. A source can be both —
@@ -522,7 +546,8 @@ function resetStreamForm() {
 
 function resetSourceForm() {
     document.getElementById('sourceModalTitle').textContent = 'Add Emission Source';
-    ['s_source_code','s_name','s_description','s_associated_product','s_total_co2e']
+    ['s_source_code','s_name','s_description','s_associated_product','s_total_co2e',
+     's_tier_level','s_uncertainty_pct','s_emission_stream_type','s_accuracy_source']
         .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     document.getElementById('s_ghg_types').value = 'CO2';
     document.getElementById('s_methodology').value = 'calculation';
@@ -541,6 +566,10 @@ document.querySelectorAll('.edit-source').forEach(btn => {
         set('s_description', s.description);
         set('s_associated_product', s.associated_product);
         set('s_total_co2e', s.total_co2e);
+        set('s_tier_level', s.tier_level);
+        set('s_uncertainty_pct', s.uncertainty_pct);
+        set('s_emission_stream_type', s.emission_stream_type);
+        set('s_accuracy_source', s.accuracy_source);
         document.getElementById('s_ghg_types').value = s.ghg_types || '';
         document.getElementById('s_methodology').value = s.methodology || 'calculation';
         document.getElementById('s_materiality').value = s.materiality || '';

@@ -31,15 +31,28 @@
     $measureRows   = $rowsFor($measures, 8);
 
     // Which sections have anything in them — drives the completeness badges.
+    // Does anything here actually use the fall-back approach? Derived rather
+    // than asked, because the emission sources already say so — and a second,
+    // manually-maintained answer to the same question would eventually
+    // contradict the first.
+    $usesMeasurement = $sources->contains('methodology', 'measurement');
+    $measurementRecorded = filled($plan?->measurement_approach) || filled($plan?->measurement_derivation);
+
+    $usesFallback = $sources->contains('methodology', 'fallback');
+    $fallbackRecorded = filled($plan?->fallback_description) || filled($plan?->fallback_justification);
+
     $done = [
         'contacts'     => filled(data_get($contacts, 'primary.surname')),
         'products'     => count($products) > 0,
+        'measurement'  => $usesMeasurement ? $measurementRecorded : true,
+        'fallback'     => $usesFallback ? $fallbackRecorded : true,
         'methane'      => $plan?->methane_present ? filled(data_get($methane, 'annual_volume')) : true,
         'verification' => filled($plan?->verification_text),
         'management'   => count($management['responsibilities'] ?? []) > 0,
         'mitigation'   => count($measures) > 0,
     ];
     $doneCount = count(array_filter($done));
+    $sectionCount = count($done);
 @endphp
 
 <div class="card border-0 shadow-sm mt-3" style="border-radius:16px;">
@@ -50,8 +63,8 @@
                 Sheets 2c1, 2c2, 3g, 4h, 4I and 4J of the EAD workbook
             </div>
         </div>
-        <span class="badge rounded-pill {{ $doneCount === 6 ? 'bg-success' : 'bg-secondary' }}" style="font-size:.78rem;">
-            {{ $doneCount }} of 6 sections started
+        <span class="badge rounded-pill {{ $doneCount === $sectionCount ? 'bg-success' : 'bg-secondary' }}" style="font-size:.78rem;">
+            {{ $doneCount }} of {{ $sectionCount }} sections started
         </span>
     </div>
 
@@ -177,6 +190,189 @@
 
                         <button class="btn btn-sm btn-success"><i class="fas fa-save me-1"></i>Save products</button>
                         <span class="text-muted small ms-2">Blank rows are discarded. Save to add more.</span>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- ============ MEASUREMENT / CEMS — 3e2 ============ --}}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secMeasurement">
+                    <i class="fas {{ $done['measurement'] ? 'fa-circle-check text-success' : 'fa-circle text-warning' }} me-2"></i>
+                    Measurement &amp; CEMS <span class="text-muted ms-2" style="font-size:.8rem;">Only if you measure the flue gas directly</span>
+                </button>
+            </h2>
+            <div id="secMeasurement" class="accordion-collapse collapse" data-bs-parent="#planAccordion">
+                <div class="accordion-body">
+                    @if($usesMeasurement && ! $measurementRecorded)
+                        <div class="alert alert-warning small">
+                            <i class="fas fa-triangle-exclamation me-1"></i>
+                            One or more emission sources is <strong>measurement-based</strong>, so EAD expects this sheet
+                            completed — including how a year's emissions are derived from concentration and flow.
+                        </div>
+                    @elseif(! $usesMeasurement)
+                        <p class="text-muted small">
+                            Nothing here is measurement-based — every emission source is calculated or falls back — so
+                            this sheet can stay empty. Complete it if a source is monitored with a continuous emission
+                            monitoring system (CEMS).
+                        </p>
+                    @endif
+
+                    <form method="POST" action="{{ route('mrv.saveReport') }}">
+                        @csrf
+                        <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+                        <input type="hidden" name="year" value="{{ $year }}">
+                        <input type="hidden" name="section" value="measurement">
+
+                        <label class="form-label small">Description of the measurement-based approach</label>
+                        <textarea name="measurement_approach" rows="4" class="form-control">{{ $plan?->measurement_approach }}</textarea>
+                        <div class="form-text" style="font-size:.72rem;">
+                            Include the type of instrument(s) used and whether measurements are taken under wet or dry
+                            conditions.
+                        </div>
+
+                        <label class="form-label small mt-3">
+                            How annual emissions are determined from concentration and flue-gas flow
+                        </label>
+                        <textarea name="measurement_derivation" rows="6" class="form-control">{{ $plan?->measurement_derivation }}</textarea>
+                        <div class="form-text" style="font-size:.72rem;">
+                            State how often concentration and flow are each determined, and — the part most operators
+                            leave out — <strong>what is substituted when no data can be determined</strong>. An analyser
+                            offline for a fortnight has to be accounted for, and that is what an assurer checks.
+                            One point per line.
+                        </div>
+
+                        <label class="form-label small mt-3">Comments <span class="text-muted">(optional)</span></label>
+                        <textarea name="measurement_comments" rows="3" class="form-control">{{ $plan?->measurement_comments }}</textarea>
+                        <div class="form-text" style="font-size:.72rem;">
+                            Biomass estimation method, further QA/QC measures, any deviation from the uncertainty
+                            requirements.
+                        </div>
+
+                        <button class="btn btn-sm btn-success mt-3"><i class="fas fa-save me-1"></i>Save measurement</button>
+                    </form>
+
+                    {{-- 3e2 (b) — measurement points. Their own records, so their own table. --}}
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                        <div>
+                            <h6 class="fw-bold small text-uppercase text-muted mb-0">Measurement points</h6>
+                            <div class="text-muted" style="font-size:.75rem;">
+                                Where a CEMS sits — a stack, or the pipeline cross-section whose CO₂ flow is measured.
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal"
+                                data-bs-target="#instrumentModal" onclick="resetInstrumentForm()">
+                            <i class="fas fa-plus me-1"></i>Add point
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:70px;">ID</th>
+                                    <th style="width:80px;">Source</th>
+                                    <th>Type / location</th>
+                                    <th>Range</th>
+                                    <th style="width:90px;">Uncertainty</th>
+                                    <th style="width:70px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @forelse($instruments as $mi)
+                                <tr>
+                                    <td><span class="badge bg-light text-dark border">{{ $mi->instrument_code }}</span></td>
+                                    <td>{{ $mi->emission_source_code ?: '—' }}</td>
+                                    <td>
+                                        <div>{{ $mi->type ?: '—' }}</div>
+                                        @if($mi->location_id)<div class="text-muted" style="font-size:.72rem;">{{ $mi->location_id }}</div>@endif
+                                    </td>
+                                    <td style="font-size:.8rem;">
+                                        @if($mi->range_lower !== null || $mi->range_upper !== null)
+                                            {{ rtrim(rtrim(number_format((float) $mi->range_lower, 4, '.', ''), '0'), '.') }}–{{ rtrim(rtrim(number_format((float) $mi->range_upper, 4, '.', ''), '0'), '.') }} {{ $mi->range_unit }}
+                                        @else — @endif
+                                    </td>
+                                    <td>{{ $mi->specified_uncertainty_pct !== null ? rtrim(rtrim(number_format((float) $mi->specified_uncertainty_pct, 3, '.', ''), '0'), '.').'%' : '—' }}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-link p-0 me-2 edit-instrument"
+                                                data-instrument='@json($mi, JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP)'
+                                                data-bs-toggle="modal" data-bs-target="#instrumentModal" title="Edit"><i class="fas fa-pen"></i></button>
+                                        <form method="POST" action="{{ route('mrv.deleteInstrument', $mi->id) }}" class="d-inline"
+                                              onsubmit="return confirm('Delete measurement point {{ $mi->instrument_code }}?')">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-sm btn-link text-danger p-0" title="Delete"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="6" class="text-center text-muted py-3" style="font-size:.85rem;">
+                                    No measurement points yet.
+                                </td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ============ FALL-BACK — 3f ============ --}}
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#secFallback">
+                    <i class="fas {{ $done['fallback'] ? 'fa-circle-check text-success' : 'fa-circle text-warning' }} me-2"></i>
+                    Fall-back approach <span class="text-muted ms-2" style="font-size:.8rem;">Only if you monitor something without tiers</span>
+                </button>
+            </h2>
+            <div id="secFallback" class="accordion-collapse collapse" data-bs-parent="#planAccordion">
+                <div class="accordion-body">
+                    {{--
+                        The prompt fires off the emission sources, not off a
+                        second answer to the same question: if a source declares
+                        the fall-back methodology, EAD expects this sheet
+                        completed, and an incomplete submission is the failure
+                        that costs something.
+                    --}}
+                    @if($usesFallback && ! $fallbackRecorded)
+                        <div class="alert alert-warning small">
+                            <i class="fas fa-triangle-exclamation me-1"></i>
+                            One or more of your emission sources is monitored with the <strong>fall-back approach</strong>,
+                            so EAD expects both boxes below to be completed.
+                        </div>
+                    @elseif(! $usesFallback && ! $fallbackRecorded)
+                        <p class="text-muted small">
+                            Nothing here uses the fall-back approach — every emission source is calculation- or
+                            measurement-based — so this sheet can stay empty. Complete it only if you monitor a
+                            source stream or emission source without using the tier system.
+                        </p>
+                    @endif
+
+                    <form method="POST" action="{{ route('mrv.saveReport') }}">
+                        @csrf
+                        <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+                        <input type="hidden" name="year" value="{{ $year }}">
+                        <input type="hidden" name="section" value="fallback">
+
+                        <label class="form-label small">
+                            Description of the monitoring approach, including formulae
+                        </label>
+                        <textarea name="fallback_description" rows="5" class="form-control">{{ $plan?->fallback_description }}</textarea>
+                        <div class="form-text" style="font-size:.72rem;">
+                            Cover every source stream or emission source for which no tier approach is used.
+                        </div>
+
+                        <label class="form-label small mt-3">Justification for applying it</label>
+                        <textarea name="fallback_justification" rows="5" class="form-control">{{ $plan?->fallback_justification }}</textarea>
+                        <div class="form-text" style="font-size:.72rem;">
+                            You must be able to demonstrate that overall uncertainty for the installation's annual
+                            emissions <strong>does not exceed 7.5%</strong>. The competent authority may ask for the
+                            full workings behind this.
+                        </div>
+
+                        <button class="btn btn-sm btn-success mt-3"><i class="fas fa-save me-1"></i>Save fall-back</button>
                     </form>
                 </div>
             </div>
@@ -471,7 +667,94 @@
 
     <div class="card-footer bg-white text-muted small">
         <i class="fas fa-info-circle me-1"></i>
-        Sections 3e (measurement/CEMS) and 3f (fall-back) are not yet covered here and remain blank in the export
-        for you to complete in the workbook.
+        Every sheet of the EAD workbook is covered here. Sections that do not apply to this facility — measurement,
+        fall-back, methane — are submitted empty, which is the correct answer for them.
     </div>
 </div>
+
+{{-- Measurement point editor — 3e2 (b) --}}
+<div class="modal fade" id="instrumentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;">
+            <form method="POST" action="{{ route('mrv.saveInstrument') }}">
+                @csrf
+                <input type="hidden" name="facility_id" value="{{ $facility->id }}">
+                <input type="hidden" name="year" value="{{ $year }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="instrumentModalTitle">Add Measurement Point</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-3"><label class="form-label small">Point ID *</label><input type="text" name="instrument_code" id="mi_code" class="form-control" placeholder="MI1" required></div>
+                        <div class="col-md-3"><label class="form-label small">Emission source</label><input type="text" name="emission_source_code" id="mi_source" class="form-control" placeholder="S03" maxlength="20"></div>
+                        <div class="col-md-6"><label class="form-label small">Instrument type</label><input type="text" name="type" id="mi_type" class="form-control" placeholder="NDIR CO₂ analyser + ultrasonic flow"></div>
+
+                        <div class="col-12"><label class="form-label small">Location</label><input type="text" name="location_id" id="mi_location" class="form-control" placeholder="Stack 2, sampling plane 18 m"></div>
+
+                        <div class="col-12">
+                            <label class="form-label small">Procedures used for this point</label>
+                            <textarea name="procedures" id="mi_procedures" rows="3" class="form-control" placeholder="Calculation, data aggregation, validation…"></textarea>
+                        </div>
+                        <div class="col-md-6"><label class="form-label small">Relevant procedures followed</label><input type="text" name="relevant_procedures" id="mi_relevant_procedures" class="form-control" placeholder="EN 14181"></div>
+                        <div class="col-md-6"><label class="form-label small">Relevant source</label><input type="text" name="relevant_source" id="mi_relevant_source" class="form-control"></div>
+                    </div>
+
+                    <h6 class="fw-bold small text-uppercase text-muted mt-4">Instrument specification</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3"><label class="form-label small">Range from</label><input type="number" step="any" name="range_lower" id="mi_range_lower" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label small">Range to</label><input type="number" step="any" name="range_upper" id="mi_range_upper" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label small">Range unit</label><input type="text" name="range_unit" id="mi_range_unit" class="form-control" placeholder="mg/Nm³"></div>
+                        <div class="col-md-3"><label class="form-label small">Specified uncertainty %</label><input type="number" step="any" min="0" name="specified_uncertainty_pct" id="mi_uncertainty" class="form-control"></div>
+
+                        <div class="col-md-3"><label class="form-label small">Used range from</label><input type="number" step="any" name="use_range_lower" id="mi_use_lower" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label small">Used range to</label><input type="number" step="any" name="use_range_upper" id="mi_use_upper" class="form-control"></div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-text" style="font-size:.72rem;">
+                                The part of the instrument's range actually used in operation — what the achieved
+                                uncertainty is assessed against.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save point</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    function resetInstrumentForm() {
+        document.getElementById('instrumentModalTitle').textContent = 'Add Measurement Point';
+        ['mi_code','mi_source','mi_type','mi_location','mi_procedures','mi_relevant_procedures',
+         'mi_relevant_source','mi_range_lower','mi_range_upper','mi_range_unit','mi_uncertainty',
+         'mi_use_lower','mi_use_upper']
+            .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    }
+
+    document.querySelectorAll('.edit-instrument').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var m = JSON.parse(this.dataset.instrument);
+            document.getElementById('instrumentModalTitle').textContent = 'Edit Measurement Point ' + (m.instrument_code || '');
+            var set = function (id, v) { var el = document.getElementById(id); if (el) el.value = (v === null || v === undefined ? '' : v); };
+            set('mi_code', m.instrument_code);
+            set('mi_source', m.emission_source_code);
+            set('mi_type', m.type);
+            set('mi_location', m.location_id);
+            set('mi_procedures', m.procedures);
+            set('mi_relevant_procedures', m.relevant_procedures);
+            set('mi_relevant_source', m.relevant_source);
+            set('mi_range_lower', m.range_lower);
+            set('mi_range_upper', m.range_upper);
+            set('mi_range_unit', m.range_unit);
+            set('mi_uncertainty', m.specified_uncertainty_pct);
+            set('mi_use_lower', m.use_range_lower);
+            set('mi_use_upper', m.use_range_upper);
+        });
+    });
+</script>
+@endpush

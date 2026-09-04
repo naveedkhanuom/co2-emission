@@ -105,6 +105,28 @@ class MrvMonitoringPlanTest extends TenantTestCase
         $calc->setTitle('3d2_ Calculation Approaches');
         $calc->setCellValue('B59', 'Source Stream ID');
 
+        $measured = $book->createSheet();
+        $measured->setTitle('3e1_Emission Sources (Measured)');
+        $measured->setCellValue('B8', 'Emission source ID');
+        $measured->setCellValue('C39', 'Tier level used ');
+        // The illustrative first row EAD ships.
+        $measured->setCellValue('B9', 'S01');
+        $measured->setCellValue('D9', 'Major');
+        $measured->setCellValue('E9', 'Illustrative');
+        $measured->setCellValue('C40', 3);
+        $measured->setCellValue('I40', 'Illustrative');
+
+        $measurement = $book->createSheet();
+        $measurement->setTitle('3e2_MeasurementBasedApproaches');
+        $measurement->setCellValue('B22', 'Measurement point ID');
+        $measurement->setCellValue('B23', 'MI1');
+        $measurement->setCellValue('C23', 'S03');
+        $measurement->setCellValue('C24', 'S04');
+
+        $fallback = $book->createSheet();
+        $fallback->setTitle('3f_Fallback Approach');
+        $fallback->setCellValue('B8', 'Please provide a concise description of the monitoring approach, including formulae, used to determine your annual CO2 or CO2(e) emissions in the text box below.');
+
         $book->createSheet()->setTitle('3g_Methane');
 
         $book->createSheet()->setTitle('4h_Verification and Data Gaps');
@@ -260,6 +282,74 @@ class MrvMonitoringPlanTest extends TenantTestCase
 
         $this->assertFalse($this->report()->methane_present);
         $this->assertNull($this->sheet('3g_Methane')->getCell('E9')->getValue());
+    }
+
+    public function test_the_fall_back_approach_reaches_3f(): void
+    {
+        $this->save('fallback', [
+            'fallback_description' => 'Mass balance across the reformer, with carbon content by monthly lab assay.',
+            'fallback_justification' => 'Overall uncertainty assessed at 4.1%, below the 7.5% threshold. Workings in FB-2026-01.',
+        ])->assertRedirect();
+
+        $ws = $this->sheet('3f_Fallback Approach');
+
+        // Two merged input blocks: (a) B9:K17, (b) B21:K29.
+        $this->assertStringContainsString('Mass balance', $ws->getCell('B9')->getValue());
+        $this->assertStringContainsString('4.1%', $ws->getCell('B21')->getValue());
+    }
+
+    public function test_clearing_the_fall_back_boxes_clears_the_sheet(): void
+    {
+        $this->save('fallback', [
+            'fallback_description' => 'Mass balance across the reformer.',
+            'fallback_justification' => 'Uncertainty 4.1%.',
+        ]);
+
+        // The operator stops using the fall-back approach and empties the form.
+        // validate() omits absent keys, so a partial fill() would have kept the
+        // old text — leaving a justification in a regulatory submission for an
+        // approach no longer in use.
+        $this->save('fallback', []);
+
+        $report = $this->report();
+
+        $this->assertNull($report->fallback_description);
+        $this->assertNull($report->fallback_justification);
+        $this->assertNull($this->sheet('3f_Fallback Approach')->getCell('B9')->getValue());
+    }
+
+    public function test_the_workspace_prompts_when_a_source_uses_fall_back_and_nothing_is_recorded(): void
+    {
+        \App\Models\MrvEmissionSource::create([
+            'company_id' => $this->company->id,
+            'facility_id' => $this->facility->id,
+            'reporting_year' => 2026,
+            'source_code' => 'S01',
+            'name' => 'Reformer',
+            'methodology' => 'fallback',
+        ]);
+
+        $response = $this->get(route('mrv.index', ['facility_id' => $this->facility->id, 'year' => 2026]));
+
+        $response->assertOk();
+        $response->assertSee('is monitored with the', false);
+        $response->assertSee('fall-back approach', false);
+    }
+
+    public function test_no_prompt_when_nothing_uses_fall_back(): void
+    {
+        \App\Models\MrvEmissionSource::create([
+            'company_id' => $this->company->id,
+            'facility_id' => $this->facility->id,
+            'reporting_year' => 2026,
+            'source_code' => 'S01',
+            'name' => 'Boiler',
+            'methodology' => 'calculation',
+        ]);
+
+        $this->get(route('mrv.index', ['facility_id' => $this->facility->id, 'year' => 2026]))
+            ->assertOk()
+            ->assertSee('this sheet can stay empty', false);
     }
 
     public function test_verification_and_data_gaps_reach_4h(): void
@@ -435,7 +525,9 @@ class MrvMonitoringPlanTest extends TenantTestCase
 
         $response->assertOk();
         $response->assertSee('Monitoring Plan Details', false);
-        $response->assertSee('of 6 sections started', false);
+        // Eight: contacts, products, measurement, fall-back, methane,
+        // verification, management, mitigation.
+        $response->assertSee('of 8 sections started', false);
         $response->assertSee('Al Mansoori', false);
     }
 
@@ -449,6 +541,7 @@ class MrvMonitoringPlanTest extends TenantTestCase
 
         $this->save('contacts', ['contacts' => ['primary' => ['surname' => 'Al Mansoori']]]);
         $this->save('methane', ['methane_present' => 1, 'methane' => ['annual_volume' => '412 t']]);
+        $this->save('fallback', ['fallback_description' => 'Mass balance.']);
         $this->save('verification', ['verification_text' => 'Verified.']);
         $this->save('management', ['management' => ['equipment_qa' => ['title' => 'Calibration']]]);
         $this->save('mitigation', ['mitigation_measures' => [['description' => 'Waste-heat recovery']]]);
@@ -459,6 +552,7 @@ class MrvMonitoringPlanTest extends TenantTestCase
         $book = app(EadWorkbookFiller::class)->fill($this->facility, 2026, $this->report());
 
         $this->assertSame('412 t', $book->getSheetByName('3g_Methane')->getCell('E9')->getValue());
+        $this->assertSame('Mass balance.', $book->getSheetByName('3f_Fallback Approach')->getCell('B9')->getValue());
         $this->assertSame('Verified.', $book->getSheetByName('4h_Verification and Data Gaps')->getCell('C7')->getValue());
         $this->assertSame('Calibration', $book->getSheetByName('4I - Management & QA')->getCell('E17')->getValue());
         $this->assertSame('Waste-heat recovery', $book->getSheetByName('4J - Mitigation Measures')->getCell('C7')->getValue());
