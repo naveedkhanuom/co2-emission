@@ -25,6 +25,7 @@ class Facilities extends Model
         'parent_entity',
         'coordinates',
         'primary_sector',
+        'primary_sector_other',
         'primary_activity',
     ];
 

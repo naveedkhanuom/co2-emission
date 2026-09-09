@@ -687,7 +687,30 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-3"><label class="form-label small">Point ID *</label><input type="text" name="instrument_code" id="mi_code" class="form-control" placeholder="MI1" required></div>
-                        <div class="col-md-3"><label class="form-label small">Emission source</label><input type="text" name="emission_source_code" id="mi_source" class="form-control" placeholder="S03" maxlength="20"></div>
+                        <div class="col-md-3">
+                            {{-- 3e2 C23:C37 is bound to the emission source IDs on 2c2. --}}
+                            <label class="form-label small">Emission source</label>
+                            <select name="emission_source_code" id="mi_source" class="form-select">
+                                <option value="">—</option>
+                                @foreach($sources as $src)
+                                    <option value="{{ $src->source_code }}">{{ $src->source_code }} — {{ Str::limit($src->name, 24) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            {{--
+                                3d2 C93:C141 is bound to the source stream IDs. There
+                                was no field for it at all: the column had a database
+                                column and (now) an export path, and no way to fill it.
+                            --}}
+                            <label class="form-label small">Source stream</label>
+                            <select name="source_stream_code" id="mi_stream" class="form-select">
+                                <option value="">—</option>
+                                @foreach($streams as $st)
+                                    <option value="{{ $st->stream_code }}">{{ $st->stream_code }} — {{ Str::limit($st->description ?: $st->fuel_type, 24) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-md-6"><label class="form-label small">Instrument type</label><input type="text" name="type" id="mi_type" class="form-control" placeholder="NDIR CO₂ analyser + ultrasonic flow"></div>
 
                         <div class="col-12"><label class="form-label small">Location</label><input type="text" name="location_id" id="mi_location" class="form-control" placeholder="Stack 2, sampling plane 18 m"></div>
@@ -730,7 +753,7 @@
 <script>
     function resetInstrumentForm() {
         document.getElementById('instrumentModalTitle').textContent = 'Add Measurement Point';
-        ['mi_code','mi_source','mi_type','mi_location','mi_procedures','mi_relevant_procedures',
+        ['mi_code','mi_source','mi_stream','mi_type','mi_location','mi_procedures','mi_relevant_procedures',
          'mi_relevant_source','mi_range_lower','mi_range_upper','mi_range_unit','mi_uncertainty',
          'mi_use_lower','mi_use_upper']
             .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
@@ -742,6 +765,7 @@
             document.getElementById('instrumentModalTitle').textContent = 'Edit Measurement Point ' + (m.instrument_code || '');
             var set = function (id, v) { var el = document.getElementById(id); if (el) el.value = (v === null || v === undefined ? '' : v); };
             set('mi_code', m.instrument_code);
+            set('mi_stream', m.source_stream_code);
             set('mi_source', m.emission_source_code);
             set('mi_type', m.type);
             set('mi_location', m.location_id);

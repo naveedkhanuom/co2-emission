@@ -244,6 +244,22 @@ resources/views/reports/mrv/index.blade.php // facility + year picker, MRV data 
 - New factor columns are nullable; existing factors keep working.
 - MRV is off by default for every facility and every company.
 - No normal user ever sees NCV / oxidation / tiers unless their facility opts in.
+- Locking a reporting period reaches MRV as it reaches everything else.
+
+### Where the period lock applies
+
+Locking a year freezes its **figures** — source streams, emission sources, and
+the prefill that creates both. It does not freeze the **monitoring plan**:
+contacts, products, and the 3f/3g/4h/4I/4J narratives stay editable after a
+lock, because those sheets describe how the facility monitors rather than what
+it emitted, and EAD asks questions about a submitted plan. Freezing them would
+make a regulator's follow-up unanswerable without unlocking the whole
+inventory.
+
+The line is "does this change a number in the submission", not "does this touch
+MRV". `MrvReportController::refuseIfPeriodLocked()` is where it is drawn, and
+`MrvPeriodLockTest` pins both halves — including the exception, so it stays
+deliberate rather than looking like an oversight.
 
 ---
 

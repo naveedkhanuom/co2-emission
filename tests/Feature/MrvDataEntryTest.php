@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\EmissionRecord;
 use App\Models\Facilities;
 use App\Models\MrvEmissionSource;
+use App\Models\MrvMeasuringInstrument;
 use App\Models\MrvSourceStream;
 use App\Models\User;
 use Spatie\Permission\PermissionRegistrar;
@@ -324,5 +325,214 @@ class MrvDataEntryTest extends TenantTestCase
         $this->assertContains('Grey cement clinker', config('mrv.product_benchmarks'));
         $this->assertContains('[Primary] Aluminium', config('mrv.product_benchmarks'));
         $this->assertCount(56, config('mrv.product_benchmarks'));
+    }
+
+    // ---------------------------------------------------------------------
+    // Which records belong to this facility
+    // ---------------------------------------------------------------------
+
+    private function scope1Record(array $overrides = []): EmissionRecord
+    {
+        return EmissionRecord::create(array_merge([
+            'company_id' => $this->company->id,
+            'entry_date' => '2026-04-11',
+            'scope' => 1,
+            'facility' => $this->facility->name,
+            'facility_id' => $this->facility->id,
+            'emission_source' => 'Natural Gas',
+            'activity_data' => 500,
+            'activity_unit' => 'MWh',
+            'co2e_value' => 90,
+            'status' => 'active',
+        ], $overrides));
+    }
+
+    /**
+     * Prefill matched Scope 1 records on the facility NAME. Nothing stops one
+     * company from having two facilities with the same name — there is no
+     * unique constraint, and "Boiler House" at two sites is ordinary — so both
+     * facilities' records were pulled into one regulated submission.
+     *
+     * Checked against the pre-fix controller: the second facility's 700 tCO2e
+     * arrived in this facility's streams, and its total read 790 instead of 90.
+     */
+    public function test_prefill_leaves_a_same_named_facilitys_records_alone(): void
+    {
+        $twin = Facilities::create([
+            'company_id' => $this->company->id,
+            'name' => $this->facility->name,
+            'mrv_enabled' => true,
+        ]);
+
+        $this->scope1Record();
+        $this->scope1Record([
+            'facility_id' => $twin->id,
+            'emission_source' => 'Diesel',
+            'co2e_value' => 700,
+        ]);
+
+        $this->post(route('mrv.prefill'), [
+            'facility_id' => $this->facility->id,
+            'year' => 2026,
+        ])->assertRedirect();
+
+        $streams = MrvSourceStream::where('facility_id', $this->facility->id)->get();
+
+        $this->assertCount(1, $streams, 'The twin facility\'s records were prefilled into this submission.');
+        $this->assertEquals(90, $streams->first()->estimated_co2e);
+    }
+
+    /**
+     * The other half: a record written before facility_id existed carries only
+     * the name, and dropping those would quietly shrink an operator's prefill.
+     */
+    public function test_a_record_that_predates_facility_ids_still_prefills(): void
+    {
+        $this->scope1Record(['facility_id' => null, 'emission_source' => 'Legacy boiler']);
+
+        $this->post(route('mrv.prefill'), [
+            'facility_id' => $this->facility->id,
+            'year' => 2026,
+        ])->assertRedirect();
+
+        $this->assertSame(1, MrvSourceStream::where('facility_id', $this->facility->id)->count());
+    }
+
+    // ---------------------------------------------------------------------
+    // What has been checked, and what has not
+    // ---------------------------------------------------------------------
+
+    /**
+     * Calculated streams are recomputed from the EU-ETS formula and a
+     * disagreement surfaces as a mismatch. A measured or fall-back figure is
+     * whatever the operator typed — the CEMS numeric path is phase 2 — and it
+     * reaches the workbook regardless. Presenting the two as one number would
+     * show unverified figures as verified, so the screen keeps them apart and
+     * says which is which.
+     */
+    public function test_a_measured_source_is_shown_as_reported_rather_than_recomputed(): void
+    {
+        MrvEmissionSource::create([
+            'company_id' => $this->company->id,
+            'facility_id' => $this->facility->id,
+            'reporting_year' => 2026,
+            'source_code' => 'S01',
+            'name' => 'Kiln stack (CEMS)',
+            'methodology' => 'measurement',
+            'total_co2e' => 41000,
+        ]);
+
+        $this->get(route('mrv.index', ['facility_id' => $this->facility->id, 'year' => 2026]))
+            ->assertOk()
+            ->assertSee('Measured / fall-back sources')
+            ->assertSee('41,000.00')
+            ->assertSee('not recomputed');
+    }
+
+    /**
+     * 2c1(b) is mandatory, so it needs somewhere to be typed. The facility
+     * settings form is where every other regulatory identifier is captured.
+     */
+    public function test_the_facility_description_can_be_entered_from_the_mrv_screen(): void
+    {
+        $this->post(route('mrv.enableFacility'), [
+            'facility_id' => $this->facility->id,
+            'mrv_enabled' => 1,
+            'description' => 'Two kiln lines and a captive limestone quarry.',
+        ])->assertRedirect();
+
+        $this->assertSame(
+            'Two kiln lines and a captive limestone quarry.',
+            $this->facility->fresh()->description
+        );
+    }
+
+    /**
+     * Saving one setting must not blank the others — the form posts every
+     * field, and an absent description used to mean "leave it alone".
+     */
+    public function test_saving_other_settings_does_not_wipe_the_description(): void
+    {
+        $this->facility->update(['description' => 'Existing description.']);
+
+        $this->post(route('mrv.enableFacility'), [
+            'facility_id' => $this->facility->id,
+            'mrv_enabled' => 1,
+            'primary_sector' => 'Cement',
+        ])->assertRedirect();
+
+        $this->assertSame('Existing description.', $this->facility->fresh()->description);
+    }
+
+    // ---------------------------------------------------------------------
+    // Values the workbook binds to a list
+    // ---------------------------------------------------------------------
+
+    /**
+     * 2c2 K10 is a dropdown. It had been a free-text box here since the MRV
+     * layer was written, so "Oil & Gas" or "energy" saved cleanly and then
+     * failed EAD's own validation on receipt.
+     */
+    public function test_a_sector_outside_the_workbooks_list_is_rejected(): void
+    {
+        $this->post(route('mrv.enableFacility'), [
+            'facility_id' => $this->facility->id,
+            'mrv_enabled' => 1,
+            'primary_sector' => 'Oil & Gas',
+        ])->assertSessionHasErrors('primary_sector');
+    }
+
+    public function test_a_sector_on_the_list_is_accepted(): void
+    {
+        $this->post(route('mrv.enableFacility'), [
+            'facility_id' => $this->facility->id,
+            'mrv_enabled' => 1,
+            'primary_sector' => 'Industrial Processes',
+        ])->assertRedirect();
+
+        $this->assertSame('Industrial Processes', $this->facility->fresh()->primary_sector);
+    }
+
+    /**
+     * C11 asks it, so choosing Other without answering leaves the workbook's
+     * own follow-up blank.
+     */
+    public function test_choosing_other_requires_saying_what_other_is(): void
+    {
+        $this->post(route('mrv.enableFacility'), [
+            'facility_id' => $this->facility->id,
+            'mrv_enabled' => 1,
+            'primary_sector' => 'Other',
+        ])->assertSessionHasErrors('primary_sector_other');
+
+        $this->post(route('mrv.enableFacility'), [
+            'facility_id' => $this->facility->id,
+            'mrv_enabled' => 1,
+            'primary_sector' => 'Other',
+            'primary_sector_other' => 'Desalination and power cogeneration',
+        ])->assertRedirect();
+
+        $this->assertSame('Desalination and power cogeneration', $this->facility->fresh()->primary_sector_other);
+    }
+
+    /**
+     * 3d2(c) column C is a dropdown over the source stream IDs, and the
+     * instrument form had no field for it at all — the column could be
+     * exported and never filled.
+     */
+    public function test_a_measurement_point_can_name_its_source_stream(): void
+    {
+        $this->post(route('mrv.saveInstrument'), [
+            'facility_id' => $this->facility->id,
+            'year' => 2026,
+            'instrument_code' => 'MI01',
+            'source_stream_code' => 'F02',
+            'type' => 'Coriolis meter',
+        ])->assertRedirect();
+
+        $this->assertSame(
+            'F02',
+            MrvMeasuringInstrument::where('facility_id', $this->facility->id)->firstOrFail()->source_stream_code
+        );
     }
 }

@@ -78,6 +78,29 @@
         </div>
 
         @if($facility)
+            @if(!empty($capacityWarnings))
+                {{--
+                    EAD's tables are fixed blocks of rows, so a facility can
+                    hold more than the workbook can carry. The export refuses
+                    rather than dropping the remainder silently — this says so
+                    before the operator gets there and finds out the hard way.
+                --}}
+                <div class="alert alert-warning border-0 shadow-sm mt-3" style="border-radius:14px;">
+                    <div class="fw-semibold mb-1">
+                        <i class="fas fa-triangle-exclamation me-1"></i>This facility does not fit the EAD workbook
+                    </div>
+                    <ul class="mb-1 small">
+                        @foreach($capacityWarnings as $warning)
+                            <li>{{ ucfirst($warning) }}</li>
+                        @endforeach
+                    </ul>
+                    <div class="small mb-0">
+                        The export is blocked until this is resolved, because a submission that quietly leaves
+                        rows out is worse than none. Split the facility across submissions, or consolidate sources.
+                    </div>
+                </div>
+            @endif
+
             {{-- Facility regulatory identifiers --}}
             <div class="row g-3 mt-1">
                 <div class="col-md-8">
@@ -105,6 +128,24 @@
                                 <div class="mt-2 text-danger small">
                                     <i class="fas fa-triangle-exclamation me-1"></i>
                                     Recompute mismatch: {{ implode(', ', $reconciliationWarnings) }}
+                                </div>
+                            @endif
+                            @if($measuredTotal > 0)
+                                {{--
+                                    Deliberately a separate line, not folded into the
+                                    total above. That total is recomputed from the
+                                    EU-ETS formula and disagreements show as a
+                                    mismatch; this figure is what the operator
+                                    reported, and nothing has checked it — the CEMS
+                                    numeric path is phase 2. One combined number
+                                    would present all of it as verified.
+                                --}}
+                                <div class="mt-2 pt-2 border-top">
+                                    <div class="text-muted small">Measured / fall-back sources</div>
+                                    <div class="fw-semibold">{{ number_format($measuredTotal, 2) }}</div>
+                                    <div class="text-muted" style="font-size:.7rem;">
+                                        tCO₂e · as reported, not recomputed
+                                    </div>
                                 </div>
                             @endif
                         </div>
@@ -158,7 +199,16 @@
                                         @if(! $src->energy_related && ! $src->process_emissions)—@endif
                                     </td>
                                     <td style="font-size:.8rem;">{{ config('mrv.methodologies')[$src->methodology] ?? '—' }}</td>
-                                    <td class="text-end fw-semibold">{{ number_format($src->total_co2e, 2) }}</td>
+                                    <td class="text-end fw-semibold">
+                                        {{ number_format($src->total_co2e, 2) }}
+                                        @if($src->methodology !== 'calculation' && $src->total_co2e > 0)
+                                            {{-- Nothing recomputes a measured or fall-back figure; say so where it is read. --}}
+                                            <div class="text-muted fw-normal" style="font-size:.65rem;"
+                                                 title="Measured and fall-back figures are reported by the operator. Only calculated streams are recomputed from the EU-ETS formula.">
+                                                not recomputed
+                                            </div>
+                                        @endif
+                                    </td>
                                     <td class="text-end">
                                         <button class="btn btn-sm btn-link p-0 me-2 edit-source"
                                             data-source='@json($src, JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP)'
@@ -303,6 +353,8 @@
                                     data-coords="{{ $f->coordinates }}"
                                     data-sector="{{ $f->primary_sector }}"
                                     data-activity="{{ $f->primary_activity }}"
+                                    data-description="{{ $f->description }}"
+                                    data-sector-other="{{ $f->primary_sector_other }}"
                                     @selected($facility && $facility->id === $f->id)>{{ $f->name }}</option>
                             @endforeach
                         </select>
@@ -316,7 +368,29 @@
                         <div class="col-md-6"><label class="form-label small">Environmental Permit Number</label><input type="text" name="environmental_permit_no" id="setPermit" class="form-control"></div>
                         <div class="col-md-6"><label class="form-label small">Parent / Group Entity</label><input type="text" name="parent_entity" id="setParent" class="form-control"></div>
                         <div class="col-md-6"><label class="form-label small">Coordinates (lat,lng)</label><input type="text" name="coordinates" id="setCoords" class="form-control" placeholder="24.4539, 54.3773"></div>
-                        <div class="col-md-6"><label class="form-label small">Primary Sector</label><input type="text" name="primary_sector" id="setSector" class="form-control" placeholder="Energy"></div>
+                        <div class="col-md-6">
+                            {{--
+                                A dropdown for the same reason Primary Activity is
+                                one: 2c2 K10 is bound to this exact list, so a
+                                sector typed by hand — "Oil & Gas", "energy" — is a
+                                value EAD's validation rejects. This list lives
+                                inline in the cell rather than on sheet 4k, which is
+                                why it stayed free text longer than the others.
+                            --}}
+                            <label class="form-label small">Primary Sector</label>
+                            <select name="primary_sector" id="setSector" class="form-select" onchange="syncSectorOther()">
+                                <option value="">—</option>
+                                @foreach(config('mrv.primary_sectors') as $sector)
+                                    <option value="{{ $sector }}">{{ $sector }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="sectorOtherWrap" style="display:none;">
+                            <label class="form-label small">If &ldquo;other&rdquo;, please specify</label>
+                            <input type="text" name="primary_sector_other" id="setSectorOther" class="form-control"
+                                placeholder="Describe the sector">
+                            <div class="form-text">EAD asks for this whenever the sector is Other &mdash; sheet 2c2, K11.</div>
+                        </div>
                         {{--
                             A dropdown, not free text: 2c2's own cell is bound
                             to this list (sheet 4k), so "Iron & steel
@@ -330,6 +404,18 @@
                                     <option value="{{ $activity }}">{{ $activity }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        {{--
+                            2c1(b), and EAD marks it mandatory. The workbook asks for an
+                            outline of the site and its activities — the linking
+                            information a reader needs to make sense of the sources
+                            listed later — so it is a paragraph, not a label.
+                        --}}
+                        <div class="col-12">
+                            <label class="form-label small">Facility description <span class="text-danger">*</span></label>
+                            <textarea name="description" id="setDescription" rows="4" class="form-control"
+                                placeholder="Outline of the site and its activities, and how they relate to the emission sources reported below."></textarea>
+                            <div class="form-text">Required by EAD — sheet 2c1(b) of the submission.</div>
                         </div>
                     </div>
                 </div>
@@ -368,7 +454,16 @@
                             </select>
                         </div>
                         <div class="col-md-4"><label class="form-label small">Fuel type</label><input type="text" name="fuel_type" id="f_fuel_type" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label small">Emission source code</label><input type="text" name="emission_source_code" id="f_emission_source_code" class="form-control" placeholder="S01"></div>
+                        <div class="col-md-3">
+                            {{-- 2c2 E75 is bound to the source IDs in C43:C67. --}}
+                            <label class="form-label small">Emission source code</label>
+                            <select name="emission_source_code" id="f_emission_source_code" class="form-select">
+                                <option value="">—</option>
+                                @foreach($sources as $s)
+                                    <option value="{{ $s->source_code }}">{{ $s->source_code }} — {{ Str::limit($s->name, 30) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-md-3"><label class="form-label small">Activity level</label><input type="number" step="any" name="activity_level" id="f_activity_level" class="form-control"></div>
                         <div class="col-md-2"><label class="form-label small">Activity unit</label><input type="text" name="activity_unit" id="f_activity_unit" class="form-control" placeholder="t"></div>
 
@@ -439,7 +534,18 @@
                         <div class="col-12"><label class="form-label small">Description</label><textarea name="description" id="s_description" class="form-control" rows="2" maxlength="1000"></textarea></div>
 
                         <div class="col-md-4"><label class="form-label small">Associated product</label>
-                            <input type="text" name="associated_product" id="s_associated_product" class="form-control" placeholder="P01" maxlength="20">
+                            {{-- 2c2 E43 is bound to the ten product IDs in C17:C26. --}}
+                            <select name="associated_product" id="s_associated_product" class="form-select">
+                                <option value="">—</option>
+                                @php $definedProducts = $report?->products ?? []; @endphp
+                                @for($i = 0; $i < 10; $i++)
+                                    @php
+                                        $pid = sprintf('P%02d', $i + 1);
+                                        $label = $definedProducts[$i]['category'] ?? null;
+                                    @endphp
+                                    <option value="{{ $pid }}">{{ $pid }}{{ $label ? ' — '.Str::limit($label, 30) : '' }}</option>
+                                @endfor
+                            </select>
                             <div class="form-text" style="font-size:.7rem;">The product ID whose production causes these emissions. Use a separate source per product.</div>
                         </div>
                         <div class="col-md-4"><label class="form-label small">Greenhouse gases</label>
@@ -531,6 +637,15 @@ function syncFacilitySettings() {
     document.getElementById('setCoords').value   = opt.dataset.coords || '';
     document.getElementById('setSector').value   = opt.dataset.sector || '';
     document.getElementById('setActivity').value = opt.dataset.activity || '';
+    document.getElementById('setDescription').value = opt.dataset.description || '';
+    document.getElementById('setSectorOther').value = opt.dataset.sectorOther || '';
+    syncSectorOther();
+}
+// The "if other" box only means anything while the sector is Other.
+function syncSectorOther() {
+    const wrap = document.getElementById('sectorOtherWrap');
+    if (!wrap) return;
+    wrap.style.display = document.getElementById('setSector').value === 'Other' ? '' : 'none';
 }
 document.addEventListener('DOMContentLoaded', syncFacilitySettings);
 

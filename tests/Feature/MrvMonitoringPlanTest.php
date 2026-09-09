@@ -86,6 +86,7 @@ class MrvMonitoringPlanTest extends TenantTestCase
         $identifiers->setTitle('2c1_ Identifiers');
         $identifiers->setCellValue('D5', 'Entity/Company name ');
         $identifiers->setCellValue('D7', 'Facility Name (as stated in the Environmental Permit)');
+        $identifiers->setCellValue('C13', 'Description of the facility and its activities (including site diagrams if applicable) (*):');
 
         $facility = $book->createSheet();
         $facility->setTitle('2c2_Facility Description');
@@ -104,6 +105,8 @@ class MrvMonitoringPlanTest extends TenantTestCase
         $calc = $book->createSheet();
         $calc->setTitle('3d2_ Calculation Approaches');
         $calc->setCellValue('B59', 'Source Stream ID');
+        $calc->setCellValue('F24', 'Source (e.g., maintenance records, fuel logs)');
+        $calc->setCellValue('C91', 'Associated source stream (ID)');
 
         $measured = $book->createSheet();
         $measured->setTitle('3e1_Emission Sources (Measured)');
@@ -136,9 +139,23 @@ class MrvMonitoringPlanTest extends TenantTestCase
         // The worked example EAD ships in the responsibilities table.
         $management->setCellValue('C7', 'HSEQ deputy head of unit');
         $management->setCellValue('F7', 'Overall responsibility for Monitoring & Reporting');
+        // …and the one it ships inside both procedure blocks, which is the
+        // whole of EAD's own QA regime — titles, a reference, the responsible
+        // post, three bullets of description — plus the margin markers that
+        // label it as an example.
+        $management->setCellValue('E17', 'ETS QA/QC of MI');
+        $management->setCellValue('M17', 'Illustrative ');
         $management->setCellValue('E20', '• Responsible person maintains a calendar');
         $management->setCellValue('E21', '• Responsible person orders external experts');
         $management->setCellValue('E22', '• Responsible person keeps records');
+        $management->setCellValue('M20', 'Illustrative ');
+        $management->setCellValue('E23', 'Measurement & Control head of unit');
+        $management->setCellValue('M23', 'Illustrative ');
+        $management->setCellValue('E28', 'ETS Data Validation');
+        $management->setCellValue('E29', 'ETS_Management_DataValidation');
+        $management->setCellValue('E31', '• Internal/External audits in accordance with EMAS/ISO 14001');
+        $management->setCellValue('E32', '• Responsible person cross-checks with production data');
+        $management->setCellValue('E33', 'Measurement & Control head of unit');
 
         $book->createSheet()->setTitle('4J - Mitigation Measures');
 
@@ -418,6 +435,56 @@ class MrvMonitoringPlanTest extends TenantTestCase
 
         $this->assertSame('Annual data review', $ws->getCell('E28')->getValue());
         $this->assertStringContainsString('ISO 14001', $ws->getCell('C37')->getValue());
+    }
+
+    public function test_an_unanswered_procedure_does_not_submit_eads_worked_example(): void
+    {
+        // 4I ships both procedure blocks FILLED IN, and set() skips blanks by
+        // design so it never clobbers the template. A facility that saved a
+        // plan without touching quality assurance therefore filed EAD's own
+        // regime — "ETS QA/QC of MI", "ETS Data Validation", the audit bullets
+        // — as a description of its own.
+        $this->save('management', [
+            'management' => ['responsibilities' => [['post' => 'Sustainability Manager', 'duties' => 'Owns the plan.']]],
+        ]);
+
+        $ws = $this->sheet('4I - Management & QA');
+
+        foreach (['E17', 'E20', 'E21', 'E22', 'E23', 'E28', 'E29', 'E31', 'E32', 'E33'] as $cell) {
+            $this->assertNull($ws->getCell($cell)->getValue(), "{$cell} still carries EAD's worked example.");
+        }
+    }
+
+    public function test_a_half_answered_procedure_does_not_borrow_the_examples_wording(): void
+    {
+        // The dangerous half: a real title beside the example's reference reads
+        // as one coherent procedure, so nothing about the sheet looks wrong.
+        $this->save('management', [
+            'management' => ['data_validation' => ['title' => 'Quarterly reconciliation']],
+        ]);
+
+        $ws = $this->sheet('4I - Management & QA');
+
+        $this->assertSame('Quarterly reconciliation', $ws->getCell('E28')->getValue());
+        $this->assertNull($ws->getCell('E29')->getValue(), 'Filed the example’s procedure reference.');
+        $this->assertNull($ws->getCell('E33')->getValue(), 'Filed the example’s responsible post.');
+    }
+
+    public function test_the_illustrative_markers_do_not_outlive_the_example(): void
+    {
+        // EAD parks these in the margin to label the rows beside them as an
+        // example. Left standing next to the operator's real answers they say
+        // the opposite of the truth.
+        $this->save('management', [
+            'management' => ['equipment_qa' => ['title' => 'Instrument calibration', 'description' => 'Annual calibration.']],
+        ]);
+
+        $ws = $this->sheet('4I - Management & QA');
+
+        $this->assertSame('Instrument calibration', $ws->getCell('E17')->getValue());
+        $this->assertNull($ws->getCell('M17')->getValue(), 'A real procedure is still marked "Illustrative".');
+        $this->assertNull($ws->getCell('M20')->getValue());
+        $this->assertNull($ws->getCell('M23')->getValue());
     }
 
     public function test_a_shorter_description_does_not_leave_the_previous_ones_tail_behind(): void

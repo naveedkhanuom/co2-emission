@@ -8,10 +8,10 @@ use App\Models\MrvFacilityReport;
 use App\Models\MrvMeasuringInstrument;
 use App\Models\MrvSourceStream;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use RuntimeException;
 
 /**
  * Fills the official EAD "Deliverable C" MRV workbook from stored MRV data, so the
@@ -23,11 +23,15 @@ use RuntimeException;
  * data rows and merge ranges). Cells that the template computes itself (e.g. the
  * 3d2 activity-data lookups that pull from 2c2) are intentionally NOT written.
  *
- * Scope (phase 1): the quantitative core — 2c1 Identifiers, 2c2 Facility Description
- * (sector/activity, emission sources, source streams), and 3d2 Calculation inputs.
- * The narrative/governance sheets (3g, 4h, 4i, 4j) are left as the template's blank
- * inputs for the user to complete; writing them wrong would be worse than leaving
- * them empty in a regulatory document.
+ * Scope: every sheet of the workbook an operator fills. The quantitative core —
+ * 2c1 Identifiers, 2c2 Facility Description, 3d1/3d2 calculation tiers and inputs,
+ * 3e1/3e2 measurement — and the narrative sheets, 3f Fallback, 3g Methane, 4h
+ * Verification, 4I Management and 4J Mitigation. The remaining three (1a Contents,
+ * 1b Guidance, 4k Reference Lists) are EAD's own reference material and are left
+ * exactly as issued.
+ *
+ * A section the facility has nothing to say about is submitted empty rather than
+ * guessed at: an invented answer in a regulatory document is worse than a blank one.
  *
  * If EAD ships a new template version with shifted rows, only the constants here and
  * the resolved template path need updating.
@@ -72,7 +76,10 @@ class EadWorkbookFiller
         [self::SHEET_FACILITY, 'C74', 'Source Stream ID'],
         [self::SHEET_STREAM_TIERS, 'B9', 'Source stream ID'],
         [self::SHEET_STREAM_TIERS, 'C40', 'Tier level used'],
+        [self::SHEET_CALC, 'F24', 'Source (e.g., maintenance records, fuel logs)'],
         [self::SHEET_CALC, 'B59', 'Source Stream ID'],
+        [self::SHEET_CALC, 'C91', 'Associated source stream (ID)'],
+        [self::SHEET_IDENTIFIERS, 'C13', 'Description of the facility and its activities (including site diagrams if applicable) (*):'],
         [self::SHEET_FALLBACK, 'B8', 'Please provide a concise description of the monitoring approach, including formulae, used to determine your annual CO2 or CO2(e) emissions in the text box below.'],
         [self::SHEET_MEASURED_SOURCES, 'B8', 'Emission source ID'],
         [self::SHEET_MEASURED_SOURCES, 'C39', 'Tier level used'],
@@ -90,10 +97,60 @@ class EadWorkbookFiller
     // tables in step.
     private const TIER_TABLE_OFFSET = 31;
 
+    /*
+     * 3d2 (b) — the FUEL table, rows 25..49: B source stream id, C fuel type,
+     * F the records the figure was read off. Columns D and E are the
+     * template's own lookups into 2c2 and are left to compute.
+     *
+     * A separate table from "other inputs / outputs" at 60..84, not an
+     * alternative to it: EAD splits combusted fuels off from process inputs
+     * and outputs and asks for the decomposed factor components only on the
+     * second. A fuel stream absent here is absent from the sheet the regulator
+     * reads combustion off, however completely 2c2 describes it.
+     *
+     * It also has to be CLEARED, like every other table: the template ships an
+     * illustrative row 25 — "F01 / Natural gas / In-house technical data" —
+     * and F01 is exactly the code prefill gives a facility's first stream. Left
+     * alone, D25/E25 match that id against 2c2 and dress the illustration in
+     * the operator's own activity data, which reads as a real fuel row rather
+     * than an obvious leftover.
+     */
+    private const FUEL_FIRST_ROW = 25;
+
+    private const FUEL_LAST_ROW = 49;
+
     // 3d2 — decomposed calculation inputs, rows 60..84.
     private const CALC_FIRST_ROW = 60;
 
     private const CALC_LAST_ROW = 84;
+
+    /*
+     * 3d2 (c) — the instruments that determine a source stream's ACTIVITY DATA:
+     * the meters and weighbridges a calculation-based figure rests on, with
+     * their range and specified uncertainty. Not the same table as 3e2(b),
+     * which lists the measurement points of a CEMS-monitored source; both are
+     * held in mrv_measuring_instruments, and each sheet takes the half it asks
+     * for.
+     *
+     * One instrument occupies a merged row PAIR — MI01 at 93/94, MI02 at 95/96
+     * — because the template lets an instrument state a second range and
+     * uncertainty on its lower row.
+     *
+     * TWENTY-FIVE slots, at 93, 95 … 141. Read off the dropdown fill on column
+     * C, which EAD applies to every usable row, NOT off the MI1..MI23 labels in
+     * column B: those stop at 109 and the table plainly does not. Mapping it
+     * from the labels capped this export at nine instruments and would have
+     * refused a tenth as "more than the workbook holds".
+     */
+    private const INSTRUMENT_FIRST_ROW = 93;
+
+    private const INSTRUMENT_LAST_ROW = 142;
+
+    private const INSTRUMENT_ROW_STRIDE = 2;
+
+    // 2c1 (b) — the facility description, one merged block at C16:L24. EAD
+    // marks it mandatory; see the asterisk convention on sheet 1b.
+    private const FACILITY_DESCRIPTION_CELL = 'C16';
 
     private const SHEET_MEASURED_SOURCES = '3e1_Emission Sources (Measured)';
 
@@ -121,7 +178,10 @@ class EadWorkbookFiller
 
     private const MEASUREMENT_POINT_FIRST_ROW = 23;
 
-    private const MEASUREMENT_POINT_LAST_ROW = 38;
+    // 37, not 38: the row borders and the column-C dropdown both stop after
+    // 37, and (c) Comments opens at 39. A sixteenth point written at 38 would
+    // land in the gap beneath the table.
+    private const MEASUREMENT_POINT_LAST_ROW = 37;
 
     private const SHEET_FALLBACK = '3f_Fallback Approach';
 
@@ -172,6 +232,25 @@ class EadWorkbookFiller
     // beneath it are separate merged blocks, so a long description is laid out
     // one line per row the way the template's own worked example is.
     private const MANAGEMENT_DESCRIPTION_ROWS = ['equipment_qa' => 3, 'data_validation' => 2];
+
+    /*
+     * The row span of each 4I procedure block, so the worked example inside it
+     * can be cleared the way every other table's is.
+     *
+     * These two blocks ship FILLED — "ETS QA/QC of MI", "ETS Data Validation",
+     * "ETS_Management_DataValidation", "Measurement & Control head of unit" and
+     * three bullets of procedure text — and set() skips blanks by design, so a
+     * facility that answered none of it submitted EAD's own worked example as
+     * its quality-assurance regime. Answering some of it was no better: the
+     * fields left blank kept the example's wording beside the operator's.
+     *
+     * Wider than MANAGEMENT_PROCEDURE_CELLS on both sides: E..M also takes in
+     * the description's continuation rows and column M's "Illustrative" marker.
+     */
+    private const MANAGEMENT_PROCEDURE_ROWS = [
+        'equipment_qa' => [17, 24],
+        'data_validation' => [28, 34],
+    ];
 
     // 4I (a) — responsibilities, rows 7..11: C job title, F duties.
     private const RESPONSIBILITY_FIRST_ROW = 7;
@@ -250,7 +329,7 @@ class EadWorkbookFiller
         $path = self::templatePath();
 
         if (! is_file($path)) {
-            throw new RuntimeException(
+            throw new EadTemplateMissingException(
                 "The EAD workbook template is not installed. Expected it at {$path}. ".
                 'It is not shipped with the application — EAD issues it to each operator under a '.
                 'confidentiality notice — so install your own copy there, or point '.
@@ -288,10 +367,17 @@ class EadWorkbookFiller
             ->orderBy('instrument_code')
             ->get();
 
+        // Refused before a single cell is written, so an operator who is over
+        // the workbook's limits gets an error instead of a file. See
+        // capacityOverflows().
+        $this->assertFacilityFits($year, $sources, $streams, $instruments, $report);
+
         $this->fillIdentifiers($book, $facility, $report);
         $this->fillFacilityDescription($book, $facility, $year, $report, $streams, $sources);
         $this->fillStreamTiers($book, $streams);
+        $this->fillFuels($book, $streams);
         $this->fillCalculation($book, $streams);
+        $this->fillInstrumentSpecifications($book, $instruments);
         $this->fillMeasuredSources($book, $sources);
         $this->fillMeasurement($book, $report, $instruments);
         $this->fillFallback($book, $report);
@@ -324,7 +410,7 @@ class EadWorkbookFiller
             $ws = $book->getSheetByName($sheetName);
 
             if (! $ws) {
-                throw new RuntimeException(
+                throw new EadTemplateMismatchException(
                     "This does not look like the EAD Deliverable C template: it has no \"{$sheetName}\" sheet. ".
                     "Checked {$path}."
                 );
@@ -333,7 +419,7 @@ class EadWorkbookFiller
             $actual = $this->normaliseLabel((string) $ws->getCell($coordinate)->getValue());
 
             if ($actual !== $this->normaliseLabel($expected)) {
-                throw new RuntimeException(
+                throw new EadTemplateMismatchException(
                     'The EAD template does not match the layout this export was built for (v8.1). '.
                     "Expected \"{$expected}\" at {$sheetName}!{$coordinate}, found \"{$actual}\". ".
                     'Filling it anyway would write values into the wrong cells of a regulatory '.
@@ -341,6 +427,117 @@ class EadWorkbookFiller
                 );
             }
         }
+    }
+
+    /**
+     * Refuse to fill a workbook that cannot hold this facility's data.
+     *
+     * Every table below is a fixed block of rows in EAD's template, and each
+     * loop that writes one stops at its last row. That stop was silent: a
+     * facility with thirty-one source streams exported twenty-five and dropped
+     * six, and the submission looked complete — twenty-five streams, every
+     * total consistent, nothing to notice. The regulator would find out, or
+     * nobody would.
+     *
+     * This is the same judgement assertCellMapFits() makes just above, for the
+     * same reason: a wrong regulatory submission that looks ordinary is worse
+     * than no submission. The operator can split the facility or consolidate
+     * sources; they cannot fix a shortfall nobody told them about.
+     *
+     * The `break`s in the write loops stay as a backstop. They are unreachable
+     * while this runs first, and they are what stops a future change here from
+     * spilling one table's rows into the section beneath it.
+     *
+     * @param  Collection<int, MrvEmissionSource>  $sources
+     * @param  Collection<int, MrvSourceStream>  $streams
+     * @param  Collection<int, MrvMeasuringInstrument>  $instruments
+     */
+    private function assertFacilityFits(int $year, Collection $sources, Collection $streams, Collection $instruments, ?MrvFacilityReport $report): void
+    {
+        $overflows = self::capacityOverflows(
+            $sources->count(),
+            $streams->count(),
+            self::measurementPoints($instruments)->count(),
+            $report,
+            self::specifiedInstruments($instruments)->count(),
+        );
+
+        if ($overflows === []) {
+            return;
+        }
+
+        throw new EadCapacityExceededException(
+            "This facility's {$year} data does not fit the EAD workbook: ".implode('; ', $overflows).'. '.
+            'Filling it would leave the rest out of the submission without saying so, so the export has '.
+            'stopped. Split the facility across submissions, or consolidate sources, and export again.'
+        );
+    }
+
+    /**
+     * What does not fit, in the operator's terms — one clause per table.
+     *
+     * Static and taking plain counts so the limits can be checked wherever the
+     * numbers are known: before an export, from a test with no template
+     * installed, or from a screen that would rather warn than let the operator
+     * reach the export button.
+     *
+     * The four report-held tables are also capped by validation in
+     * MrvReportController, at exactly these numbers. Checking them again here
+     * is not redundant: validation guards the form, and rows also arrive from
+     * prefill, seeders and imports, which never pass through it.
+     *
+     * The two instrument counts are separate because the two sheets take
+     * the two sheets take different subsets: 3e2 lists every measurement
+     * point, 3d2(c) only those carrying an instrument specification. One
+     * count against both limits would refuse an export that fits.
+     *
+     * @return array<int, string>
+     */
+    public static function capacityOverflows(int $sources, int $streams, int $measurementPoints, ?MrvFacilityReport $report = null, int $specifiedInstruments = 0): array
+    {
+        $rows = fn (int $first, int $last): int => $last - $first + 1;
+
+        // Pulled out rather than indexed inline: `$report?->management['x']`
+        // reads the offset off null whenever the report exists but the
+        // section has never been saved, which is a warning, not a null.
+        $management = $report?->management ?? [];
+
+        // A stream occupies a row on 2c2 and a row on ONE of 3d2's two tables —
+        // fuels above, other inputs and outputs below — each sized by its own
+        // constant. The smallest is the real limit, so a later edit to any of
+        // them cannot leave the others silently short. Deliberately not split
+        // per classification: a facility can burn all 25 of its streams or none
+        // of them, so either table has to be able to take the lot.
+        $streamCapacity = min(
+            $rows(self::STREAM_FIRST_ROW, self::STREAM_LAST_ROW),
+            $rows(self::FUEL_FIRST_ROW, self::FUEL_LAST_ROW),
+            $rows(self::CALC_FIRST_ROW, self::CALC_LAST_ROW),
+        );
+
+        // 3d2(c) gives each instrument a merged row PAIR, so its capacity is
+        // half the block, not the row count.
+        $instrumentSlots = intdiv(self::INSTRUMENT_LAST_ROW - self::INSTRUMENT_FIRST_ROW, self::INSTRUMENT_ROW_STRIDE) + 1;
+
+        $limits = [
+            ['emission source', $sources, $rows(self::SRC_FIRST_ROW, self::SRC_LAST_ROW), 'sheet 2c2'],
+            ['source stream', $streams, $streamCapacity, 'sheets 2c2 and 3d2'],
+            ['measurement point', $measurementPoints, $rows(self::MEASUREMENT_POINT_FIRST_ROW, self::MEASUREMENT_POINT_LAST_ROW), 'sheet 3e2'],
+            ['measuring instrument', $specifiedInstruments, $instrumentSlots, 'sheet 3d2'],
+            ['product', count($report?->products ?? []), $rows(self::PRODUCT_FIRST_ROW, self::PRODUCT_LAST_ROW), 'sheet 2c2'],
+            ['data gap', count($report?->data_gaps ?? []), $rows(self::GAP_FIRST_ROW, self::GAP_LAST_ROW), 'sheet 4h'],
+            ['responsibility', count($management['responsibilities'] ?? []), $rows(self::RESPONSIBILITY_FIRST_ROW, self::RESPONSIBILITY_LAST_ROW), 'sheet 4I'],
+            ['mitigation measure', count($report?->mitigation_measures ?? []), $rows(self::MITIGATION_FIRST_ROW, self::MITIGATION_LAST_ROW), 'sheet 4J'],
+        ];
+
+        $overflows = [];
+
+        foreach ($limits as [$noun, $held, $capacity, $where]) {
+            if ($held > $capacity) {
+                $overflows[] = "{$held} ".Str::plural($noun, $held).", but the workbook holds {$capacity} ({$where})";
+            }
+        }
+
+        return $overflows;
     }
 
     /** Case- and whitespace-insensitive, so cosmetic drift is not read as a moved row. */
@@ -417,6 +614,10 @@ class EadWorkbookFiller
         $this->set($ws, self::ID_ROWS['address'], $facility->address);
         $this->set($ws, self::ID_ROWS['coordinates'], $facility->coordinates);
 
+        // 2c1 (b). Mandatory, and unwritten until now: every submission this
+        // product generated left EAD's own asterisked field blank. The facility
+        // already carries a description — it was simply never read here.
+        $this->set($ws, self::FACILITY_DESCRIPTION_CELL, $facility->description);
         $contacts = $report?->contacts ?? [];
         $this->fillContact($ws, self::PRIMARY_CONTACT_START, $contacts['primary'] ?? []);
         $this->fillContact($ws, self::ALT_CONTACT_START, $contacts['alternate'] ?? []);
@@ -444,6 +645,14 @@ class EadWorkbookFiller
 
         // Primary sector / activity (yellow dropdowns).
         $this->set($ws, 'K10', $facility->primary_sector);
+
+        // K11 — C11 asks 'If "other", please specify'. Written only when the
+        // sector is Other, so a value left behind by an earlier draft cannot
+        // contradict a sector that has since been chosen from the list.
+        if ($facility->primary_sector === 'Other') {
+            $this->set($ws, 'K11', $facility->primary_sector_other);
+        }
+
         $this->set($ws, 'K12', $facility->primary_activity);
 
         $this->fillProducts($ws, $report);
@@ -578,6 +787,52 @@ class EadWorkbookFiller
     }
 
     /**
+     * 3d2 (b), first table — the fuels the facility burns.
+     *
+     * Only streams classified as combusted fuel. The sheet's own note says the
+     * table is "an example for energy combustion emissions" and that process
+     * emissions belong in the table below it, so listing an output or a process
+     * input here would answer a question EAD did not ask on this row.
+     *
+     * Membership is by classification, not by whether a fuel type happens to be
+     * filled in: a stream the operator declared as combusted fuel and left
+     * unnamed still belongs on this table, blank, rather than silently dropping
+     * out of the combustion sheet.
+     *
+     * Column F takes the same `information_source` as the other table's column
+     * J. EAD words them differently — "Source (e.g., maintenance records, fuel
+     * logs)" against "Information Source" — but both ask what the number was
+     * read off, and a stream holds one answer to that.
+     *
+     * @param  Collection<int, MrvSourceStream>  $streams
+     */
+    private function fillFuels(Spreadsheet $book, Collection $streams): void
+    {
+        $ws = $book->getSheetByName(self::SHEET_CALC);
+        if (! $ws) {
+            return;
+        }
+
+        // Unconditional, and before the filter: a facility that burns nothing
+        // must submit this table empty, not carrying the template's F01.
+        $this->clearTable($ws, self::FUEL_FIRST_ROW, self::FUEL_LAST_ROW, 'B', 'F');
+
+        $row = self::FUEL_FIRST_ROW;
+
+        foreach ($streams->where('classification', 'fuel_combusted') as $st) {
+            if ($row > self::FUEL_LAST_ROW) {
+                break;
+            }
+
+            $this->set($ws, "B{$row}", $st->stream_code);
+            $this->set($ws, "C{$row}", $st->fuel_type ?: $st->description);
+            $this->set($ws, "F{$row}", $st->information_source);
+
+            $row++;
+        }
+    }
+
+    /**
      * @param  Collection<int, MrvSourceStream>  $streams
      */
     private function fillCalculation(Spreadsheet $book, Collection $streams): void
@@ -597,7 +852,11 @@ class EadWorkbookFiller
         // factor has nothing to say in it.
         $decomposed = $streams->filter(fn (MrvSourceStream $st) => $st->net_calorific_value !== null);
 
-        $this->clearTable($ws, self::CALC_FIRST_ROW, self::CALC_LAST_ROW, 'B', 'J');
+        // Out to K, one past the table: EAD parks an "Illustrative" marker in
+        // the margin beside row 60. Clearing only the data left that marker
+        // standing next to the operator's first real stream, labelling a
+        // genuine figure as an example.
+        $this->clearTable($ws, self::CALC_FIRST_ROW, self::CALC_LAST_ROW, 'B', 'K');
 
         $row = self::CALC_FIRST_ROW;
         foreach ($decomposed as $st) {
@@ -687,6 +946,107 @@ class EadWorkbookFiller
      *
      * @param  Collection<int, \App\Models\MrvMeasuringInstrument>  $instruments
      */
+    /**
+     * 3d2 (c) — the measuring instruments behind a calculation-based figure.
+     *
+     * The specification half of mrv_measuring_instruments: type, location,
+     * range, specified uncertainty, typical use range. All of it was already
+     * captured by the workspace and validated down to "the top of the range
+     * cannot be below the bottom of it", and none of it reached the workbook —
+     * it went into the database and stopped there.
+     *
+     * Worse, because nothing wrote here, nothing CLEARED here: EAD's worked
+     * examples — MI01 "Rotary meter" and MI02 "Weigh bridge", both tagged
+     * Illustrative in column M — shipped inside every submission this product
+     * produced, describing instruments the facility does not own. That is the
+     * defect clearTable() exists to prevent, in the one table nobody had mapped.
+     *
+     * Only instruments carrying a specification are listed. A pure CEMS
+     * measurement point is not an instrument that determines activity data, and
+     * 3e2(b) is where it belongs; putting it here with every column blank would
+     * misdescribe the monitoring. Unlike 3e1, this sheet holds no cross-sheet
+     * formula tying row N to another table's row N, so filtering is safe.
+     *
+     * @param  Collection<int, MrvMeasuringInstrument>  $instruments
+     */
+    private function fillInstrumentSpecifications(Spreadsheet $book, Collection $instruments): void
+    {
+        $ws = $book->getSheetByName(self::SHEET_CALC);
+        if (! $ws) {
+            return;
+        }
+
+        $this->clearTable($ws, self::INSTRUMENT_FIRST_ROW, self::INSTRUMENT_LAST_ROW, 'B', 'M');
+
+        $row = self::INSTRUMENT_FIRST_ROW;
+
+        foreach (self::specifiedInstruments($instruments) as $instrument) {
+            if ($row > self::INSTRUMENT_LAST_ROW) {
+                break;
+            }
+
+            $this->set($ws, "B{$row}", $instrument->instrument_code);
+            $this->set($ws, "C{$row}", $instrument->source_stream_code);
+            $this->set($ws, "D{$row}", $instrument->type);
+            $this->set($ws, "F{$row}", $instrument->location_id);
+            $this->set($ws, "G{$row}", $instrument->range_unit);
+            $this->set($ws, "H{$row}", $instrument->range_lower !== null ? (float) $instrument->range_lower : null);
+            $this->set($ws, "I{$row}", $instrument->range_upper !== null ? (float) $instrument->range_upper : null);
+            $this->set($ws, "J{$row}", $instrument->specified_uncertainty_pct !== null ? (float) $instrument->specified_uncertainty_pct : null);
+            $this->set($ws, "K{$row}", $instrument->use_range_lower !== null ? (float) $instrument->use_range_lower : null);
+            $this->set($ws, "L{$row}", $instrument->use_range_upper !== null ? (float) $instrument->use_range_upper : null);
+
+            $row += self::INSTRUMENT_ROW_STRIDE;
+        }
+    }
+
+    /**
+     * The instruments 3e2(b) is asking about — the measurement points.
+     *
+     * The mirror of specifiedInstruments(). 3e2 used to list every row in the
+     * table, meters included, which is both wrong on the sheet — a weighbridge
+     * is not a point where emissions are continuously measured — and wrong on
+     * the capacity: a facility with twenty-five meters and no CEMS at all was
+     * refused for overflowing a fifteen-row table it did not belong in.
+     *
+     * An instrument with NEITHER half filled in still lands here rather than
+     * nowhere. It carries nothing but an id, but "captured and silently absent
+     * from the submission" is the defect this whole pass exists to remove.
+     *
+     * @param  Collection<int, MrvMeasuringInstrument>  $instruments
+     * @return Collection<int, MrvMeasuringInstrument>
+     */
+    public static function measurementPoints(Collection $instruments): Collection
+    {
+        return $instruments->filter(fn ($instrument) => filled($instrument->emission_source_code)
+            || filled($instrument->procedures)
+            || filled($instrument->relevant_procedures)
+            || filled($instrument->relevant_source)
+            || self::specifiedInstruments(collect([$instrument]))->isEmpty());
+    }
+
+    /**
+     * The instruments 3d2(c) is asking about — those with a specification.
+     *
+     * Public and static because the capacity check needs the same count, and
+     * two definitions of "belongs on 3d2(c)" would eventually disagree about
+     * whether an export was going to fit.
+     *
+     * @param  Collection<int, MrvMeasuringInstrument>  $instruments
+     * @return Collection<int, MrvMeasuringInstrument>
+     */
+    public static function specifiedInstruments(Collection $instruments): Collection
+    {
+        return $instruments->filter(fn ($instrument) => filled($instrument->type)
+            || filled($instrument->location_id)
+            || filled($instrument->range_unit)
+            || $instrument->range_lower !== null
+            || $instrument->range_upper !== null
+            || $instrument->specified_uncertainty_pct !== null
+            || $instrument->use_range_lower !== null
+            || $instrument->use_range_upper !== null);
+    }
+
     private function fillMeasurement(Spreadsheet $book, ?MrvFacilityReport $report, Collection $instruments): void
     {
         $ws = $book->getSheetByName(self::SHEET_MEASUREMENT);
@@ -708,7 +1068,7 @@ class EadWorkbookFiller
 
         $row = self::MEASUREMENT_POINT_FIRST_ROW;
 
-        foreach ($instruments as $instrument) {
+        foreach (self::measurementPoints($instruments) as $instrument) {
             if ($row > self::MEASUREMENT_POINT_LAST_ROW) {
                 break;
             }
@@ -829,6 +1189,9 @@ class EadWorkbookFiller
 
         foreach (self::MANAGEMENT_PROCEDURE_CELLS as $key => $cells) {
             $procedure = $management[$key] ?? [];
+
+            [$firstRow, $lastRow] = self::MANAGEMENT_PROCEDURE_ROWS[$key];
+            $this->clearTable($ws, $firstRow, $lastRow, 'E', 'M');
 
             foreach ($cells as $field => $cell) {
                 if ($field === 'description') {

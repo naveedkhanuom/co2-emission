@@ -9,14 +9,18 @@ use App\Models\MrvEmissionSource;
 use App\Models\MrvFacilityReport;
 use App\Models\MrvMeasuringInstrument;
 use App\Models\MrvSourceStream;
+use App\Models\ReportingPeriod;
+use App\Services\MRV\EadCapacityExceededException;
+use App\Services\MRV\EadTemplateMismatchException;
+use App\Services\MRV\EadTemplateMissingException;
 use App\Services\MRV\EadWorkbookFiller;
 use App\Services\MRV\MrvCalculator;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -57,6 +61,8 @@ class MrvReportController extends Controller
         $instruments = collect();
         $total = 0.0;
         $reconciliationWarnings = [];
+        $capacityWarnings = [];
+        $measuredTotal = 0.0;
         $scope1Available = 0;
 
         if ($facility) {
@@ -93,11 +99,38 @@ class MrvReportController extends Controller
                 }
             }
 
-            $scope1Available = EmissionRecord::where('scope', 1)
-                ->where('facility', $facility->name)
-                ->whereYear('entry_date', $year)
-                ->where('status', 'active')
-                ->count();
+            /*
+             * Measured and fall-back sources report a figure the operator
+             * typed; nothing recomputes it, because the CEMS numeric path is
+             * phase 2 (see MRV_EAD_PLAN.md §7). It still reaches the workbook —
+             * 2c2 column G, which 3e1 then reads — so leaving it out of this
+             * screen entirely meant a facility monitored by CEMS saw a total of
+             * zero beside a submission carrying real numbers.
+             *
+             * Kept separate from $total rather than added to it. Calculated
+             * streams are recomputed here and disagreements surface as
+             * reconciliation warnings; these figures have had no such check, and
+             * merging the two would present one number as if all of it had been
+             * verified. A source using calculation is excluded because its
+             * emissions are already counted through its streams.
+             */
+            $measuredTotal = (float) $sources
+                ->where('methodology', '!=', 'calculation')
+                ->sum('total_co2e');
+
+            // The export refuses outright when the facility holds more rows
+            // than EAD's fixed tables — see EadWorkbookFiller. Saying so here
+            // means the operator finds out while they can still act on it,
+            // rather than at the moment they need the file.
+            $capacityWarnings = EadWorkbookFiller::capacityOverflows(
+                $sources->count(),
+                $streams->count(),
+                EadWorkbookFiller::measurementPoints($instruments)->count(),
+                $report,
+                EadWorkbookFiller::specifiedInstruments($instruments)->count(),
+            );
+
+            $scope1Available = $this->scope1RecordsFor($facility, $year)->count();
         }
 
         return view('reports.mrv.index', [
@@ -112,8 +145,83 @@ class MrvReportController extends Controller
             'instruments' => $instruments,
             'total' => $total,
             'reconciliationWarnings' => $reconciliationWarnings,
+            'capacityWarnings' => $capacityWarnings,
+            'measuredTotal' => $measuredTotal,
             'scope1Available' => $scope1Available,
         ]);
+    }
+
+    /**
+     * Refuse a write that would change a locked year's FIGURES, or null to proceed.
+     *
+     * Locking a reporting period is this platform's governance action: it
+     * declares an inventory final, and seven other write paths — manual entry,
+     * the Excel import, OCR, AI extraction, the review queue, the supplier
+     * survey converter — all consult it. The MRV layer consulted nothing, so a
+     * signed-off year's regulated submission stayed editable indefinitely. That
+     * is the same hole as GHG-01 and TEN-13, in the one place where the output
+     * goes to a government agency.
+     *
+     * WHAT THIS DOES NOT BLOCK, AND WHY
+     *
+     * Only the tables that carry emissions figures: source streams, emission
+     * sources, and the prefill that creates both from a locked year's records.
+     * The monitoring plan itself — contacts, products, the 3f/3g/4h/4I/4J
+     * narratives, measurement points — stays editable after a lock, on purpose.
+     * Those sheets describe HOW the facility monitors, not what it emitted, and
+     * an operator answering EAD's questions on a submitted plan is doing the
+     * thing the workbook exists for. Freezing them would make a regulator's
+     * follow-up unanswerable without unlocking the whole inventory.
+     *
+     * The line is therefore "does this change a number in the submission",
+     * not "does this touch MRV".
+     */
+    private function refuseIfPeriodLocked(int $facilityId, int $year): ?RedirectResponse
+    {
+        $companyId = (int) (current_company_id() ?? auth()->user()->company_id);
+
+        if (! ReportingPeriod::isYearLocked($year, $companyId)) {
+            return null;
+        }
+
+        return redirect()
+            ->route('mrv.index', ['facility_id' => $facilityId, 'year' => $year])
+            ->with('error', "The {$year} reporting period is locked, so its emissions figures cannot be changed. The monitoring plan itself can still be edited. Unlock {$year} first if the figures need to change.");
+    }
+
+    /**
+     * The facility's active Scope 1 records for a reporting year.
+     *
+     * Matched on facility_id, because that is the facility's identity — the
+     * `facility` column is the name that was typed at the time. Both used to be
+     * matched on the name alone, which the rename cascade in the Facilities
+     * model keeps working for linked rows, but which cannot tell two facilities
+     * apart when a company has given them the same name. Nothing stops it: there
+     * is no unique constraint on facilities.name, and "Boiler House" at two
+     * sites is an ordinary thing for an operator to have. Both facilities' Scope
+     * 1 records would then prefill into one regulated submission.
+     *
+     * The name is still accepted, but only for records that carry NO facility_id
+     * at all — rows written before the linking migration, or by a writer that
+     * only ever set the name. Dropping them would quietly shrink an operator's
+     * prefill; matching them by name cannot be ambiguous, because a row that
+     * names a facility and identifies none belongs to whichever facility bears
+     * that name or to nothing.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<EmissionRecord>
+     */
+    private function scope1RecordsFor(Facilities $facility, int $year)
+    {
+        return EmissionRecord::where('scope', 1)
+            ->where('status', 'active')
+            ->whereYear('entry_date', $year)
+            ->where(function ($query) use ($facility) {
+                $query->where('facility_id', $facility->id)
+                    ->orWhere(function ($legacy) use ($facility) {
+                        $legacy->whereNull('facility_id')
+                            ->where('facility', $facility->name);
+                    });
+            });
     }
 
     /**
@@ -124,22 +232,39 @@ class MrvReportController extends Controller
         $data = $request->validate([
             'facility_id' => 'required|integer',
             'mrv_enabled' => 'nullable|boolean',
+            // 2c1(b), which EAD marks mandatory. Long, because it asks for an
+            // outline of the site and its activities, not a label.
+            'description' => 'nullable|string|max:5000',
             'economic_licence_number' => 'nullable|string|max:255',
             'environmental_permit_no' => 'nullable|string|max:255',
             'parent_entity' => 'nullable|string|max:255',
             'coordinates' => 'nullable|string|max:255',
-            'primary_sector' => 'nullable|string|max:255',
-            'primary_activity' => 'nullable|string|max:255',
+            /*
+             * 2c2 K10 and K12 are both dropdowns bound to fixed lists, so a
+             * value typed freehand is one EAD's validation rejects — the same
+             * reason saveSource uses Rule::in for its methodology. K10's list
+             * had been free text since the MRV layer was written, because it
+             * lives inline in the cell rather than on sheet 4k with the others.
+             */
+            'primary_sector' => ['nullable', Rule::in(config('mrv.primary_sectors'))],
+            'primary_activity' => ['nullable', Rule::in(config('mrv.primary_activities'))],
+
+            // C11 asks it in the template's own words, and K11 is where the
+            // answer goes. Required only when the sector actually is "Other",
+            // which is the only time the workbook asks.
+            'primary_sector_other' => 'nullable|string|max:500|required_if:primary_sector,Other',
         ]);
 
         $facility = Facilities::findOrFail($data['facility_id']);
         $facility->fill([
             'mrv_enabled' => (bool) ($data['mrv_enabled'] ?? true),
+            'description' => $data['description'] ?? $facility->description,
             'economic_licence_number' => $data['economic_licence_number'] ?? $facility->economic_licence_number,
             'environmental_permit_no' => $data['environmental_permit_no'] ?? $facility->environmental_permit_no,
             'parent_entity' => $data['parent_entity'] ?? $facility->parent_entity,
             'coordinates' => $data['coordinates'] ?? $facility->coordinates,
             'primary_sector' => $data['primary_sector'] ?? $facility->primary_sector,
+            'primary_sector_other' => $data['primary_sector_other'] ?? $facility->primary_sector_other,
             'primary_activity' => $data['primary_activity'] ?? $facility->primary_activity,
         ])->save();
 
@@ -166,12 +291,12 @@ class MrvReportController extends Controller
         $facility = Facilities::findOrFail($data['facility_id']);
         $year = (int) $data['year'];
 
-        $grouped = EmissionRecord::where('scope', 1)
-            ->where('facility', $facility->name)
-            ->whereYear('entry_date', $year)
-            ->where('status', 'active')
-            ->get()
-            ->groupBy('emission_source');
+        // Prefill writes streams and sources, so it is a figures write.
+        if ($locked = $this->refuseIfPeriodLocked($facility->id, $year)) {
+            return $locked;
+        }
+
+        $grouped = $this->scope1RecordsFor($facility, $year)->get()->groupBy('emission_source');
 
         if ($grouped->isEmpty()) {
             return redirect()
@@ -352,6 +477,10 @@ class MrvReportController extends Controller
         $companyId = (int) (current_company_id() ?? auth()->user()->company_id);
         $facility = Facilities::findOrFail($data['facility_id']);
         $year = (int) $data['year'];
+
+        if ($locked = $this->refuseIfPeriodLocked($facility->id, $year)) {
+            return $locked;
+        }
 
         $stream = MrvSourceStream::updateOrCreate(
             ['facility_id' => $facility->id, 'reporting_year' => $year, 'stream_code' => $data['stream_code']],
@@ -778,6 +907,10 @@ class MrvReportController extends Controller
         $facility = Facilities::findOrFail($data['facility_id']);
         $year = (int) $data['year'];
 
+        if ($locked = $this->refuseIfPeriodLocked($facility->id, $year)) {
+            return $locked;
+        }
+
         $source = MrvEmissionSource::updateOrCreate(
             ['facility_id' => $facility->id, 'reporting_year' => $year, 'source_code' => $data['source_code']],
             array_merge($data, [
@@ -800,6 +933,12 @@ class MrvReportController extends Controller
         $source = MrvEmissionSource::findOrFail($id);
         $facilityId = $source->facility_id;
         $year = $source->reporting_year;
+
+        // Removing a source removes its emissions from the submission, so a
+        // delete is as much a figures write as a save.
+        if ($locked = $this->refuseIfPeriodLocked((int) $facilityId, (int) $year)) {
+            return $locked;
+        }
 
         // Streams reference their source by code, so removing a source that
         // still has streams would leave them pointing at nothing — and 2c2
@@ -911,16 +1050,33 @@ class MrvReportController extends Controller
 
         try {
             $book = $filler->fill($facility, $year, $report);
-        } catch (RuntimeException $e) {
-            // A missing template is a server installation problem, not
-            // something the client did. Log the detail — it names a filesystem
-            // path, which is for whoever administers the deployment, not for a
-            // client's sustainability officer — and say what is actionable.
+        } catch (EadTemplateMissingException $e) {
+            // A server installation problem, not something the client did. Log
+            // the detail — it names a filesystem path, which is for whoever
+            // administers the deployment, not for a client's sustainability
+            // officer — and say what is actionable.
             Log::error('EAD workbook export failed: '.$e->getMessage());
 
             return redirect()
                 ->route('mrv.index', ['facility_id' => $facility->id, 'year' => $year])
                 ->with('error', 'The EAD workbook template is not installed on this server, so the submission could not be generated. Please contact your administrator.');
+        } catch (EadTemplateMismatchException $e) {
+            // Caught separately because the remedy is the opposite one. This
+            // used to share the branch above, so an operator whose server had a
+            // NEWER EAD template was told it was not installed — and sent their
+            // administrator looking for a file that was sitting right there.
+            Log::error('EAD workbook export failed: '.$e->getMessage());
+
+            return redirect()
+                ->route('mrv.index', ['facility_id' => $facility->id, 'year' => $year])
+                ->with('error', 'The EAD template installed on this server is not the version this export was built for, so filling it could put figures under the wrong headings. The export has stopped. Please ask your administrator to check which template version is installed.');
+        } catch (EadCapacityExceededException $e) {
+            // The operator's own data, and the operator is who resolves it, so
+            // the exception's own message is shown: it names each table, what
+            // the facility holds and what the workbook has room for.
+            return redirect()
+                ->route('mrv.index', ['facility_id' => $facility->id, 'year' => $year])
+                ->with('error', $e->getMessage());
         }
 
         $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '_', $facility->name);
@@ -940,6 +1096,11 @@ class MrvReportController extends Controller
         $stream = MrvSourceStream::findOrFail($id);
         $facilityId = $stream->facility_id;
         $year = $stream->reporting_year;
+
+        if ($locked = $this->refuseIfPeriodLocked((int) $facilityId, (int) $year)) {
+            return $locked;
+        }
+
         $stream->delete();
 
         return redirect()

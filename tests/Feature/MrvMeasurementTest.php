@@ -93,6 +93,7 @@ class MrvMeasurementTest extends TenantTestCase
         $ids->setTitle('2c1_ Identifiers');
         $ids->setCellValue('D5', 'Entity/Company name ');
         $ids->setCellValue('D7', 'Facility Name (as stated in the Environmental Permit)');
+        $ids->setCellValue('C13', 'Description of the facility and its activities (including site diagrams if applicable) (*):');
 
         $facility = $book->createSheet();
         $facility->setTitle('2c2_Facility Description');
@@ -107,6 +108,8 @@ class MrvMeasurementTest extends TenantTestCase
         $calc = $book->createSheet();
         $calc->setTitle('3d2_ Calculation Approaches');
         $calc->setCellValue('B59', 'Source Stream ID');
+        $calc->setCellValue('F24', 'Source (e.g., maintenance records, fuel logs)');
+        $calc->setCellValue('C91', 'Associated source stream (ID)');
 
         $measured = $book->createSheet();
         $measured->setTitle('3e1_Emission Sources (Measured)');
@@ -459,5 +462,28 @@ class MrvMeasurementTest extends TenantTestCase
         $measurement = $book->getSheetByName('3e2_MeasurementBasedApproaches');
         $this->assertSame('NDIR on Stack 2.', $measurement->getCell('B7')->getValue());
         $this->assertSame('MP1', $measurement->getCell('B23')->getValue());
+
+        // 3d2(c) on the real file, not just the fixture: this table is written
+        // at hardcoded rows with a stride of two, and its worked examples ship
+        // filled. If either is wrong here, a submission carries EAD's "Rotary
+        // meter" as the operator's own instrument.
+        MrvMeasuringInstrument::create([
+            'company_id' => $this->company->id,
+            'facility_id' => $this->facility->id,
+            'reporting_year' => 2026,
+            'instrument_code' => 'MI01',
+            'source_stream_code' => 'F01',
+            'type' => 'Ultrasonic flow meter',
+            'range_unit' => 'Nm3/h',
+            'specified_uncertainty_pct' => 1.2,
+        ]);
+
+        $book = app(EadWorkbookFiller::class)->fill($this->facility, 2026, $this->report());
+        $calc = $book->getSheetByName('3d2_ Calculation Approaches');
+
+        $this->assertSame('MI01', $calc->getCell('B93')->getValue());
+        $this->assertSame('Ultrasonic flow meter', $calc->getCell('D93')->getValue());
+        $this->assertNull($calc->getCell('M93')->getValue(), 'EAD\'s "Illustrative" marker survived into the submission.');
+        $this->assertNull($calc->getCell('D95')->getValue(), 'EAD\'s "Weigh bridge" example survived into the submission.');
     }
 }

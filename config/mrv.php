@@ -70,6 +70,25 @@ return [
     |
     */
 
+    /*
+     * 2c2 K10. Unlike every other list here this one is NOT on sheet 4k — it is
+     * written inline into the cell's own data validation, which is why the
+     * transcription pass that produced the rest of this file missed it and the
+     * sector shipped as free text for as long as it did.
+     *
+     * Verified against the template by EadVocabularyTest, which reads K10's
+     * validation out of the workbook rather than trusting this copy.
+     */
+    'primary_sectors' => [
+        'Energy',
+        'Transport',
+        'Industrial Processes',
+        'Agriculture',
+        'Waste',
+        'Land Use & Forestry',
+        'Other',
+    ],
+
     'primary_activities' => [
         'Combustion of fuels',
         'Production of coke',
